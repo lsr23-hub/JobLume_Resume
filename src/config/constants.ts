@@ -17,4 +17,3 @@ export const DEFAULT_FIELD_ORDER: BasicFieldType[] = [
   { id: "7", key: "location", label: "所在地", type: "text", visible: true }
 ];
 
-export const GITHUB_REPO_URL = "https://github.com/JOYCEQL/magic-resume";
