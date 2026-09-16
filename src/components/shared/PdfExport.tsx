@@ -7,9 +7,9 @@ import {
   exportResumeAsJson,
   exportResumeAsMarkdown,
   exportToLongPageImage,
-  exportToLongPagePdf,
-  exportToPdf
+  exportToLongPagePdf
 } from "@/utils/export";
+import { toast } from "sonner";
 import { exportResumeToBrowserPrint } from "@/utils/print";
 import { cn } from "@/lib/utils";
 import {
@@ -24,7 +24,6 @@ import {
 import {
   PdfGlassIcon,
   ImageGlassIcon,
-  PrintGlassIcon,
   JsonGlassIcon,
   MarkdownGlassIcon,
 } from "./GlassIcons";
@@ -95,7 +94,6 @@ const PdfExport = ({ children }: { children?: React.ReactNode }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingLongPage, setIsExportingLongPage] = useState(false);
   const [isExportingImage, setIsExportingImage] = useState(false);
-  const [isPrinting, setIsPrinting] = useState(false);
   const [isExportingJson, setIsExportingJson] = useState(false);
   const [isExportingMarkdown, setIsExportingMarkdown] = useState(false);
   const { activeResume } = useResumeStore();
@@ -104,16 +102,26 @@ const PdfExport = ({ children }: { children?: React.ReactNode }) => {
   const tBasicField = useTranslations("workbench.basicPanel.basicFields");
 
   const handleExport = async () => {
-    await exportToPdf({
-      elementId: "resume-preview",
-      title: title || "resume",
-      pagePadding: globalSettings?.pagePadding || 0,
-      fontFamily: globalSettings?.fontFamily,
-      onStart: () => setIsExporting(true),
-      onEnd: () => setIsExporting(false),
-      successMessage: t("toast.success"),
-      errorMessage: t("toast.error")
-    });
+    const resumeContent = document.getElementById("resume-preview");
+    if (!resumeContent) {
+      toast.error(t("toast.error"));
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      await exportResumeToBrowserPrint(
+        resumeContent,
+        globalSettings?.pagePadding || 0,
+        globalSettings?.fontFamily,
+        title
+      );
+    } catch (error) {
+      console.error("Print export failed:", error);
+      toast.error(t("toast.error"));
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleLongPageExport = async () => {
@@ -175,35 +183,14 @@ const PdfExport = ({ children }: { children?: React.ReactNode }) => {
     });
   };
 
-  const handlePrint = async () => {
-    const resumeContent = document.getElementById("resume-preview");
-    if (!resumeContent) {
-      console.error("Resume content not found");
-      return;
-    }
-
-    try {
-      setIsPrinting(true);
-      const pagePadding = globalSettings?.pagePadding || 0;
-      await exportResumeToBrowserPrint(
-        resumeContent,
-        pagePadding,
-        globalSettings?.fontFamily
-      );
-    } finally {
-      setIsPrinting(false);
-    }
-  };
-
   const isLoading =
     isExporting ||
     isExportingLongPage ||
     isExportingImage ||
     isExportingJson ||
-    isExportingMarkdown ||
-    isPrinting;
+    isExportingMarkdown;
   const loadingText =
-    isExporting || isExportingLongPage || isExportingImage || isPrinting
+    isExporting || isExportingLongPage || isExportingImage
       ? t("button.exporting")
     : isExportingJson
       ? t("button.exportingJson")
@@ -286,16 +273,6 @@ const PdfExport = ({ children }: { children?: React.ReactNode }) => {
               onClick={handleLongPageImageExport}
               bgGradientClass="from-teal-500/10 dark:from-teal-500/20"
               hoverBorderClass="hover:border-teal-500/40 hover:ring-1 hover:ring-teal-500/20"
-            />
-            <ExportCard
-              icon={PrintGlassIcon}
-              title={t("button.print")}
-              description={t("modal.printDesc")}
-              isLoading={isPrinting}
-              isDisabled={isLoading}
-              onClick={handlePrint}
-              bgGradientClass="from-sky-500/10 dark:from-sky-500/20"
-              hoverBorderClass="hover:border-sky-500/40 hover:ring-1 hover:ring-sky-500/20"
             />
             <ExportCard
               icon={JsonGlassIcon}

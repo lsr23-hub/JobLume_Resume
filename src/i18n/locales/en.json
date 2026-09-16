@@ -261,25 +261,23 @@
     "modal": {
       "title": "Export Resume",
       "subtitle": "Select the format you want to export your resume",
-      "pdfDesc": "High-precision rendering with 100% format accuracy. Recommended for job applications.",
+      "pdfDesc": "Exported via browser print. Real text layer \u2014 selectable and ATS-parseable. Choose \"Save as PDF\" in the print dialog.",
       "longPagePdfDesc": "Renders the entire resume as an image in a custom-height, single-page PDF. Best for online preview and sharing; not recommended for printing, text selection, or ATS parsing.",
       "longPageImageDesc": "Exports the entire resume as a single tall PNG. Best for mobile preview, portfolios, and image uploads; not recommended for formal applications or printing.",
-      "printDesc": "Save via system print dialog. Use as a fallback or for custom margins.",
       "jsonDesc": "Export your resume data as JSON to backup or transfer between devices.",
       "markdownDesc": "Convert to plain Markdown text for easy sharing with AI models.",
       "privacyNotice": "Magic Resume promise never to collect, upload, or store any of your resume data. Your privacy is fully protected."
     },
     "button": {
       "export": "Export",
-      "exportPdf": "Export PDF (Server)",
+      "exportPdf": "Export PDF",
       "exportLongPagePdf": "PDF (Long Page)",
       "exportLongPageImage": "PNG (Long Image)",
       "exportJson": "Export JSON Config",
       "exportMarkdown": "Export Markdown",
       "exporting": "Exporting...",
       "exportingJson": "Exporting...",
-      "exportingMarkdown": "Exporting...",
-      "print": "Browser Print"
+      "exportingMarkdown": "Exporting..."
     },
     "toast": {
       "success": "PDF exported successfully",

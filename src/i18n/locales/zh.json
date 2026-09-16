@@ -262,10 +262,9 @@
     "modal": {
       "title": "导出简历",
       "subtitle": "选择您希望导出简历的格式",
-      "pdfDesc": "通过高精度渲染生成，100% 还原格式，简历投递首选。",
+      "pdfDesc": "调用浏览器打印导出。文字可选中、可被 ATS 解析，投递首选 —— 在打印对话框中选择「另存为 PDF」即可。",
       "longPagePdfDesc": "将整份简历渲染为图片，生成自定义高度的单页 PDF。适合在线预览和分享，不适合打印、复制文字或 ATS 解析。",
       "longPageImageDesc": "将整份简历导出为单张 PNG 长图。适合移动端预览、作品集展示和图片上传，不建议用于正式投递或打印。",
-      "printDesc": "调用系统打印工具另存为 PDF，当主渲染拥堵或需手动干预边距时的备用方案。",
       "jsonDesc": "保存您的配置档案副本。日后更换设备或清理缓存后，可使用此文件一键无损导入恢复进度。",
       "markdownDesc": "转换为极简的文本标记语言文件，方便快速粘贴给各种 AI 模型或是其他文本编辑器。",
       "privacyNotice": "魔方简历承诺绝不收集、上传或存储您的任何简历数据，您的隐私完全受到保护。"
@@ -279,8 +278,7 @@
       "exportMarkdown": "Markdown",
       "exporting": "导出中...",
       "exportingJson": "导出中...",
-      "exportingMarkdown": "导出中...",
-      "print": "PDF(备份)"
+      "exportingMarkdown": "导出中..."
     },
     "toast": {
       "success": "PDF导出成功",

@@ -1,10 +1,19 @@
 import { getFontFaceCss, normalizeFontFamily } from "@/utils/fonts";
+import { getSafeFileName } from "@/utils/export";
 
+/**
+ * 调用浏览器打印功能导出 PDF。
+ *
+ * 这是唯一产出真实文字层 PDF 的路径 —— 浏览器打印引擎负责分页，
+ * 结果可选中、可复制、可被 ATS 解析，且不依赖任何外部服务。
+ * 代价是需要在系统打印对话框里选择「另存为 PDF」。
+ */
 export const exportResumeToBrowserPrint = async (
   resumeContent: HTMLElement,
   pagePadding: number,
-  fontFamily?: string
-) => {
+  fontFamily?: string,
+  title?: string
+): Promise<void> => {
   const printFrame = document.createElement("iframe");
   printFrame.style.position = "absolute";
   printFrame.style.width = "1px";
@@ -17,9 +26,8 @@ export const exportResumeToBrowserPrint = async (
 
   const iframeWindow = printFrame.contentWindow;
   if (!iframeWindow) {
-    console.error("IFrame window not found");
     document.body.removeChild(printFrame);
-    return;
+    throw new Error("无法创建打印窗口");
   }
 
   try {
@@ -43,11 +51,14 @@ export const exportResumeToBrowserPrint = async (
     clonedContent.style.setProperty("font-family", selectedFontFamily, "important");
     const fontFaceStyles = await getFontFaceCss(selectedFontFamily);
 
+    // 打印对话框默认用文档标题作为文件名
+    const safeTitle = getSafeFileName(title);
+
     const htmlContent = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Print Resume</title>
+          <title>${safeTitle}</title>
           <style>
             ${fontFaceStyles}
 
@@ -168,18 +179,19 @@ export const exportResumeToBrowserPrint = async (
           }
         }, 1000);
       } catch (error) {
-        console.error("Error print:", error);
         if (document.body.contains(printFrame)) {
           document.body.removeChild(printFrame);
         }
+        throw error;
       }
     };
 
-    void printWhenReady();
+    // await 而非 void：让打印过程的错误能冒泡给调用方，避免静默失败
+    await printWhenReady();
   } catch (error) {
-    console.error("Error setting up print:", error);
     if (document.body.contains(printFrame)) {
       document.body.removeChild(printFrame);
     }
+    throw error;
   }
 };
