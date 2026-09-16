@@ -121,6 +121,7 @@
       "newResumeDescription": "Create a new resume to get started.",
       "import": "Import Resume",
       "untitled": "Untitled Resume",
+      "targetedBadge": "Targeted",
       "importSuccess": "Configuration imported successfully",
       "importError": "Import failed, please check the file format",
       "importDialog": {
@@ -967,6 +968,32 @@
       "weak": "Thin coverage",
       "missing": "Missing",
       "missingNote": "Missing items are reported only; the tool will not fabricate experience for you."
+    }
+  },
+  "backup": {
+    "title": "Backup",
+    "description": "Export your career database, all resumes, and all job targets as a single JSON file. The three are linked in the data layer, so they must be backed up together to stay consistent.",
+    "export": "Export full backup",
+    "import": "Import backup",
+    "lastBackup": "Last backup: {time}",
+    "neverBackedUp": "Never backed up. Clearing your browser cache wipes everything — export regularly.",
+    "imageNote": "Photos and certificates are embedded as Base64 and will be included, which makes the backup file fairly large. That's expected.",
+    "exportSuccess": "Backup exported ({size})",
+    "importFailed": "Import failed: {error}",
+    "importSuccess": "Imported {resumes} resumes and {targets} targets ({skipped} duplicates skipped)",
+    "confirm": {
+      "title": "Confirm import",
+      "profile": "Career database",
+      "hasProfile": "{count} entries included",
+      "noProfile": "Not included",
+      "resumes": "{count} resumes",
+      "targets": "{count} targets",
+      "exportedAt": "Exported at {time}",
+      "mergeHint": "Merge: only non-duplicate items are added; existing data stays untouched. Good for combining two devices.",
+      "replaceHint": "Replace: wipes all current data and writes the backup contents. This cannot be undone.",
+      "cancel": "Cancel",
+      "merge": "Merge import",
+      "replace": "Replace import"
     }
   }
 }

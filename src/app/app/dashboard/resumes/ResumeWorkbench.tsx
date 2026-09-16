@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations, useLocale } from "@/i18n/compat/client";
 import { useRouter } from "@/lib/navigation";
@@ -145,6 +145,27 @@ export const ResumeWorkbench = () => {
         setActiveResume(newId);
         router.push({ to: "/app/workbench/$id", params: { id: newId } });
     };
+
+    // 同一投递目标下的版本号：按生成时间正序编号，最早的是 v1
+    const versionLabels = useMemo(() => {
+        const grouped: Record<string, string[]> = {};
+        for (const [id, r] of Object.entries(resumes)) {
+            const targetId = (r as any).snapshot?.jobTargetId;
+            if (!targetId) continue;
+            (grouped[targetId] ||= []).push(id);
+        }
+
+        const labels: Record<string, string> = {};
+        for (const ids of Object.values(grouped)) {
+            ids
+                .sort((a, b) =>
+                    new Date((resumes[a] as any).createdAt || 0).getTime() -
+                    new Date((resumes[b] as any).createdAt || 0).getTime()
+                )
+                .forEach((id, i) => { labels[id] = `v${i + 1}`; });
+        }
+        return labels;
+    }, [resumes]);
 
     const duplicateResume = async (resume: any) => {
         const { generateUUID } = await import("@/utils/uuid");
@@ -465,6 +486,7 @@ export const ResumeWorkbench = () => {
                                         deleteResume={deleteResume}
                                         duplicateResume={duplicateResume}
                                         index={index}
+                                        versionLabel={versionLabels[id]}
                                     />
                                 ))}
                         </AnimatePresence>

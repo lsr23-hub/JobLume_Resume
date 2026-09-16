@@ -18,6 +18,7 @@ import {
 } from "@/utils/fileSystem";
 import { useResumeStore } from "@/store/useResumeStore";
 import { syncResumesFromDirectory } from "@/utils/resumeFileSync";
+import BackupPanel from "./BackupPanel";
 
 const SettingsPage = () => {
   const [directoryHandle, setDirectoryHandle] =
@@ -150,6 +151,8 @@ const SettingsPage = () => {
               </div>
             </CardContent>
           </Card>
+
+          <BackupPanel />
         </div>
       </div>
     </div>

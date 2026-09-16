@@ -122,6 +122,7 @@
       "newResumeDescription": "创建一个新简历以开始。",
       "import": "导入简历",
       "untitled": "未命名简历",
+      "targetedBadge": "投递",
       "importSuccess": "配置导入成功",
       "importError": "配置导入失败，请检查文件格式",
       "importDialog": {
@@ -969,6 +970,32 @@
       "weak": "覆盖薄弱",
       "missing": "缺失",
       "missingNote": "缺失项只作提示，工具不会替你编造经历。"
+    }
+  },
+  "backup": {
+    "title": "数据备份",
+    "description": "把职业数据库、全部简历与投递目标导出为单个 JSON 文件。三者在数据层相互关联，必须整体备份才能保持关系完整。",
+    "export": "导出全库备份",
+    "import": "导入备份",
+    "lastBackup": "上次备份：{time}",
+    "neverBackedUp": "尚未备份过。浏览器清理缓存会清空全部数据，建议定期导出。",
+    "imageNote": "照片与证书以 Base64 内嵌在数据中，会一并导出 —— 这会让备份文件偏大，属正常现象。",
+    "exportSuccess": "已导出备份（{size}）",
+    "importFailed": "导入失败：{error}",
+    "importSuccess": "已导入 {resumes} 份简历、{targets} 个投递目标（跳过 {skipped} 项重复）",
+    "confirm": {
+      "title": "确认导入",
+      "profile": "职业数据库",
+      "hasProfile": "包含 {count} 条经历",
+      "noProfile": "不包含",
+      "resumes": "简历 {count} 份",
+      "targets": "投递目标 {count} 个",
+      "exportedAt": "导出于 {time}",
+      "mergeHint": "合并：只收下不重复的条目，已有的保持不动。适合合并两台设备的数据。",
+      "replaceHint": "覆盖：清空当前全部数据后写入备份内容，不可撤销。",
+      "cancel": "取消",
+      "merge": "合并导入",
+      "replace": "覆盖导入"
     }
   }
 }

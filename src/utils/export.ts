@@ -15,7 +15,7 @@ export const getSafeFileName = (title?: string) => {
   return normalized || "resume";
 };
 
-const downloadBlob = (blob: Blob, fileName: string) => {
+export const downloadBlob = (blob: Blob, fileName: string) => {
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

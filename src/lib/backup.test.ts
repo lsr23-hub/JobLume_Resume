@@ -1,0 +1,144 @@
+import { describe, expect, it } from "vitest";
+import {
+  BACKUP_APP_ID,
+  buildBackup,
+  estimateBackupSize,
+  mergeById,
+  parseBackup,
+  summarizeBackup,
+  type BackupPayload,
+} from "./backup";
+
+const NOW = "2026-01-01T00:00:00.000Z";
+
+const makePayload = (over: Partial<BackupPayload> = {}): BackupPayload => ({
+  app: BACKUP_APP_ID,
+  version: 1,
+  exportedAt: NOW,
+  profile: null,
+  resumes: [],
+  targets: [],
+  ...over,
+});
+
+describe("buildBackup", () => {
+  it("把 Record 形式的集合转为数组", () => {
+    const payload = buildBackup({
+      profile: null,
+      resumes: { r1: { id: "r1", title: "A" } as never, r2: { id: "r2", title: "B" } as never },
+      targets: { t1: { id: "t1", company: "X" } as never },
+      now: NOW,
+    });
+
+    expect(payload.app).toBe(BACKUP_APP_ID);
+    expect(payload.exportedAt).toBe(NOW);
+    expect(payload.resumes.map((r) => r.id).sort()).toEqual(["r1", "r2"]);
+    expect(payload.targets.map((t) => t.id)).toEqual(["t1"]);
+  });
+});
+
+describe("parseBackup", () => {
+  const valid = JSON.stringify(makePayload());
+
+  it("解析合法备份", () => {
+    const result = parseBackup(valid);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.payload.version).toBe(1);
+  });
+
+  it("拒绝非法 JSON", () => {
+    const r = parseBackup("{ 不是 json");
+    expect(r).toMatchObject({ ok: false });
+    if (!r.ok) expect(r.error).toContain("JSON");
+  });
+
+  it("拒绝非本工具的备份", () => {
+    const r = parseBackup(JSON.stringify({ app: "other-tool", version: 1, resumes: [], targets: [] }));
+    expect(r).toMatchObject({ ok: false });
+    if (!r.ok) expect(r.error).toContain("本工具");
+  });
+
+  it("拒绝更高版本的备份 —— 避免用旧结构覆盖新数据", () => {
+    const r = parseBackup(JSON.stringify(makePayload({ version: 99 })));
+    expect(r).toMatchObject({ ok: false });
+    if (!r.ok) expect(r.error).toContain("版本");
+  });
+
+  it("拒绝缺少集合的备份", () => {
+    const r = parseBackup(JSON.stringify({ app: BACKUP_APP_ID, version: 1 }));
+    expect(r).toMatchObject({ ok: false });
+  });
+
+  it("接受 profile 为 null（只备份过简历的情况）", () => {
+    const r = parseBackup(JSON.stringify(makePayload({ profile: null })));
+    expect(r.ok).toBe(true);
+  });
+
+  it("profile 不是对象时拒绝", () => {
+    const r = parseBackup(JSON.stringify({ ...makePayload(), profile: "字符串" }));
+    expect(r).toMatchObject({ ok: false });
+  });
+
+  it("数组不是数组时拒绝", () => {
+    const r = parseBackup(JSON.stringify({ ...makePayload(), resumes: {} }));
+    expect(r).toMatchObject({ ok: false });
+  });
+
+  it("缺失 exportedAt 时给出空串而非 undefined", () => {
+    const r = parseBackup(JSON.stringify({ app: BACKUP_APP_ID, version: 1, resumes: [], targets: [] }));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.payload.exportedAt).toBe("");
+  });
+});
+
+describe("mergeById", () => {
+  it("只收下 id 不冲突的条目", () => {
+    const existing = { a: { id: "a", v: 1 } };
+    const incoming = [{ id: "a", v: 999 }, { id: "b", v: 2 }, { id: "c", v: 3 }];
+
+    const result = mergeById(existing, incoming);
+    expect(result.added).toBe(2);
+    expect(result.skipped).toBe(1);
+    expect(Object.keys(result.merged).sort()).toEqual(["a", "b", "c"]);
+    // 已存在的条目不被覆盖
+    expect(result.merged.a.v).toBe(1);
+  });
+
+  it("全冲突时一个也不加", () => {
+    const r = mergeById({ a: { id: "a" } }, [{ id: "a" }]);
+    expect(r).toMatchObject({ added: 0, skipped: 1 });
+  });
+
+  it("空输入不崩溃", () => {
+    expect(mergeById({}, [])).toMatchObject({ added: 0, skipped: 0 });
+  });
+
+  it("跳过缺少 id 的脏数据", () => {
+    const r = mergeById({}, [{ id: "" }, { id: "ok" }] as Array<{ id: string }>);
+    expect(r).toMatchObject({ added: 1, skipped: 1 });
+  });
+});
+
+describe("summarizeBackup", () => {
+  it("统计各集合数量", () => {
+    const s = summarizeBackup(
+      makePayload({
+        profile: { entities: { e1: {}, e2: {} } } as never,
+        resumes: [{ id: "r1" } as never],
+        targets: [{ id: "t1" } as never, { id: "t2" } as never],
+      })
+    );
+
+    expect(s).toMatchObject({ hasProfile: true, entityCount: 2, resumeCount: 1, targetCount: 2 });
+  });
+
+  it("无 profile 时 entityCount 为 0", () => {
+    expect(summarizeBackup(makePayload()).entityCount).toBe(0);
+  });
+});
+
+describe("estimateBackupSize", () => {
+  it("返回字节数", () => {
+    expect(estimateBackupSize(makePayload())).toBeGreaterThan(0);
+  });
+});

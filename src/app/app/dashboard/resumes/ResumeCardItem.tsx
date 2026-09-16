@@ -33,6 +33,8 @@ interface ResumeCardItemProps {
     deleteResume: (resume: any) => void;
     duplicateResume: (resume: any) => void;
     index: number;
+    /** 同一投递目标下的版本号，如「v2」。通用简历为 undefined */
+    versionLabel?: string;
 }
 
 export const ResumeCardItem = ({
@@ -44,6 +46,7 @@ export const ResumeCardItem = ({
     deleteResume,
     duplicateResume,
     index,
+    versionLabel,
 }: ResumeCardItemProps) => {
     const containerRef = React.useRef<HTMLDivElement>(null);
     const [scale, setScale] = React.useState(0.24);
@@ -114,8 +117,20 @@ export const ResumeCardItem = ({
                     <div className="absolute inset-x-0 bottom-0 top-[60%] pointer-events-none bg-gradient-to-t from-white via-white/90 to-transparent dark:from-gray-950 dark:via-gray-950/90 z-0"></div>
                     <div className="absolute inset-x-0 bottom-0 pt-12 pb-3 px-4 flex justify-between items-end border-t border-transparent z-10 transition-colors group-hover:bg-white/50 dark:group-hover:bg-gray-950/50">
                         <div className="flex flex-col w-full">
-                            <span className="text-[15px] font-semibold truncate text-gray-900 dark:text-gray-100 drop-shadow-sm w-[90%]">
-                                {resume.title || t("dashboard.resumes.untitled")}
+                            <span className="flex items-center gap-1.5 w-[90%]">
+                                {resume.snapshot?.mode === "targeted" && (
+                                    <span className="shrink-0 rounded bg-primary/15 px-1 py-0.5 text-[10px] font-medium text-primary">
+                                        {t("dashboard.resumes.targetedBadge")}
+                                    </span>
+                                )}
+                                <span className="text-[15px] font-semibold truncate text-gray-900 dark:text-gray-100 drop-shadow-sm">
+                                    {resume.title || t("dashboard.resumes.untitled")}
+                                </span>
+                                {versionLabel && (
+                                    <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                                        {versionLabel}
+                                    </span>
+                                )}
                             </span>
                             <span className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 font-medium">
                                 {t(`dashboard.templates.${templateNameKey}.name`)} · {new Intl.DateTimeFormat(locale, {
