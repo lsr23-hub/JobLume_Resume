@@ -1,0 +1,283 @@
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import type { StateStorage } from "zustand/middleware";
+
+import {
+  createEmptyProfile,
+  type CareerProfile,
+  type EntityType,
+  type ProfileEntity,
+  type SkillGroup,
+} from "@/types/profile";
+import type { BasicInfo, Certificate, CustomFieldType, PhotoConfig } from "@/types/resume";
+import { DEFAULT_SECTION_ORDER, PRESET_BASIC_FIELDS } from "@/config/sections";
+import { parseDateRange } from "@/lib/profile/entityUtils";
+import { generateUUID } from "@/utils/uuid";
+
+export const PROFILE_STORAGE_KEY = "career-profile-storage";
+
+const DEFAULT_PHOTO_CONFIG: PhotoConfig = {
+  width: 90,
+  height: 120,
+  aspectRatio: "1:1",
+  borderRadius: "none",
+  customBorderRadius: 0,
+  visible: true,
+};
+
+const createEmptyBasic = (): BasicInfo => ({
+  name: "",
+  title: "",
+  email: "",
+  phone: "",
+  location: "",
+  birthDate: "",
+  employementStatus: "",
+  photo: "",
+  photoConfig: { ...DEFAULT_PHOTO_CONFIG },
+  icons: {
+    email: "Mail",
+    phone: "Phone",
+    birthDate: "CalendarRange",
+    employementStatus: "Briefcase",
+    location: "MapPin",
+  },
+  customFields: PRESET_BASIC_FIELDS.map((f: CustomFieldType) => ({ ...f })),
+  githubKey: "",
+  githubUseName: "",
+  githubContributionsVisible: false,
+  layout: "left",
+});
+
+/** 新建条目时的入参 —— id / order / 时间戳由 store 补全 */
+export type NewEntity = Partial<Omit<ProfileEntity, "id" | "createdAt" | "updatedAt">> & {
+  sectionId: string;
+};
+
+interface ProfileStore {
+  profile: CareerProfile | null;
+
+  /** 首次访问时惰性创建，避免在 store 初始化阶段调用 Date.now() */
+  ensureProfile: () => CareerProfile;
+
+  addEntity: (input: NewEntity) => string;
+  updateEntity: (id: string, patch: Partial<ProfileEntity>) => void;
+  removeEntity: (id: string) => void;
+  /** 按给定 id 顺序重排某板块的条目 */
+  reorderEntities: (sectionId: string, orderedIds: string[]) => void;
+
+  addSkillGroup: (input: Omit<SkillGroup, "id" | "order">) => string;
+  updateSkillGroup: (id: string, patch: Partial<SkillGroup>) => void;
+  removeSkillGroup: (id: string) => void;
+
+  updateBasic: (patch: Partial<BasicInfo>) => void;
+  setCertificates: (certificates: Certificate[]) => void;
+  setSelfEvaluationContent: (content: string) => void;
+
+  /** 整库替换（导入备份时使用） */
+  replaceProfile: (profile: CareerProfile) => void;
+  resetProfile: () => void;
+}
+
+/** 写入失败（如配额超限）时不中断本次会话，只警告一次 */
+const warnedKeys = new Set<string>();
+
+const safeLocalStorage: StateStorage = {
+  getItem: (name) => localStorage.getItem(name),
+  setItem: (name, value) => {
+    try {
+      localStorage.setItem(name, value);
+    } catch (error) {
+      if (!warnedKeys.has(name)) {
+        warnedKeys.add(name);
+        console.warn(
+          `[career-profile] 写入 localStorage 失败，改动仅在本会话内有效。`,
+          error
+        );
+      }
+    }
+  },
+  removeItem: (name) => localStorage.removeItem(name),
+};
+
+const withDerivedDates = (
+  patch: Partial<ProfileEntity>
+): Partial<ProfileEntity> => {
+  if (patch.dateRange === undefined) return patch;
+  const { endTimestamp, isCurrent } = parseDateRange(patch.dateRange);
+  return { ...patch, endTimestamp, isCurrent };
+};
+
+const touch = (profile: CareerProfile): CareerProfile => ({
+  ...profile,
+  meta: { ...profile.meta, updatedAt: new Date().toISOString() },
+});
+
+export const useCareerProfileStore = create<ProfileStore>()(
+  persist(
+    (set, get) => ({
+      profile: null,
+
+      ensureProfile: () => {
+        const existing = get().profile;
+        if (existing) return existing;
+
+        const created = createEmptyProfile(createEmptyBasic(), new Date().toISOString());
+        created.sectionOrder = [...DEFAULT_SECTION_ORDER];
+        set({ profile: created });
+        return created;
+      },
+
+      addEntity: (input) => {
+        const profile = get().ensureProfile();
+        const id = generateUUID();
+        const now = new Date().toISOString();
+
+        const sameSection = Object.values(profile.entities).filter(
+          (e) => e.sectionId === input.sectionId
+        );
+
+        const entity: ProfileEntity = {
+          id,
+          type: (input.type ?? "custom") as EntityType,
+          sectionId: input.sectionId,
+          title: input.title ?? "",
+          subtitle: input.subtitle ?? "",
+          dateRange: input.dateRange ?? "",
+          description: input.description ?? "",
+          tags: input.tags ?? [],
+          skills: input.skills ?? [],
+          metrics: input.metrics ?? [],
+          link: input.link,
+          linkLabel: input.linkLabel,
+          gpa: input.gpa,
+          degree: input.degree,
+          order: sameSection.length,
+          createdAt: now,
+          updatedAt: now,
+          ...withDerivedDates({ dateRange: input.dateRange ?? "" }),
+        };
+
+        set({
+          profile: touch({
+            ...profile,
+            entities: { ...profile.entities, [id]: entity },
+          }),
+        });
+        return id;
+      },
+
+      updateEntity: (id, patch) => {
+        const profile = get().profile;
+        const current = profile?.entities[id];
+        if (!profile || !current) return;
+
+        set({
+          profile: touch({
+            ...profile,
+            entities: {
+              ...profile.entities,
+              [id]: {
+                ...current,
+                ...withDerivedDates(patch),
+                updatedAt: new Date().toISOString(),
+              },
+            },
+          }),
+        });
+      },
+
+      removeEntity: (id) => {
+        const profile = get().profile;
+        if (!profile || !profile.entities[id]) return;
+
+        const entities = { ...profile.entities };
+        delete entities[id];
+        set({ profile: touch({ ...profile, entities }) });
+      },
+
+      reorderEntities: (sectionId, orderedIds) => {
+        const profile = get().profile;
+        if (!profile) return;
+
+        const entities = { ...profile.entities };
+        orderedIds.forEach((id, index) => {
+          const entity = entities[id];
+          if (entity && entity.sectionId === sectionId) {
+            entities[id] = { ...entity, order: index };
+          }
+        });
+
+        set({ profile: touch({ ...profile, entities }) });
+      },
+
+      addSkillGroup: (input) => {
+        const profile = get().ensureProfile();
+        const id = generateUUID();
+        const group: SkillGroup = {
+          id,
+          name: input.name,
+          content: input.content,
+          order: profile.skillGroups.length,
+        };
+
+        set({
+          profile: touch({ ...profile, skillGroups: [...profile.skillGroups, group] }),
+        });
+        return id;
+      },
+
+      updateSkillGroup: (id, patch) => {
+        const profile = get().profile;
+        if (!profile) return;
+
+        set({
+          profile: touch({
+            ...profile,
+            skillGroups: profile.skillGroups.map((g) => (g.id === id ? { ...g, ...patch } : g)),
+          }),
+        });
+      },
+
+      removeSkillGroup: (id) => {
+        const profile = get().profile;
+        if (!profile) return;
+
+        set({
+          profile: touch({
+            ...profile,
+            skillGroups: profile.skillGroups.filter((g) => g.id !== id),
+          }),
+        });
+      },
+
+      updateBasic: (patch) => {
+        const profile = get().ensureProfile();
+        set({ profile: touch({ ...profile, basic: { ...profile.basic, ...patch } }) });
+      },
+
+      setCertificates: (certificates) => {
+        const profile = get().ensureProfile();
+        set({ profile: touch({ ...profile, certificates }) });
+      },
+
+      setSelfEvaluationContent: (selfEvaluationContent) => {
+        const profile = get().ensureProfile();
+        set({ profile: touch({ ...profile, selfEvaluationContent }) });
+      },
+
+      replaceProfile: (profile) => set({ profile }),
+
+      resetProfile: () => {
+        const created = createEmptyProfile(createEmptyBasic(), new Date().toISOString());
+        created.sectionOrder = [...DEFAULT_SECTION_ORDER];
+        set({ profile: created });
+      },
+    }),
+    {
+      name: PROFILE_STORAGE_KEY,
+      storage: createJSONStorage(() => safeLocalStorage),
+      partialize: (state) => ({ profile: state.profile }),
+    }
+  )
+);

@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "release": "bumpp",
     "generate:template-snapshots": "tsx scripts/generate-template-snapshots.ts",
-    "install:playwright": "playwright install chromium"
+    "install:playwright": "playwright install chromium",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -105,6 +107,7 @@
     "typescript": "^5",
     "vite": "^7.3.1",
     "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^5.0.1",
     "wrangler": "^4.19.1"
   }
 }

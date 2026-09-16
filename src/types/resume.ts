@@ -1,3 +1,5 @@
+import type { MatchAnalysis } from "./jobTarget";
+
 export interface PhotoConfig {
   width: number;
   height: number;
@@ -198,6 +200,42 @@ export interface ResumeData {
   draggingProjectId: string | null;
   menuSections: MenuSection[];
   globalSettings: GlobalSettings;
+
+  /**
+   * 来源映射：简历中的 itemId → 职业数据库中的 entityId。
+   * 用于溯源与「同步回数据库」。
+   */
+  sourceMap?: Record<string, string>;
+
+  /** 生成快照：记录这份简历是怎么来的 */
+  snapshot?: ResumeSnapshot;
+}
+
+export interface ResumeSnapshot {
+  /** 生成模式 */
+  mode: "generic" | "targeted" | "manual";
+
+  /** 关联的投递目标（通用简历为 null） */
+  jobTargetId: string | null;
+
+  /** JD 正文快照 —— 防止投递目标被修改后无法追溯 */
+  jdSnapshot?: string;
+
+  /**
+   * 生成时的分析结果快照。
+   * 直接拷贝 JobTarget.matchAnalysis，使简历可独立回溯
+   * 「当时是根据什么判断选的这些内容」，即使投递目标后来被改动或删除。
+   */
+  matchAnalysisSnapshot?: MatchAnalysis;
+
+  /** 各板块选中的条目 id */
+  selectedEntityIds?: Record<string, string[]>;
+
+  /** 用户手动改变过勾选状态的条目 id */
+  manuallyAdjustedIds?: string[];
+
+  /** 生成时间 */
+  generatedAt: string;
 }
 
 export interface ResumeStore {
