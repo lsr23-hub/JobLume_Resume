@@ -1,0 +1,30 @@
+# 只读参考的上游项目，不纳入版本管理
+/rawproject/
+
+# 依赖与构建产物
+node_modules/
+dist/
+.output/
+build/
+coverage/
+*.tsbuildinfo
+src/routeTree.gen.ts
+
+# 环境与密钥
+.env
+.env*.local
+*.pem
+*.key
+
+# 系统与编辑器
+.DS_Store
+.idea/
+.history/
+.agent/
+.tanstack/
+
+# 包管理器调试日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
