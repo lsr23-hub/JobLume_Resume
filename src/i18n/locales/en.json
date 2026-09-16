@@ -104,6 +104,7 @@
   "dashboard": {
     "sidebar": {
       "appName": "JobLume",
+      "profile": "Career DB",
       "resumes": "Resumes",
       "settings": "Settings",
       "templates": "Templates",
@@ -238,7 +239,6 @@
         "name": "Minimalist",
         "description": "Large amount of whitespace, clean and pure layout style"
       },
-
       "elegant": {
         "name": "Elegant",
         "description": "Centered title single-column design, with a touch of elegance"
@@ -261,7 +261,7 @@
     "modal": {
       "title": "Export Resume",
       "subtitle": "Select the format you want to export your resume",
-      "pdfDesc": "Exported via browser print. Real text layer \u2014 selectable and ATS-parseable. Choose \"Save as PDF\" in the print dialog.",
+      "pdfDesc": "Exported via browser print. Real text layer — selectable and ATS-parseable. Choose \"Save as PDF\" in the print dialog.",
       "longPagePdfDesc": "Renders the entire resume as an image in a custom-height, single-page PDF. Best for online preview and sharing; not recommended for printing, text selection, or ATS parsing.",
       "longPageImageDesc": "Exports the entire resume as a single tall PNG. Best for mobile preview, portfolios, and image uploads; not recommended for formal applications or printing.",
       "jsonDesc": "Export your resume data as JSON to backup or transfer between devices.",
@@ -827,6 +827,100 @@
         "question": "How do I drag and drop to reorder modules?",
         "answer": "In the 'Layout' settings of the left edit panel, hover your cursor over the 'Drag Handle' (usually represented by a six-dot icon) on the left side of the module card. Click and hold the left mouse button to drag the module up or down to reorder the sections of your entire resume."
       }
+    }
+  },
+  "profile": {
+    "title": "Career Database",
+    "subtitle": "Keep every experience in one place; pick what you need per resume",
+    "generateGeneric": "Generate General Resume",
+    "generatedTitle": "General Resume",
+    "generateSuccess": "Resume generated, opening workbench",
+    "untitled": "Untitled",
+    "newEntityTitle": "New entry",
+    "addEntity": "Add entry",
+    "delete": "Delete",
+    "show": "Show",
+    "hide": "Hide",
+    "unknownSection": "Unknown section",
+    "field": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "dateRange": "Date range",
+      "description": "Description",
+      "descriptionPlaceholder": "One line per point",
+      "school": "School",
+      "major": "Major",
+      "degree": "Degree",
+      "gpa": "GPA",
+      "company": "Company",
+      "position": "Position",
+      "projectName": "Project",
+      "role": "Role",
+      "link": "Link",
+      "linkLabel": "Link label",
+      "language": "Language",
+      "level": "Level"
+    },
+    "hints": {
+      "title": "Matching hints (optional)",
+      "why": "These never appear on the resume. They only feed the future job-matching analysis. Leaving all of them empty is fine.",
+      "category": "Category",
+      "category.placeholder": "e.g. Finance, Engineering, Operations — press Enter",
+      "categoryNote": "The first tag is the category. In general-resume ranking, too many entries from one category get down-weighted so the resume doesn't collapse into a single field.",
+      "skills": "Skill keywords",
+      "metrics": "Quantified results",
+      "tagPlaceholder": "e.g. React — press Enter",
+      "metricPlaceholder": "e.g. build time 8min→2min — press Enter"
+    },
+    "basic": {
+      "name": "Name",
+      "jobTitle": "Title",
+      "status": "Status",
+      "birthDate": "Birth date",
+      "email": "Email",
+      "phone": "Phone",
+      "location": "Location",
+      "photo": "Photo URL",
+      "photoNote": "Local image upload lands with IndexedDB image storage. For now, paste an image URL.",
+      "customFields": "Custom fields",
+      "customFieldsNote": "The toggle controls whether the field appears on the resume. Empty fields are hidden.",
+      "toggleVisible": "visible",
+      "custom": {
+        "politics": "Political status",
+        "website": "Website",
+        "portfolio": "Portfolio",
+        "hometown": "Hometown",
+        "salary": "Expected salary",
+        "availability": "Availability"
+      }
+    },
+    "skills": {
+      "empty": "No skill groups yet — add one to start",
+      "groupName": "Group name",
+      "contentPlaceholder": "e.g. React, Vue.js, Next.js",
+      "newGroupPlaceholder": "New group name, e.g. Frontend frameworks",
+      "addGroup": "Add group",
+      "defaultGroupName": "New group",
+      "note": "Renders as \"Group name: content\" on the resume. Skill names are extracted later by the AI matching step — no need to split them yourself."
+    },
+    "selfEvaluation": {
+      "placeholder": "A few sentences on your strengths and positioning",
+      "note": "This text appears verbatim in the resume's summary section and can be edited per resume after generation."
+    },
+    "certificates": {
+      "title": "Certificates",
+      "pending": "Certificates are images and need IndexedDB image storage. Planned for the next phase — image upload will be enabled here."
+    },
+    "generic": {
+      "title": "Generate General Resume",
+      "description": "Not tailored to any specific role — good for broad applications. The default selection is ranked by recency and category diversity; adjust freely.",
+      "noEntities": "Your career database is empty. Add a few experiences on the left, then come back.",
+      "locked": "Required section, always kept",
+      "emptySection": "No selectable content",
+      "orderNote": "Order: recency first, same-category entries down-weighted",
+      "sameCategoryNote": "Entry #{rank} in its category, ranking weight {score}",
+      "cancel": "Cancel",
+      "confirm": "Generate ({count} selected)"
     }
   }
 }

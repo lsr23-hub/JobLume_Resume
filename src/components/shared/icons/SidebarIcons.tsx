@@ -74,12 +74,32 @@ export const IconAI: React.FC<IconProps> = ({ size = 24, className, active }) =>
   <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
     {/* Main Flat Star - Vibrant Purple */}
     <path d="M20 2L24.5 14L37 18.5L24.5 23L20 35L15.5 23L3 18.5L15.5 14L20 2Z" fill="#722ED1" />
-    
+
     {/* Inner Star Highlight - Flat Light Purple */}
     <path d="M20 8L22 16L30 18.5L22 21L20 29L18 21L10 18.5L18 16L20 8Z" fill="#B37FEB" />
-    
+
     {/* Accessory Sparkles - Blue & Orange */}
     <circle cx="32" cy="10" r="4" fill="#1890FF" />
     <rect x="5" y="28" width="8" height="8" rx="2" fill="#FA8C16" transform="rotate(25 9 32)" />
+  </svg>
+);
+
+// Career Profile: Layered Cards (Flat Vibrant Teal)
+export const IconProfile: React.FC<IconProps> = ({ size = 24, className, active }) => (
+  <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    {/* Back card */}
+    <rect x="8" y="4" width="24" height="24" rx="5" fill="#13C2C2" fillOpacity="0.45" />
+    {/* Middle card */}
+    <rect x="10" y="8" width="24" height="24" rx="5" fill="#13C2C2" fillOpacity="0.75" />
+    {/* Front card */}
+    <rect x="12" y="12" width="24" height="24" rx="5" fill="#08979C" />
+    {/* Text lines on the front card */}
+    <rect x="17" y="18" width="14" height="2.5" rx="1.25" fill="white" />
+    <rect x="17" y="23" width="10" height="2.5" rx="1.25" fill="white" fillOpacity="0.75" />
+    <rect x="17" y="28" width="14" height="2.5" rx="1.25" fill="white" fillOpacity="0.75" />
+    {/* Active indicator */}
+    {active && (
+      <circle cx="34" cy="34" r="5" fill="#FF4D4F" stroke="white" strokeWidth="2" />
+    )}
   </svg>
 );

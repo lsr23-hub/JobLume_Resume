@@ -105,6 +105,7 @@
   "dashboard": {
     "sidebar": {
       "appName": "职光简历",
+      "profile": "职业数据库",
       "resumes": "我的简历",
       "settings": "通用设置",
       "templates": "简历模板",
@@ -239,7 +240,6 @@
         "name": "极简模板",
         "description": "大面积留白，干净纯粹的排版风格"
       },
-
       "elegant": {
         "name": "优雅模板",
         "description": "居中标题单列设计，具有高级感的分隔线"
@@ -829,6 +829,100 @@
         "question": "如何拖拽调整模块顺序？",
         "answer": "在左侧编辑面板的“布局”设置中，将光标悬停在模块卡片左侧的「拖拽手柄」（通常表现为六个点状图标）上，按住鼠标左键即可上下拖拽模块以重新排序整个简历的章节。"
       }
+    }
+  },
+  "profile": {
+    "title": "职业数据库",
+    "subtitle": "所有经历集中维护一次，生成简历时按需挑选",
+    "generateGeneric": "生成通用简历",
+    "generatedTitle": "通用简历",
+    "generateSuccess": "已生成简历，正在打开工作台",
+    "untitled": "未命名",
+    "newEntityTitle": "新条目",
+    "addEntity": "添加条目",
+    "delete": "删除",
+    "show": "显示",
+    "hide": "隐藏",
+    "unknownSection": "未知板块",
+    "field": {
+      "title": "标题",
+      "subtitle": "副标题",
+      "dateRange": "时间",
+      "description": "描述",
+      "descriptionPlaceholder": "分点描述你做的事，每行一条",
+      "school": "学校",
+      "major": "专业",
+      "degree": "学位",
+      "gpa": "GPA",
+      "company": "公司",
+      "position": "职位",
+      "projectName": "项目名称",
+      "role": "担任角色",
+      "link": "链接",
+      "linkLabel": "链接文字",
+      "language": "语言",
+      "level": "水平"
+    },
+    "hints": {
+      "title": "匹配提示（可选）",
+      "why": "这些信息不会出现在简历上，仅用于后续的岗位匹配分析。全部留空也能正常使用。",
+      "category": "类别",
+      "category.placeholder": "如：金融、计算机、运营 —— 回车确认",
+      "categoryNote": "第一个标签是「类别」。通用简历排序时，同类经历过多会被依次降权，避免简历变成单一领域。",
+      "skills": "技能关键词",
+      "metrics": "量化成果",
+      "tagPlaceholder": "如：React —— 回车确认",
+      "metricPlaceholder": "如：构建时间 8min→2min —— 回车确认"
+    },
+    "basic": {
+      "name": "姓名",
+      "jobTitle": "职位",
+      "status": "状态",
+      "birthDate": "生日",
+      "email": "邮箱",
+      "phone": "电话",
+      "location": "所在地",
+      "photo": "照片链接",
+      "photoNote": "本地图片上传将在图片存储（IndexedDB）实现后支持，当前请填写图片 URL。",
+      "customFields": "自定义字段",
+      "customFieldsNote": "开关控制该字段是否出现在简历上，留空则不显示。",
+      "toggleVisible": "是否显示",
+      "custom": {
+        "politics": "政治面貌",
+        "website": "个人网站",
+        "portfolio": "作品集",
+        "hometown": "籍贯",
+        "salary": "期望薪资",
+        "availability": "到岗时间"
+      }
+    },
+    "skills": {
+      "empty": "还没有技能组，添加一组开始",
+      "groupName": "分组名称",
+      "contentPlaceholder": "如：React、Vue.js、Next.js",
+      "newGroupPlaceholder": "新分组名称，如「前端框架」",
+      "addGroup": "添加分组",
+      "defaultGroupName": "新分组",
+      "note": "简历上会显示为「分组名称：内容」。技能名的识别由后续的 AI 匹配分析完成，无需手动拆分。"
+    },
+    "selfEvaluation": {
+      "placeholder": "用几句话概括你的优势与定位",
+      "note": "这段文字会原样出现在简历的「自我评价」板块，可在生成后单独调整。"
+    },
+    "certificates": {
+      "title": "证书",
+      "pending": "证书是图片，需要图片存储（IndexedDB）支持。计划在下一阶段实现，届时此处可上传证书图片。"
+    },
+    "generic": {
+      "title": "生成通用简历",
+      "description": "这份简历不针对具体岗位，适合海投。排序已按「时效 + 类别多样性」给出默认勾选，你可以随意增删。",
+      "noEntities": "职业数据库还是空的。先到左侧添加几条经历，再回来生成简历。",
+      "locked": "必备板块，始终保留",
+      "emptySection": "暂无可选内容",
+      "orderNote": "排序：时间优先，同类经历依次降权",
+      "sameCategoryNote": "同类第 {rank} 条，排序权重 {score}",
+      "cancel": "取消",
+      "confirm": "生成（已选 {count} 条）"
     }
   }
 }
