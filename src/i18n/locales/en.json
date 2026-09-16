@@ -883,7 +883,7 @@
       "phone": "Phone",
       "location": "Location",
       "photo": "Photo URL",
-      "photoNote": "Local image upload lands with IndexedDB image storage. For now, paste an image URL.",
+      "photoNote": "Local images live in IndexedDB, so they don't consume the localStorage quota. You can also paste an external URL.",
       "customFields": "Custom fields",
       "customFieldsNote": "The toggle controls whether the field appears on the resume. Empty fields are hidden.",
       "toggleVisible": "visible",
@@ -894,7 +894,9 @@
         "hometown": "Hometown",
         "salary": "Expected salary",
         "availability": "Availability"
-      }
+      },
+      "uploadPhoto": "Upload photo",
+      "photoStored": "Stored locally (upload again to replace)"
     },
     "skills": {
       "empty": "No skill groups yet — add one to start",
@@ -911,7 +913,13 @@
     },
     "certificates": {
       "title": "Certificates",
-      "pending": "Certificates are images and need IndexedDB image storage. Planned for the next phase — image upload will be enabled here."
+      "empty": "No certificates yet. Upload scans or photos — they'll be laid out side by side at the width you pick.",
+      "upload": "Upload certificate",
+      "uploading": "Processing…",
+      "widthHint": "Display width",
+      "notImage": "\"{name}\" is not an image file",
+      "uploadFailed": "Failed to save image",
+      "storageNote": "Images live in IndexedDB (auto-compressed to 1200px max edge) and don't consume the localStorage quota. Full backups exclude these binaries — re-upload after switching devices."
     },
     "generic": {
       "title": "Generate General Resume",

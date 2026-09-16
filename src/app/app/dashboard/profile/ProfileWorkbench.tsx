@@ -10,6 +10,7 @@ import { BasicPanel } from "./BasicPanel";
 import { SkillGroupPanel } from "./SkillGroupPanel";
 import { SelfEvaluationPanel } from "./SelfEvaluationPanel";
 import { GenerateGenericModal } from "./GenerateGenericModal";
+import { CertificatesPanel } from "./CertificatesPanel";
 
 /** 走「条目列表」形态的板块；其余由专属面板负责 */
 const ENTITY_SECTIONS = new Set([
@@ -46,14 +47,7 @@ export const ProfileWorkbench = () => {
     if (activeSection === "skills") return <SkillGroupPanel />;
     if (activeSection === "selfEvaluation") return <SelfEvaluationPanel />;
 
-    if (activeSection === "certificates") {
-      return (
-        <Placeholder
-          title={t("certificates.title")}
-          body={t("certificates.pending")}
-        />
-      );
-    }
+    if (activeSection === "certificates") return <CertificatesPanel />;
 
     if (ENTITY_SECTIONS.has(activeSection)) {
       return <EntityList sectionId={activeSection} />;

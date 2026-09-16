@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState, useRef } from "react";
 import throttle from "lodash/throttle";
 import { toast } from "sonner";
 import { DEFAULT_TEMPLATES } from "@/config";
+import { resolveImagesInElement } from "@/lib/imageStore";
 import { cn } from "@/lib/utils";
 import { useResumeStore } from "@/store/useResumeStore";
 import { useAutoOnePage } from "@/hooks/useAutoOnePage";
@@ -131,6 +132,21 @@ const PreviewPanel = React.forwardRef<HTMLDivElement, PreviewPanelProps>(
         return () => clearTimeout(timer);
       }
     }, [activeResume]);
+
+    // 图片引用（idb:）解析成 blob: URL。
+    // 必须在此刻完成 —— 上游的导出逻辑（optimizeImages 等）处理的是
+    // DOM 中已渲染的图片，若拖到导出阶段解析会因异步时序丢图。
+    //
+    // 直接改 DOM 而非走 React state：React 只在属性值变化时才更新 DOM，
+    // 这里 img.src 的 prop 值（idb: 引用）没变，因此改写不会被覆盖。
+    // deps 覆盖「数据变化」与「模板切换」两类会重建 img 元素的情况。
+    useEffect(() => {
+      const element = resumeContentRef.current;
+      if (!element) return;
+      void resolveImagesInElement(element).catch((error) =>
+        console.warn("图片引用解析失败:", error)
+      );
+    }, [activeResume, template]);
 
     const pagePadding = activeResume?.globalSettings?.pagePadding || 0;
     const autoOnePageEnabled = activeResume?.globalSettings?.autoOnePage || false;

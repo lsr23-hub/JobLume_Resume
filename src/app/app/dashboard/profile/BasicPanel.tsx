@@ -1,9 +1,14 @@
+import { useEffect, useRef, useState } from "react";
+import { ImagePlus } from "lucide-react";
+import { toast } from "sonner";
 import { useTranslations } from "@/i18n/compat/client";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import type { BasicInfo } from "@/types/resume";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { isImageRef, resolveImageRef, storeImageFile } from "@/lib/imageStore";
 
 const BASIC_FIELDS: Array<{ key: keyof BasicInfo; labelKey: string }> = [
   { key: "name", labelKey: "basic.name" },
@@ -42,15 +47,7 @@ export const BasicPanel = () => {
         ))}
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground">{t("basic.photo")}</Label>
-        <Input
-          value={basic.photo}
-          onChange={(e) => updateBasic({ photo: e.target.value })}
-          placeholder="https://…"
-        />
-        <p className="text-xs text-muted-foreground">{t("basic.photoNote")}</p>
-      </div>
+      <PhotoField />
 
       <div className="space-y-3">
         <div>
@@ -76,6 +73,86 @@ export const BasicPanel = () => {
           </div>
         ))}
       </div>
+    </div>
+  );
+};
+
+/** 照片：支持本地上传（存 IndexedDB）或填写外链 */
+const PhotoField = () => {
+  const t = useTranslations("profile");
+  const { profile, updateBasic } = useCareerProfileStore();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const photo = profile?.basic.photo ?? "";
+  const isRef = isImageRef(photo);
+
+  useEffect(() => {
+    if (!isRef) {
+      setPreview(photo);
+      return;
+    }
+    let objectUrl = "";
+    void resolveImageRef(photo).then((url) => {
+      objectUrl = url;
+      setPreview(url);
+    });
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [photo, isRef]);
+
+  const handleFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error(t("certificates.notImage", { name: file.name }));
+      return;
+    }
+    setBusy(true);
+    try {
+      updateBasic({ photo: await storeImageFile(file) });
+    } catch (error) {
+      console.error("照片保存失败:", error);
+      toast.error(t("certificates.uploadFailed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs text-muted-foreground">{t("basic.photo")}</Label>
+      <div className="flex items-center gap-3">
+        {preview && (
+          <img
+            src={preview}
+            alt=""
+            className="h-16 w-12 shrink-0 rounded border border-border/60 object-cover"
+          />
+        )}
+        <Input
+          value={isRef ? "" : photo}
+          onChange={(e) => updateBasic({ photo: e.target.value })}
+          placeholder={isRef ? t("basic.photoStored") : "https://…"}
+          disabled={isRef}
+        />
+        <Button variant="outline" className="shrink-0" disabled={busy} onClick={() => inputRef.current?.click()}>
+          <ImagePlus className="mr-2 h-4 w-4" />
+          {busy ? t("certificates.uploading") : t("basic.uploadPhoto")}
+        </Button>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleFile(f);
+          e.target.value = "";
+        }}
+      />
+      <p className="text-xs text-muted-foreground">{t("basic.photoNote")}</p>
     </div>
   );
 };

@@ -885,7 +885,7 @@
       "phone": "电话",
       "location": "所在地",
       "photo": "照片链接",
-      "photoNote": "本地图片上传将在图片存储（IndexedDB）实现后支持，当前请填写图片 URL。",
+      "photoNote": "本地图片存于浏览器 IndexedDB，不占用 localStorage 配额；也可直接填写图片外链。",
       "customFields": "自定义字段",
       "customFieldsNote": "开关控制该字段是否出现在简历上，留空则不显示。",
       "toggleVisible": "是否显示",
@@ -896,7 +896,9 @@
         "hometown": "籍贯",
         "salary": "期望薪资",
         "availability": "到岗时间"
-      }
+      },
+      "uploadPhoto": "上传照片",
+      "photoStored": "已存储本地图片（如需更换请重新上传）"
     },
     "skills": {
       "empty": "还没有技能组，添加一组开始",
@@ -913,7 +915,13 @@
     },
     "certificates": {
       "title": "证书",
-      "pending": "证书是图片，需要图片存储（IndexedDB）支持。计划在下一阶段实现，届时此处可上传证书图片。"
+      "empty": "还没有证书。上传证书扫描件或照片，会按下方宽度并排显示。",
+      "upload": "上传证书图片",
+      "uploading": "处理中…",
+      "widthHint": "显示宽度",
+      "notImage": "「{name}」不是图片文件",
+      "uploadFailed": "图片保存失败",
+      "storageNote": "图片存于浏览器 IndexedDB（自动压缩至最长边 1200px），不占用 localStorage 配额。全库备份不包含这些二进制 —— 换设备后需重新上传。"
     },
     "generic": {
       "title": "生成通用简历",
