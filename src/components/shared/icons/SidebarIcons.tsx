@@ -103,3 +103,17 @@ export const IconProfile: React.FC<IconProps> = ({ size = 24, className, active 
     )}
   </svg>
 );
+
+// Targets: Bullseye (Flat Vibrant Orange)
+export const IconTarget: React.FC<IconProps> = ({ size = 24, className, active }) => (
+  <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    {/* Outer ring */}
+    <circle cx="20" cy="20" r="16" fill="#FA8C16" />
+    <circle cx="20" cy="20" r="11" fill="white" />
+    <circle cx="20" cy="20" r="6" fill="#FA8C16" />
+    {/* Bullseye core */}
+    <circle cx="20" cy="20" r="2.5" fill={active ? "#FF4D4F" : "white"} />
+    {/* Arrow tail */}
+    <rect x="26" y="5" width="4" height="14" rx="2" fill="#FA8C16" transform="rotate(45 28 12)" />
+  </svg>
+);

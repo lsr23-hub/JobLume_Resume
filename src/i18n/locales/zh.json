@@ -107,6 +107,7 @@
       "appName": "职光简历",
       "profile": "职业数据库",
       "resumes": "我的简历",
+      "targets": "投递目标",
       "settings": "通用设置",
       "templates": "简历模板",
       "ai": "AI服务商"
@@ -923,6 +924,49 @@
       "sameCategoryNote": "同类第 {rank} 条，排序权重 {score}",
       "cancel": "取消",
       "confirm": "生成（已选 {count} 条）"
+    }
+  },
+  "targets": {
+    "title": "投递目标",
+    "subtitle": "粘贴 JD，让 AI 标出哪些经历值得放进这份简历",
+    "newTarget": "新建投递目标",
+    "empty": "还没有投递目标",
+    "selectOrCreate": "从左侧选择一个投递目标，或新建一个",
+    "company": "公司名称",
+    "position": "岗位名称",
+    "jdRaw": "JD 正文",
+    "jdPlaceholder": "把招聘网站上的岗位描述完整粘贴到这里…",
+    "jdNote": "请粘贴完整 JD，包含「任职要求」部分 —— 原文会直接作为 AI 分析的输入，不做预解析。",
+    "warnShort": "JD 内容偏短，可能影响分析质量",
+    "warnNoSection": "这看起来不像完整的岗位描述（未找到「任职要求」「岗位职责」等段落）",
+    "warnNoNumbers": "JD 中未发现具体数字（年限、人数、百分比），分析结果可能较宽泛",
+    "create": "创建",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "needApiKey": "需要先在「AI 服务商」里配置 API Key 才能使用智能匹配",
+    "analyze": "智能分析",
+    "analyzing": "分析中…",
+    "reanalyze": "重新分析",
+    "forceReanalyze": "忽略缓存重跑",
+    "analyzedAt": "基于 {model} 分析于 {time}",
+    "analyzeFailed": "分析失败",
+    "fallbackHint": "仍可手动勾选经历后生成简历 —— 生成流程不依赖 AI。",
+    "corrections": "已修正 AI 返回的 {count} 处不合规内容",
+    "generate": "生成简历",
+    "generateSuccess": "已生成简历，正在打开工作台",
+    "selectedCount": "已选 {count} 条",
+    "sections": "板块：",
+    "selectAllRecommended": "全选推荐项",
+    "clearAll": "清空",
+    "noDefaultHint": "初始状态不预勾选 —— 放进简历的必须是你自己选的",
+    "evidence": "依据",
+    "coverage": {
+      "title": "技能覆盖度",
+      "covered": "已覆盖",
+      "weak": "覆盖薄弱",
+      "missing": "缺失",
+      "missingNote": "缺失项只作提示，工具不会替你编造经历。"
     }
   }
 }

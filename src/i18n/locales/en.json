@@ -106,6 +106,7 @@
       "appName": "JobLume",
       "profile": "Career DB",
       "resumes": "Resumes",
+      "targets": "Job Targets",
       "settings": "Settings",
       "templates": "Templates",
       "ai": "AI Config"
@@ -921,6 +922,49 @@
       "sameCategoryNote": "Entry #{rank} in its category, ranking weight {score}",
       "cancel": "Cancel",
       "confirm": "Generate ({count} selected)"
+    }
+  },
+  "targets": {
+    "title": "Job Targets",
+    "subtitle": "Paste a JD and let AI flag which experiences belong in this resume",
+    "newTarget": "New target",
+    "empty": "No targets yet",
+    "selectOrCreate": "Pick a target on the left, or create one",
+    "company": "Company",
+    "position": "Position",
+    "jdRaw": "Job description",
+    "jdPlaceholder": "Paste the full job posting here…",
+    "jdNote": "Paste the complete JD including requirements — the raw text goes straight to the model with no pre-parsing.",
+    "warnShort": "The JD looks short; analysis quality may suffer",
+    "warnNoSection": "This doesn't look like a complete job posting (no requirements/duties section found)",
+    "warnNoNumbers": "No concrete numbers found (years, headcount, percentages); results may be vague",
+    "create": "Create",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "needApiKey": "Configure an API key under AI Providers before using smart matching",
+    "analyze": "Analyze",
+    "analyzing": "Analyzing…",
+    "reanalyze": "Re-analyze",
+    "forceReanalyze": "Ignore cache and re-run",
+    "analyzedAt": "Analyzed with {model} at {time}",
+    "analyzeFailed": "Analysis failed",
+    "fallbackHint": "You can still pick experiences manually — generation never depends on AI.",
+    "corrections": "Corrected {count} non-conforming items from the model",
+    "generate": "Generate resume",
+    "generateSuccess": "Resume generated, opening workbench",
+    "selectedCount": "{count} selected",
+    "sections": "Sections:",
+    "selectAllRecommended": "Select all recommended",
+    "clearAll": "Clear",
+    "noDefaultHint": "Nothing is pre-checked — what goes in must be your own choice",
+    "evidence": "Evidence",
+    "coverage": {
+      "title": "Skill coverage",
+      "covered": "Covered",
+      "weak": "Thin coverage",
+      "missing": "Missing",
+      "missingNote": "Missing items are reported only; the tool will not fabricate experience for you."
     }
   }
 }

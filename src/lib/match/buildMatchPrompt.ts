@@ -10,6 +10,15 @@ export const PROMPT_VERSION = "v1";
 /** 打「★ 优先」标记的条目数 */
 export const TOP_N = 5;
 
+/**
+ * 采样参数。**由服务端注入，不接受客户端传值** ——
+ * 防止前端哪天误传一个高温度，静默破坏结果稳定性且极难排查。
+ */
+export const LLM_PARAMS = {
+  temperature: 0,
+  seed: 42,
+} as const;
+
 /** 单条描述进入 prompt 的最大字符数 */
 const DESCRIPTION_MAX_CHARS = 300;
 
