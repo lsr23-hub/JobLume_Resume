@@ -80,3 +80,55 @@ export interface MatchAnalysis {
   promptVersion: string;
   analyzedAt: string;
 }
+
+// ─────────────────────────────────────────────────────────────
+// 投递目标（Phase 3）
+// ─────────────────────────────────────────────────────────────
+
+export interface JobTarget {
+  id: string;
+
+  /** 公司名（用户填写） */
+  company: string;
+
+  /** 岗位名（用户填写） */
+  position: string;
+
+  /** JD 正文原文 —— 不做预解析，原样作为 LLM 分析的输入 */
+  jdRaw: string;
+
+  /** 用户备注 */
+  note?: string;
+
+  /** 最近一次分析结果；未分析过为 null */
+  matchAnalysis: MatchAnalysis | null;
+
+  /** 分析缓存信息；未分析过为 null */
+  analysisCache: AnalysisCache | null;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * 分析缓存。
+ * 指纹一致时直接复用 matchAnalysis，不重新调用模型 —— 这是可复现性的第四道防线。
+ */
+export interface AnalysisCache {
+  /** 数据库全部条目内容 + JD 正文 的哈希 */
+  contentFingerprint: string;
+
+  /**
+   * 逐条目的内容指纹。用于定位「是哪几条变了」——
+   * 只存合并哈希的话，只能知道数据变了，无法告诉用户变了什么。
+   */
+  entityFingerprints: Record<string, string>;
+
+  /** 模型标识，换模型必然改变结果 */
+  modelId: string;
+
+  /** 提示词模板版本，模板改动必须使缓存失效 */
+  promptVersion: string;
+
+  analyzedAt: string;
+}
