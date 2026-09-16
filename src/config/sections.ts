@@ -52,12 +52,18 @@ export const DEFAULT_SECTION_ORDER = SECTION_DEFS.map((s) => s.id);
  *
  * 复用简历层已有的 `BasicInfo.customFields` 通道 —— 无需改类型，
  * 也无需改模板：BaseInfo 组件已经会渲染 customFields。
+ *
+ * `displayLabel` 的语义（见 `@/lib/customField`）：
+ * - `false` → 渲染「值」，图标模式下为 `<图标> 值`（简历上的正确形态）
+ * - `true`  → 渲染「标签」文本，值仅作为跳转链接（会丢掉可读的 URL）
+ *
+ * 简历是要打印/导出的，所以一律用 `false` 让内容可见。
  */
 export const PRESET_BASIC_FIELDS: CustomFieldType[] = [
-  { id: "politics", label: "政治面貌", value: "", icon: "Flag", visible: true, displayLabel: true },
-  { id: "website", label: "个人网站", value: "", icon: "Globe", visible: true, displayLabel: true },
-  { id: "portfolio", label: "作品集", value: "", icon: "Github", visible: true, displayLabel: true },
-  { id: "hometown", label: "籍贯", value: "", icon: "MapPin", visible: false, displayLabel: true },
-  { id: "salary", label: "期望薪资", value: "", icon: "Wallet", visible: false, displayLabel: true },
-  { id: "availability", label: "到岗时间", value: "", icon: "Clock", visible: false, displayLabel: true },
+  { id: "politics", label: "政治面貌", value: "", icon: "Flag", visible: true, displayLabel: false },
+  { id: "website", label: "个人网站", value: "", icon: "Globe", visible: true, displayLabel: false },
+  { id: "portfolio", label: "作品集", value: "", icon: "Github", visible: true, displayLabel: false },
+  { id: "hometown", label: "籍贯", value: "", icon: "MapPin", visible: false, displayLabel: false },
+  { id: "salary", label: "期望薪资", value: "", icon: "Wallet", visible: false, displayLabel: false },
+  { id: "availability", label: "到岗时间", value: "", icon: "Clock", visible: false, displayLabel: false },
 ];
