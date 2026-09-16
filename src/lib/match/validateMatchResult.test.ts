@@ -124,6 +124,57 @@ describe("validateMatchResult — 证据自洽（核心约束）", () => {
     expect(analysis.items.a.level).toBe("not_recommended");
   });
 
+  it("依据来自副标题时同样算有效（模型看到的就是这些字段）", () => {
+    const e = entity("a", { subtitle: "JLPT N3 · 日常交流", description: "" });
+    const { analysis, corrections } = validateMatchResult(
+      { items: [{ id: "a", level: "not_recommended", evidence: "日常交流" }] },
+      { entities: [e], ...opts }
+    );
+
+    expect(analysis.items.a.level).toBe("not_recommended");
+    expect(corrections).toEqual([]);
+  });
+
+  it("证据来自技能/成果字段时也算有效", () => {
+    const e = entity("a", { description: "", skills: [], metrics: ["构建时间 8min→2min"] });
+    const { analysis } = validateMatchResult(
+      { items: [{ id: "a", level: "not_recommended", evidence: "构建时间 8min→2min" }] },
+      { entities: [e], ...opts }
+    );
+    expect(analysis.items.a.level).toBe("not_recommended");
+  });
+
+  it("提升为推荐时清空理由并打标记 —— 避免界面自相矛盾", () => {
+    const { analysis } = validateMatchResult(
+      {
+        items: [
+          {
+            id: "a",
+            level: "not_recommended",
+            reason: "与岗位要求无关",
+            evidence: "编造的依据",
+          },
+        ],
+      },
+      { entities: [entity("a")], ...opts }
+    );
+
+    const item = analysis.items.a;
+    expect(item.level).toBe("recommended");
+    expect(item.autoPromoted).toBe(true);
+    expect(item.reason).toBe("");      // 原理由描述的是已被推翻的否定判断
+    expect(item.evidence).toBe("");    // 原依据无法核对
+  });
+
+  it("未发生提升时不带 autoPromoted 标记", () => {
+    const { analysis } = validateMatchResult(
+      { items: [{ id: "a", level: "not_recommended", evidence: "a 主导了性能优化" }] },
+      { entities: [entity("a")], ...opts }
+    );
+    expect(analysis.items.a.autoPromoted).toBeUndefined();
+    expect(analysis.items.a.reason).toBe("");
+  });
+
   it("推荐不需要举证", () => {
     const { corrections } = validateMatchResult(
       { items: [{ id: "a", level: "recommended", evidence: "" }] },

@@ -104,7 +104,11 @@ export const TargetsWorkbench = () => {
       return;
     }
 
-    if (!outcome.fromCache) {
+    if (outcome.fromCache) {
+      // 缓存命中时不重跑是设计意图（保证结果零变化），但必须让用户知道
+      // 按钮为什么「没反应」，否则会以为功能坏了
+      toast.info(t("usedCache"));
+    } else {
       setAnalysis(current.id, outcome.analysis, outcome.cache);
     }
     if (outcome.corrections.length > 0) {

@@ -948,6 +948,7 @@
     "reanalyze": "Re-analyze",
     "forceReanalyze": "Ignore cache and re-run",
     "analyzedAt": "Analyzed with {model} at {time}",
+    "usedCache": "Data unchanged; reusing the previous result. Use \"Ignore cache and re-run\" to force a fresh analysis.",
     "analyzeFailed": "Analysis failed",
     "fallbackHint": "You can still pick experiences manually — generation never depends on AI.",
     "corrections": "Corrected {count} non-conforming items from the model",
@@ -959,6 +960,7 @@
     "clearAll": "Clear",
     "noDefaultHint": "Nothing is pre-checked — what goes in must be your own choice",
     "evidence": "Evidence",
+    "autoPromoted": "AI marked this as not recommended but cited no verifiable evidence; treated as recommended",
     "coverage": {
       "title": "Skill coverage",
       "covered": "Covered",

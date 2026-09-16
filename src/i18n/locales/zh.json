@@ -950,6 +950,7 @@
     "reanalyze": "重新分析",
     "forceReanalyze": "忽略缓存重跑",
     "analyzedAt": "基于 {model} 分析于 {time}",
+    "usedCache": "数据未修改，直接复用上次结果 —— 如需强制重跑请点「忽略缓存重跑」",
     "analyzeFailed": "分析失败",
     "fallbackHint": "仍可手动勾选经历后生成简历 —— 生成流程不依赖 AI。",
     "corrections": "已修正 AI 返回的 {count} 处不合规内容",
@@ -961,6 +962,7 @@
     "clearAll": "清空",
     "noDefaultHint": "初始状态不预勾选 —— 放进简历的必须是你自己选的",
     "evidence": "依据",
+    "autoPromoted": "AI 判为「不推荐」但未能提供可核对的依据，已按「推荐」处理",
     "coverage": {
       "title": "技能覆盖度",
       "covered": "已覆盖",

@@ -38,7 +38,8 @@ const normalizeForMatch = (text: string): string => text.replace(/\s+/g, "");
 /**
  * 校验并修正模型返回的分析结果。
  *
- * 核心是**证据自洽**：判为 not_recommended 必须逐字引用条目描述原文，
+ * 核心是**证据自洽**：判为 not_recommended 必须逐字引用条目原文
+ * （标题 / 副标题 / 时间 / 描述 / 技能 / 成果 —— 即 prompt 里模型看得到的全部内容），
  * 引用不出就提升为 recommended —— 无法举证就不该否定用户的经历。
  * 这把提示词里的软约束变成了程序可验证的硬约束，不依赖模型是否听话。
  */
@@ -87,26 +88,42 @@ export const validateMatchResult = (
     }
 
     const evidence = typeof rawItem.evidence === "string" ? rawItem.evidence.trim() : "";
-    const descriptionText = normalizeForMatch(stripHtml(entity.description));
+    // 搜索范围必须覆盖**模型实际看得到的全部用户输入** ——
+    // prompt 里序列化了标题、副标题、时间、描述、技能、成果，
+    // 模型引用副标题是合法的，只在描述里找会误判为「无法举证」。
+    const entityText = normalizeForMatch(
+      [
+        entity.title,
+        entity.subtitle,
+        entity.dateRange,
+        stripHtml(entity.description),
+        ...entity.skills,
+        ...entity.metrics,
+      ].join(" ")
+    );
+
+    let autoPromoted = false;
+    let reason = typeof rawItem.reason === "string" ? rawItem.reason.trim() : "";
 
     // 证据自洽：判为不推荐却举不出原文 → 提升为推荐
     if (level === "not_recommended") {
       const cited = normalizeForMatch(evidence);
-      if (!cited || !descriptionText.includes(cited)) {
+      if (!cited || !entityText.includes(cited)) {
         corrections.push({
           entityId: id,
           type: "evidence_not_found",
-          detail: "否定依据无法在描述原文中找到，已提升为推荐",
+          detail: "否定依据无法在原文中核对，已提升为推荐",
         });
         level = "recommended";
+        autoPromoted = true;
+        // 理由与依据描述的是那个已被推翻的否定判断，留着会与新等级矛盾
+        reason = "";
       }
     }
 
-    const entitySkillText = normalizeForMatch(
-      [...entity.skills, stripHtml(entity.description)].join(" ")
-    );
+    // 与证据校验用同一份文本：模型看到什么，就允许它从什么里提取技能
     const matchedSkills = asStringArray(rawItem.matchedSkills).filter((skill) => {
-      const hit = entitySkillText.includes(normalizeForMatch(skill));
+      const hit = entityText.includes(normalizeForMatch(skill));
       if (!hit) {
         corrections.push({
           entityId: id,
@@ -119,11 +136,12 @@ export const validateMatchResult = (
 
     items[id] = {
       level,
-      reason: typeof rawItem.reason === "string" ? rawItem.reason.trim() : "",
-      evidence,
+      reason,
+      evidence: autoPromoted ? "" : evidence,
       inTopN: false, // 稍后统一计算
       matchedSkills,
       missingSkills: asStringArray(rawItem.missingSkills),
+      ...(autoPromoted ? { autoPromoted: true } : {}),
       ...(typeof rawItem.suggestedFocus === "string" && rawItem.suggestedFocus.trim()
         ? { suggestedFocus: rawItem.suggestedFocus.trim() }
         : {}),

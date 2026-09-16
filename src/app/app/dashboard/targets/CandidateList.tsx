@@ -172,6 +172,11 @@ const EntityRow = ({
           <span className="block truncate text-xs text-muted-foreground">
             {[entity.subtitle, entity.dateRange].filter(Boolean).join(" · ")}
           </span>
+          {item?.autoPromoted && (
+            <span className="mt-1 block text-xs text-amber-600 dark:text-amber-400">
+              {t("autoPromoted")}
+            </span>
+          )}
           {hasAnalysis && item?.reason && (
             <span
               className={cn(
