@@ -1,8 +1,8 @@
 {
   "common": {
-    "title": "Magic Resume",
+    "title": "JobLume",
     "subtitle": "AI Driven Resume Editor",
-    "description": "Magic Resume is an open source resume editor, free, privacy-first. No registration required, all data stored locally, support data backup and export, ensuring your resume data is always available.",
+    "description": "JobLume is an open source resume editor, free, privacy-first. No registration required, all data stored locally, support data backup and export, ensuring your resume data is always available.",
     "dashboard": "Dashboard",
     "edit": "Edit",
     "delete": "Delete",
@@ -17,7 +17,7 @@
   },
   "home": {
     "header": {
-      "title": "Magic Resume",
+      "title": "JobLume",
       "startButton": "Get Started",
       "features": "Features",
       "pricing": "Pricing",
@@ -29,12 +29,12 @@
     "hero": {
       "badge": "Smart Resume Creation",
       "title": "Make Resume Creation Simple and Smart",
-      "subtitle": "Magic Resume uses AI technology to help you quickly create professional resumes. No registration required, free to use, with secure data storage.",
+      "subtitle": "JobLume uses AI technology to help you quickly create professional resumes. No registration required, free to use, with secure data storage.",
       "cta": "Get Started",
       "secondary": "Browse Templates"
     },
     "features": {
-      "title": "Why Choose Magic Resume?",
+      "title": "Why Choose JobLume?",
       "subtitle": "We provide an all-in-one resume solution to make your job search journey smoother",
       "ai": {
         "badge": "AI Smart Check",
@@ -67,24 +67,24 @@
       "content": "New AI Resume Enhancement Feature is Live"
     },
     "footer": {
-      "copyright": " 2025 Magic Resume. All rights reserved."
+      "copyright": " 2025 JobLume. All rights reserved."
     },
     "changelog": "Changelog",
     "cta": {
       "title": "Start Your New Career Chapter",
-      "description": "Start using Magic Resume now to create an impressive resume",
+      "description": "Start using JobLume now to create an impressive resume",
       "button": "Start Using for Free"
     },
     "faq": {
       "title": "Frequently Asked Questions",
       "items": [
         {
-          "question": "Is Magic Resume free to use?",
-          "answer": "Magic Resume is currently free, meeting basic resume creation needs. The open-source version's features will remain unchanged"
+          "question": "Is JobLume free to use?",
+          "answer": "JobLume is currently free, meeting basic resume creation needs. The open-source version's features will remain unchanged"
         },
         {
           "question": "Is my resume data secure?",
-          "answer": "Yes, very secure. Magic Resume uses local storage, meaning all your data is stored on your own device with no cloud storage, ensuring complete privacy protection."
+          "answer": "Yes, very secure. JobLume uses local storage, meaning all your data is stored on your own device with no cloud storage, ensuring complete privacy protection."
         },
         {
           "question": "What export formats are supported?",
@@ -103,7 +103,7 @@
   },
   "dashboard": {
     "sidebar": {
-      "appName": "Magic Resume",
+      "appName": "JobLume",
       "resumes": "Resumes",
       "settings": "Settings",
       "templates": "Templates",
@@ -266,7 +266,7 @@
       "longPageImageDesc": "Exports the entire resume as a single tall PNG. Best for mobile preview, portfolios, and image uploads; not recommended for formal applications or printing.",
       "jsonDesc": "Export your resume data as JSON to backup or transfer between devices.",
       "markdownDesc": "Convert to plain Markdown text for easy sharing with AI models.",
-      "privacyNotice": "Magic Resume promise never to collect, upload, or store any of your resume data. Your privacy is fully protected."
+      "privacyNotice": "JobLume promise never to collect, upload, or store any of your resume data. Your privacy is fully protected."
     },
     "button": {
       "export": "Export",
@@ -809,7 +809,7 @@
   },
   "faqDialog": {
     "title": "Frequently Asked Questions (FAQ)",
-    "description": "Common tips and solutions for the Magic Resume workbench.",
+    "description": "Common tips and solutions for the JobLume workbench.",
     "items": {
       "browser-compatibility": {
         "question": "Which browser is recommended?",

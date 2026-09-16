@@ -10,7 +10,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center gap-3">
             <Logo size={32} />
-            <span className="font-serif font-semibold text-lg text-foreground/80">Magic Resume</span>
+            <span className="font-serif font-semibold text-lg text-foreground/80">{t("header.title")}</span>
           </div>
           
           <div className="text-sm text-muted-foreground/60 font-light">

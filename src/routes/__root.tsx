@@ -42,7 +42,7 @@ export const Route = createRootRoute({
         name: "viewport",
         content: "width=device-width, initial-scale=1"
       },
-      { title: "Magic Resume" }
+      { title: "职光简历" }
     ],
     links: [
       {
@@ -79,8 +79,9 @@ function RootComponent() {
     <html lang={locale} suppressHydrationWarning>
       <head>
         <HeadContent />
-        <link rel="icon" href="/favicon.ico?v=2" />
-        <link rel="icon" href="/icon.png" />
+        <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/icon.png" />
       </head>
       <body>
         <NextIntlClientProvider
