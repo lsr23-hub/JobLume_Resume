@@ -154,7 +154,7 @@ export const TargetsWorkbench = () => {
 
     const sections: MenuSection[] = SECTION_DEFS.map((def, index) => ({
       id: def.id,
-      title: def.title,
+      title: t(def.titleKey),
       icon: def.icon,
       enabled: (def.required || !disabledSections.has(def.id)) && hasContent(def.id),
       order: index,
@@ -210,8 +210,9 @@ export const TargetsWorkbench = () => {
         </Button>
       </header>
 
-      <div className="flex min-h-0 flex-1">
-        <nav className="w-64 shrink-0 overflow-y-auto border-r border-border/40 p-3">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col md:flex-row">
+        <nav className="w-full min-w-0 shrink-0 overflow-x-auto border-b border-border/40 p-3 md:w-64 md:overflow-y-auto md:border-b-0 md:border-r">
+          <div className="flex gap-1 md:block">
           {list.length === 0 && (
             <p className="px-3 py-6 text-center text-sm text-muted-foreground">{t("empty")}</p>
           )}
@@ -223,7 +224,7 @@ export const TargetsWorkbench = () => {
                 key={target.id}
                 onClick={() => setSelectedId(target.id)}
                 className={cn(
-                  "mb-1 flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left transition-colors",
+                  "mb-1 flex shrink-0 items-start gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-left transition-colors md:w-full",
                   active
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -241,6 +242,7 @@ export const TargetsWorkbench = () => {
               </button>
             );
           })}
+          </div>
         </nav>
 
         <section className="min-w-0 flex-1 overflow-y-auto p-6">
@@ -373,7 +375,7 @@ const TargetEditor = ({ target, onCancel, onSubmit, onDelete }: EditorProps) => 
 
   return (
     <div className="space-y-4 rounded-xl border border-border/60 p-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("company")}</Label>
           <Input value={company} onChange={(e) => setCompany(e.target.value)} />

@@ -3,7 +3,10 @@ import type { CustomFieldType } from "@/types/resume";
 
 export interface SectionDef {
   id: string;
+  /** 中文默认标题。同时作为 i18n 缺失时的兜底 */
   title: string;
+  /** i18n key。界面显示时用 t(titleKey) 翻译，不要直接用 title */
+  titleKey: string;
   icon: string;
 
   /** 必备板块：生成简历时默认勾选且不可取消 */
@@ -19,24 +22,28 @@ export interface SectionDef {
 /**
  * 职业数据库的板块定义。
  *
- * `id` 必须与简历层的 `MenuSection.id` 保持一致 —— 这是数据库能物化成
- * 简历、并被 9 套模板渲染的前提（模板对未识别的 id 走 customData 回退分支）。
+ * `id` 必须与简历层的 `MenuSection.id` 一致 —— 这是数据库能物化成简历、
+ * 并被 9 套模板渲染的前提（模板对未识别的 id 走 customData 回退分支）。
+ *
+ * **标题与上游 `initialResumeData.ts` 的 menuSections 保持一致**
+ * （工作经验 / 项目经历 / 专业技能）。模板的 SectionTitle 是直接渲染
+ * `menuSections[].title` 的，两者不一致会让生成的简历与上游产物长得不一样。
  *
  * 与 `@/config/modules` 的 `STANDARD_MODULES` 是不同层的概念：
- * 后者是「简历里可以添加哪些模块」，这里是「数据库有哪些板块」。
+ * 后者是「简历里可以添加哪些模块」，这里是「数据库有哪些板块」，
  * 两者共享同一套 id 字符串。
  */
 export const SECTION_DEFS: SectionDef[] = [
-  { id: "basic", title: "基本信息", icon: "👤", required: true, preset: true, accepts: [] },
-  { id: "education", title: "教育经历", icon: "🎓", required: true, preset: true, accepts: ["education"] },
-  { id: "experience", title: "经历", icon: "💼", required: true, preset: true, accepts: ["experience"] },
-  { id: "skills", title: "技能", icon: "⚡", required: true, preset: true, accepts: [] },
-  { id: "certificates", title: "证书", icon: "🏆", required: true, preset: true, accepts: [] },
-  { id: "projects", title: "项目经验", icon: "🚀", required: false, preset: true, accepts: ["project"] },
-  { id: "selfEvaluation", title: "自我评价", icon: "💬", required: false, preset: true, accepts: [] },
-  { id: "campus", title: "校园经历", icon: "🏫", required: false, preset: true, accepts: ["campus"] },
-  { id: "honors", title: "荣誉课程", icon: "🎖️", required: false, preset: true, accepts: ["honors"] },
-  { id: "languages", title: "语言能力", icon: "🌐", required: false, preset: true, accepts: ["languages"] },
+  { id: "basic", title: "基本信息", titleKey: "sections.basic", icon: "👤", required: true, preset: true, accepts: [] },
+  { id: "education", title: "教育经历", titleKey: "sections.education", icon: "🎓", required: true, preset: true, accepts: ["education"] },
+  { id: "experience", title: "工作经验", titleKey: "sections.experience", icon: "💼", required: true, preset: true, accepts: ["experience"] },
+  { id: "skills", title: "专业技能", titleKey: "sections.skills", icon: "⚡", required: true, preset: true, accepts: [] },
+  { id: "certificates", title: "证书作品", titleKey: "sections.certificates", icon: "🏆", required: true, preset: true, accepts: [] },
+  { id: "projects", title: "项目经历", titleKey: "sections.projects", icon: "🚀", required: false, preset: true, accepts: ["project"] },
+  { id: "selfEvaluation", title: "自我评价", titleKey: "sections.selfEvaluation", icon: "💬", required: false, preset: true, accepts: [] },
+  { id: "campus", title: "校园经历", titleKey: "sections.campus", icon: "🏫", required: false, preset: true, accepts: ["campus"] },
+  { id: "honors", title: "荣誉课程", titleKey: "sections.honors", icon: "🎖️", required: false, preset: true, accepts: ["honors"] },
+  { id: "languages", title: "语言能力", titleKey: "sections.languages", icon: "🌐", required: false, preset: true, accepts: ["languages"] },
 ];
 
 export const SECTION_IDS = SECTION_DEFS.map((s) => s.id);
@@ -49,9 +56,6 @@ export const DEFAULT_SECTION_ORDER = SECTION_DEFS.map((s) => s.id);
 
 /**
  * 基本信息板块的预设自定义字段。
- *
- * 复用简历层已有的 `BasicInfo.customFields` 通道 —— 无需改类型，
- * 也无需改模板：BaseInfo 组件已经会渲染 customFields。
  *
  * `displayLabel` 的语义（见 `@/lib/customField`）：
  * - `false` → 渲染「值」，图标模式下为 `<图标> 值`（简历上的正确形态）

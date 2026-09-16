@@ -1,157 +1,165 @@
-<div align="center">
+# 职光简历 · JobLume Resume
 
-# ✨ Magic Resume ✨
+把散落各处的求职经历沉淀成一份**结构化的职业数据库**，再针对具体岗位自动筛选、生成针对性简历。
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-![TanStack Start](https://img.shields.io/badge/TanStack_Start-latest-black)
-![Framer Motion](https://img.shields.io/badge/Framer_Motion-10.0-purple)
+> 本项目基于 [Magic Resume](https://github.com/JOYCEQL/magic-resume) v2.0.8 二次开发。上游代码保留在 `rawproject/`（只读参考，不参与构建）。
 
-<a href="https://trendshift.io/repositories/13077" target="_blank"><img src="https://trendshift.io/api/badge/repositories/13077" alt="Magic Resume | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+---
 
-[简体中文](./README.zh-CN.md) | English
+## 它解决什么问题
 
-</div>
+求职时的重复劳动集中在三件事上：
 
-Magic Resume is a modern online resume editor that makes creating professional resumes simple and enjoyable. Built with TanStack Start and Framer Motion, it supports real-time preview and custom themes.
+1. **重复录入** —— 每投一家公司就要重填一遍教育、经历、项目
+2. **手工裁剪** —— 同一段经历，A 岗位要突出性能优化、B 岗位要突出团队协作，全靠人肉判断
+3. **版本失控** —— 投了 30 家后，本地躺着一堆「简历-最终版-v3」，无法回答「我投腾讯用的是哪版」
 
-## 📸 Screenshots
+现有工具解决的是**排版**问题，不解决**内容组织与匹配**问题。
 
-<img width="1920" height="1440" alt="336_1x_shots_so" src="https://github.com/user-attachments/assets/18969a17-06f8-4a4b-94eb-284ba8442620" />
+---
 
+## 核心流程
 
-## ✨ Features
-
-- 🚀 Built with TanStack Start
-- 💫 Smooth animations (Framer Motion)
-- 🎨 Custom theme support
-- 📱 Responsive design
-- 🌙 Dark mode
-- 📤 Export to PDF
-- 🔄 Real-time preview
-- 💾 Auto-save
-- 🔒 Local storage
-
-## 🛠️ Tech Stack
-
-- TanStack Start
-- TypeScript
-- Motion
-- Tiptap
-- Tailwind CSS
-- Zustand
-- Shadcn/ui
-- Lucide Icons
-
-## 🚀 Quick Start
-
-1. Clone the project
-
-```bash
-git clone git@github.com:JOYCEQL/magic-resume.git
-cd magic-resume
+```
+职业数据库（唯一事实来源）
+      │
+      │  无 JD：时效 × 同类衰减排序给建议
+      │  有 JD：LLM 标注推荐 + top-N   ◀── 仅此一步依赖 AI
+      ▼
+用户勾选（唯一决策点）
+      │  物化 materialize()
+      ▼
+简历数据（9 套模板零改动）
+      │
+      ▼
+PDF / PNG / JSON / Markdown
 ```
 
-2. Install dependencies
+### 三个产品承诺
+
+**1. 事实与呈现分离**
+数据库存事实，简历存呈现。同一段经历可以生成十份不同侧重的简历，事实只有一份。
+
+**2. AI 是推荐者，不是决策者**
+LLM 只标注「哪些经历值得放进这份简历」，**勾选状态完全由用户产生**，AI 不预设任何默认值。生成路径自始至终是「用户勾选 → 物化」，与 AI 是否可用无关 —— 未配置 API Key 时功能照常可用。
+
+**3. 判断必须可核对**
+判为「不推荐」的条目必须逐字引用原文作为依据，引用不出就自动改判为推荐。举证责任在否定一侧：**无法举证就不该否定用户的经历**。
+
+---
+
+## 功能
+
+| 模块 | 说明 |
+|---|---|
+| **职业数据库** | 10 个板块（基本信息 / 教育 / 工作 / 技能 / 证书 / 项目 / 自我评价 / 校园 / 荣誉 / 语言），条目级 CRUD、拖拽排序、显示隐藏 |
+| **通用简历** | 无 JD，按「时效 × 同类衰减」排序给出默认建议 —— 避免简历变成单一领域 |
+| **目标简历** | 粘贴 JD → LLM 语义匹配 → 候选清单（等级 + 理由 + 逐字依据）→ 用户勾选 → 生成 |
+| **技能覆盖度** | 报告 JD 要求中「已覆盖 / 覆盖薄弱 / 缺失」，只报告不伪造 |
+| **简历编辑** | 复用上游工作台：9 套模板、字体字号、间距边距、主题色、板块拖拽排序 |
+| **版本管理** | 投递目标分组、版本号、编辑/复制/删除 |
+| **导出** | PDF（浏览器打印，真实文字层）/ 长页 PDF / PNG 长图 / JSON / Markdown |
+| **图片存储** | 照片与证书存 IndexedDB，不占 localStorage 配额 |
+| **全库备份** | 数据库 + 简历 + 投递目标整体导出/导入（合并或覆盖） |
+
+---
+
+## 快速开始
 
 ```bash
 pnpm install
+pnpm dev          # http://localhost:3000
 ```
 
-3. Start development server
+构建与测试：
 
 ```bash
-pnpm dev
+pnpm build        # 生产构建
+pnpm test         # 单元测试
+pnpm exec tsc --noEmit   # 类型检查
 ```
 
-4. Open browser and visit `http://localhost:3000`
-
-## 📦 Build and Deploy
-
-```bash
-pnpm build
-```
-
-
-## 🐳 Docker Deployment
-
-### Docker Compose
-
-1. Ensure you have Docker and Docker Compose installed
-
-2. Run the following command in the project root directory:
+Docker：
 
 ```bash
 docker compose up -d
 ```
 
-This will:
+### 配置 AI 匹配（可选）
 
-- Automatically build the application image
-- Start the container in the background
+「目标简历」的智能匹配需要 DeepSeek API Key：进入 **AI 服务商** 页面填入即可。
 
+未配置时该功能降级为手动勾选 —— 候选清单、勾选、生成简历全部照常。
 
-## 📝 License and Commercial Use
+---
 
-The source code of this project is open-sourced under the **Apache 2.0** license, but with **strict commercial use restrictions**:
+## 技术栈
 
-- **Free for Personal Use**: Free to use purely for personal, non-commercial purposes (e.g., personal learning, creating your own resume).
-- **Commercial License Required**: Unauthorized commercial use is strictly prohibited. Any organization or individual that provides it as a service (SaaS/PaaS, etc.) to the public for profit, uses it for enterprise commercial operations, or conducts secondary commercial development, **must obtain a commercial license, regardless of whether the source code has been modified**.
+| | |
+|---|---|
+| 框架 | TanStack Start 1.160 + Vite 7 + React 18 + TypeScript |
+| 样式 | Tailwind CSS + shadcn/ui |
+| 状态 | Zustand + persist（localStorage） |
+| 富文本 | Tiptap |
+| 图片存储 | IndexedDB |
+| 测试 | Vitest |
+| AI | DeepSeek（OpenAI 兼容接口） |
 
-Please see the [LICENSE](LICENSE) file for detailed terms.
+---
 
-## 🗺️ Roadmap
+## 项目结构
 
-- [x] AI-assisted writing
-- [x] Multi-language support
-- [ ] Support for more resume templates
-- [ ] Support for more export formats
-- [ ] Import PDF, Markdown, etc.
-- [x] Custom model
-- [x] Auto one page
-- [ ] Online resume hosting
+```
+docs/          设计文档（PRD / 数据模型 / 算法 / 开发计划 / API）
+rawproject/    上游代码只读参考，不参与构建、不入版本控制
+src/
+├── types/         类型定义（profile / resume / jobTarget）
+├── config/        板块定义、常量、AI Provider 配置
+├── store/         Zustand store（职业数据库 / 简历 / 投递目标）
+├── lib/
+│   ├── profile/       排序、物化、日期解析
+│   ├── match/         提示词构造、结果校验、指纹缓存、编排
+│   ├── imageStore.ts  IndexedDB 图片存储
+│   └── backup.ts      全库备份
+├── app/app/dashboard/
+│   ├── profile/       职业数据库
+│   ├── targets/       投递目标与候选清单
+│   └── resumes/       简历列表（上游）
+└── components/
+    ├── templates/     9 套模板（上游，零改动）
+    └── editor/        工作台编辑器（上游）
+```
 
-## 📈 Star History
+设计文档见 [docs/](docs/) —— 建议按 [PRD](docs/01-PRD.md) → [数据模型](docs/02-data-model.md) → [算法](docs/03-generation-algorithm.md) 顺序阅读。
 
-<a href="https://star-history.com/#JOYCEQL/magic-resume&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=JOYCEQL/magic-resume&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=JOYCEQL/magic-resume&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=JOYCEQL/magic-resume&type=Date" />
- </picture>
-</a>
+---
 
-## 📞 Contact
+## 可复现性
 
-You can follow the latest updates via:
+用户明确要求「匹配结果不要每次相差很远」。四道防线：
 
-- Author: Siyue
-- X: @GuangzhouY81070
-- Discord: Join our community https://discord.gg/9mWgZrW3VN
-- Email: 18806723365@163.com
+| 防线 | 手段 |
+|---|---|
+| 一 | **二值判断**（推荐 / 不推荐），档位越少越稳定；LLM 的排序只用于算 top-N，不作为界面顺序 |
+| 二 | **prompt 逐字节确定**：固定序列化顺序，禁用 `Date.now()` / `Object.keys()` / `toLocaleString` |
+| 三 | **采样参数**：`temperature=0` + `seed=42`，由服务端注入，不接受客户端传值 |
+| 四 | **指纹缓存**：数据未变时不重跑，结果**零变化**；变更时提示而非自动重跑 |
 
+实测（10 次运行，真实 DeepSeek）：
 
-- Project Homepage: https://github.com/JOYCEQL/magic-resume
+| 指标 | 实测 | 阈值 |
+|---|---|---|
+| 推荐集合 Jaccard | 平均 0.964 / 最低 0.900 | ≥ 0.80 |
+| top-N Jaccard | 平均 1.000 / 最低 1.000 | ≥ 0.70 |
+| 推荐条数极差 | 1 | ≤ 3 |
 
-## 🌟 Support
+---
 
-If you find this project helpful, please give it a star ⭐️
+## 许可证
 
-## ❤️ Sponsors
+上游 Magic Resume 采用 **Apache 2.0 + 附加商业限制条款**：
 
-<div align="center">
-  <h3>Sponsors</h3>
-  <p>If you sponsored this project but are not listed here, please contact me.</p>
-  <p>
-    <a href="https://github.com/yj147">
-      <img src="https://github.com/yj147.png?size=40" width="40" height="40" alt="@yj147" />
-    </a>
-    <a href="https://github.com/someone1128">
-      <img src="https://github.com/someone1128.png?size=40" width="40" height="40" alt="@someone1128" />
-    </a>
-    <!-- Add more sponsors here:
-    <a href="https://github.com/<username>">
-      <img src="https://github.com/<username>.png?size=40" width="40" height="40" alt="@<username>" />
-    </a>
-    -->
-  </p>
-</div>
+- ✅ 个人非商业使用免费
+- ⚠️ 二次开发后用于商业运营 / 作为 SaaS 提供 / 嵌入企业内部系统，需事先获得上游作者授权
+
+原文见 [LICENSE](LICENSE)。本项目当前定位为个人自用求职工具。

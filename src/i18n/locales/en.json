@@ -931,6 +931,18 @@
       "sameCategoryNote": "Entry #{rank} in its category, ranking weight {score}",
       "cancel": "Cancel",
       "confirm": "Generate ({count} selected)"
+    },
+    "sections": {
+      "basic": "Basic Info",
+      "education": "Education",
+      "experience": "Work Experience",
+      "skills": "Skills",
+      "certificates": "Certificates",
+      "projects": "Projects",
+      "selfEvaluation": "Summary",
+      "campus": "Campus",
+      "honors": "Honors",
+      "languages": "Languages"
     }
   },
   "targets": {
@@ -970,6 +982,7 @@
     "noDefaultHint": "Nothing is pre-checked — what goes in must be your own choice",
     "evidence": "Evidence",
     "autoPromoted": "AI marked this as not recommended but cited no verifiable evidence; treated as recommended",
+    "emptyDescriptionHint": "This entry has no description, so the AI judgment may be unstable. Add details and re-analyze.",
     "coverage": {
       "title": "Skill coverage",
       "covered": "Covered",

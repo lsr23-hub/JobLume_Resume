@@ -178,7 +178,9 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
           </SidebarContent>
           <SidebarFooter />
         </Sidebar>
-        <main className="flex-1 flex flex-col">
+        {/* min-w-0 是必需的：flex item 默认 min-width:auto，不加则无法收缩到
+            内容 min-content 宽度以下 —— 窄屏下内部任何 nowrap 内容都会撑破整页 */}
+        <main className="flex-1 flex flex-col min-w-0">
           <div className="p-2">
             <SidebarTrigger />
           </div>

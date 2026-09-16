@@ -933,6 +933,18 @@
       "sameCategoryNote": "同类第 {rank} 条，排序权重 {score}",
       "cancel": "取消",
       "confirm": "生成（已选 {count} 条）"
+    },
+    "sections": {
+      "basic": "基本信息",
+      "education": "教育经历",
+      "experience": "工作经验",
+      "skills": "专业技能",
+      "certificates": "证书作品",
+      "projects": "项目经历",
+      "selfEvaluation": "自我评价",
+      "campus": "校园经历",
+      "honors": "荣誉课程",
+      "languages": "语言能力"
     }
   },
   "targets": {
@@ -972,6 +984,7 @@
     "noDefaultHint": "初始状态不预勾选 —— 放进简历的必须是你自己选的",
     "evidence": "依据",
     "autoPromoted": "AI 判为「不推荐」但未能提供可核对的依据，已按「推荐」处理",
+    "emptyDescriptionHint": "该条目描述为空，AI 判定可能不稳定 —— 建议补充内容后重新分析",
     "coverage": {
       "title": "技能覆盖度",
       "covered": "已覆盖",

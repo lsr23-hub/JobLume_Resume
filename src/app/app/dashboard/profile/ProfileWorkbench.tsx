@@ -69,8 +69,10 @@ export const ProfileWorkbench = () => {
         </Button>
       </header>
 
-      <div className="flex min-h-0 flex-1">
-        <nav className="w-52 shrink-0 overflow-y-auto border-r border-border/40 p-3">
+      {/* 窄屏：板块导航收成顶部横向滚动条；宽屏：左侧竖向栏 */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col md:flex-row">
+        <nav className="w-full min-w-0 shrink-0 overflow-x-auto border-b border-border/40 p-3 md:w-52 md:overflow-y-auto md:border-b-0 md:border-r">
+          <div className="flex gap-1 md:block">
           {SECTION_DEFS.map((section) => {
             const active = section.id === activeSection;
             const count = entityCounts[section.id] ?? 0;
@@ -79,20 +81,21 @@ export const ProfileWorkbench = () => {
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
                 className={cn(
-                  "mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors",
+                  "mb-1 flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm transition-colors md:w-full",
                   active
                     ? "bg-primary/10 font-semibold text-primary"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 )}
               >
                 <span aria-hidden>{section.icon}</span>
-                <span className="flex-1 truncate">{section.title}</span>
+                <span className="flex-1 truncate">{t(section.titleKey)}</span>
                 {count > 0 && (
                   <span className="shrink-0 text-xs tabular-nums opacity-60">{count}</span>
                 )}
               </button>
             );
           })}
+          </div>
         </nav>
 
         <section className="min-w-0 flex-1 overflow-y-auto p-6">

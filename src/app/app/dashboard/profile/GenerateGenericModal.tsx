@@ -99,7 +99,7 @@ export const GenerateGenericModal = ({ open, onOpenChange }: Props) => {
 
     const sections: MenuSection[] = SECTION_DEFS.map((def, index) => ({
       id: def.id,
-      title: def.title,
+      title: t(def.titleKey),
       icon: def.icon,
       enabled: (def.required || !disabledSections.has(def.id)) && hasContent(def.id),
       order: index,
@@ -151,7 +151,7 @@ export const GenerateGenericModal = ({ open, onOpenChange }: Props) => {
                       onCheckedChange={(v) => toggleSection(def.id, v)}
                     />
                     <span className="font-medium">
-                      {def.icon} {def.title}
+                      {def.icon} {t(def.titleKey)}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {def.required ? t("generic.locked") : t("generic.emptySection")}
@@ -172,7 +172,7 @@ export const GenerateGenericModal = ({ open, onOpenChange }: Props) => {
                       onCheckedChange={(v) => toggleSection(def.id, v)}
                     />
                     <span className="text-sm font-medium">
-                      {def.icon} {def.title}
+                      {def.icon} {t(def.titleKey)}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {t("generic.orderNote")}

@@ -80,7 +80,7 @@ export const CandidateList = ({
               disabled={section.required}
               onCheckedChange={(v) => onToggleSection(section.id, v)}
             />
-            {section.title}
+            {t(section.titleKey)}
           </label>
         ))}
       </div>
@@ -100,7 +100,7 @@ export const CandidateList = ({
       {grouped.map(({ section, items }) => (
         <div key={section.id} className="space-y-1.5">
           <p className="text-sm font-semibold">
-            {section.icon} {section.title}
+            {section.icon} {t(section.titleKey)}
           </p>
           {items.map((entity) => (
             <EntityRow
@@ -172,6 +172,11 @@ const EntityRow = ({
           <span className="block truncate text-xs text-muted-foreground">
             {[entity.subtitle, entity.dateRange].filter(Boolean).join(" · ")}
           </span>
+          {hasAnalysis && !entity.description.trim() && (
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {t("emptyDescriptionHint")}
+            </span>
+          )}
           {item?.autoPromoted && (
             <span className="mt-1 block text-xs text-amber-600 dark:text-amber-400">
               {t("autoPromoted")}
