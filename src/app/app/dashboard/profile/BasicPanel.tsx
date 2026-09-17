@@ -13,11 +13,14 @@ import { BirthdayPicker } from "./BirthdayPicker";
 import { PhotoCropper } from "./PhotoCropper";
 import { RegionSelector } from "./RegionSelector";
 
-/** 纯文本字段。生日与所在地有专属控件，单独处理 */
-const TEXT_FIELDS: Array<{ key: keyof BasicInfo; labelKey: string; hintKey?: string }> = [
+/**
+ * 纯文本字段。生日与所在地有专属控件，单独处理。
+ *
+ * 「职位」「状态」不在此列 —— 两者不是人人都有的信息，已下沉为
+ * 预设自定义字段（见 `PRESET_BASIC_FIELDS`），由用户自行开关。
+ */
+const TEXT_FIELDS: Array<{ key: keyof BasicInfo; labelKey: string }> = [
   { key: "name", labelKey: "basic.name" },
-  { key: "title", labelKey: "basic.jobTitle", hintKey: "basic.jobTitleHint" },
-  { key: "employementStatus", labelKey: "basic.status", hintKey: "basic.statusHint" },
   { key: "email", labelKey: "basic.email" },
   { key: "phone", labelKey: "basic.phone" },
 ];
@@ -38,14 +41,13 @@ export const BasicPanel = () => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {TEXT_FIELDS.map(({ key, labelKey, hintKey }) => (
+        {TEXT_FIELDS.map(({ key, labelKey }) => (
           <div key={String(key)} className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">{t(labelKey)}</Label>
             <Input
               value={(basic[key] as string) ?? ""}
               onChange={(e) => updateBasic({ [key]: e.target.value } as Partial<BasicInfo>)}
             />
-            {hintKey && <p className="text-xs text-muted-foreground">{t(hintKey)}</p>}
           </div>
         ))}
 

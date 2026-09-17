@@ -167,7 +167,10 @@ export const PhotoCropper = ({ file, onCancel, onConfirm }: Props) => {
                 alt=""
                 draggable={false}
                 onLoad={handleLoad}
-                className="absolute origin-top-left will-change-transform"
+                // max-w-none 必须有：Tailwind preflight 的 img{max-width:100%} 会把这张
+                // 绝对定位的图压到裁剪框宽度（286px），而 inline 的 height 仍然生效，
+                // 于是 512×384 被拉成 286×384 —— 横图在裁剪框里显示成竖图。
+                className="absolute max-w-none origin-top-left will-change-transform"
                 style={{
                   width: dispW || "auto",
                   height: dispH || "auto",

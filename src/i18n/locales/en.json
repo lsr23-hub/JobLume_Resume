@@ -876,8 +876,6 @@
     },
     "basic": {
       "name": "Name",
-      "jobTitle": "Title",
-      "status": "Status",
       "birthDate": "Birth date",
       "email": "Email",
       "phone": "Phone",
@@ -888,6 +886,8 @@
       "customFieldsNote": "The toggle controls whether the field appears on the resume. Empty fields are hidden.",
       "toggleVisible": "visible",
       "custom": {
+        "title": "Title",
+        "status": "Status",
         "politics": "Political status",
         "website": "Website",
         "portfolio": "Portfolio",
@@ -897,13 +897,12 @@
       },
       "uploadPhoto": "Upload photo",
       "photoStored": "Stored locally (upload again to replace)",
-      "jobTitleHint": "The line right under your name in the resume header. Put your professional headline here, not the job you're applying for.",
-      "statusHint": "A contact-area field for your current job-seeking status, e.g. \"Open to offers\" or \"Available immediately\". Usually omitted on Western resumes.",
       "selectProvince": "Province",
       "selectCity": "City",
-      "locationNote": "Pick province and city; add a detailed address in a custom field below if needed.",
-      "birthDatePlaceholder": "Pick year & month",
-      "birthDateNote": "Month precision only — that's all a resume needs."
+      "selectDistrict": "District",
+      "locationNote": "Province / city / district. The district select is disabled where no district data exists.",
+      "birthDatePlaceholder": "Pick a birth date",
+      "birthDateNote": "Day precision, stored back as YYYY/MM/DD."
     },
     "skills": {
       "empty": "No skill groups yet — add one to start",
@@ -985,6 +984,10 @@
       "invalid": "This file is not a backup exported by this tool",
       "success": "Career database imported",
       "archived": "Current database archived, importing…"
+    },
+    "export": {
+      "button": "Export",
+      "success": "Career database saved to a file"
     }
   },
   "targets": {

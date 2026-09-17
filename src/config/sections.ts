@@ -64,6 +64,10 @@ export const DEFAULT_SECTION_ORDER = SECTION_DEFS.map((s) => s.id);
  * 简历是要打印/导出的，所以一律用 `false` 让内容可见。
  */
 export const PRESET_BASIC_FIELDS: CustomFieldType[] = [
+  // 职位（简历抬头那一行）与状态（求职状态）曾是一等字段。
+  // 两者都不是人人都有，改由自定义字段承载 —— 用户能自行关掉。
+  { id: "title", label: "职位", value: "", icon: "Briefcase", visible: true, displayLabel: false },
+  { id: "status", label: "状态", value: "", icon: "Activity", visible: true, displayLabel: false },
   { id: "politics", label: "政治面貌", value: "", icon: "Flag", visible: true, displayLabel: false },
   { id: "website", label: "个人网站", value: "", icon: "Globe", visible: true, displayLabel: false },
   { id: "portfolio", label: "作品集", value: "", icon: "Github", visible: true, displayLabel: false },

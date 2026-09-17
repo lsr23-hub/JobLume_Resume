@@ -110,6 +110,41 @@ const withDerivedDates = (
   return { ...patch, endTimestamp, isCurrent };
 };
 
+/**
+ * 补齐随版本新增的预设自定义字段。
+ *
+ * 「职位」「状态」原是一等字段，现改由自定义字段承载：把旧值搬到新字段并清空
+ * 原字段，否则简历上会同时出现抬头和联系方式两份职位。
+ * 只在确实缺字段时才重建对象，避免每次 mount 都触发一次写入。
+ */
+const syncBasicPresets = (profile: CareerProfile): CareerProfile => {
+  const { customFields } = profile.basic;
+  const missing = PRESET_BASIC_FIELDS.filter((p) => !customFields.some((f) => f.id === p.id));
+  if (missing.length === 0) return profile;
+
+  const carried: Record<string, string> = {
+    title: profile.basic.title,
+    status: profile.basic.employementStatus,
+  };
+
+  return {
+    ...profile,
+    basic: {
+      ...profile.basic,
+      title: "",
+      employementStatus: "",
+      // 按预设顺序重排，并保留预设之外的条目
+      customFields: [
+        ...PRESET_BASIC_FIELDS.map((preset) => {
+          const current = customFields.find((f) => f.id === preset.id);
+          return current ?? { ...preset, value: carried[preset.id] ?? preset.value };
+        }),
+        ...customFields.filter((f) => !PRESET_BASIC_FIELDS.some((p) => p.id === f.id)),
+      ],
+    },
+  };
+};
+
 const touch = (profile: CareerProfile): CareerProfile => ({
   ...profile,
   meta: { ...profile.meta, updatedAt: new Date().toISOString() },
@@ -122,7 +157,11 @@ export const useCareerProfileStore = create<ProfileStore>()(
 
       ensureProfile: () => {
         const existing = get().profile;
-        if (existing) return existing;
+        if (existing) {
+          const synced = syncBasicPresets(existing);
+          if (synced !== existing) set({ profile: synced });
+          return synced;
+        }
 
         const created = createEmptyProfile(createEmptyBasic(), new Date().toISOString());
         created.sectionOrder = [...DEFAULT_SECTION_ORDER];

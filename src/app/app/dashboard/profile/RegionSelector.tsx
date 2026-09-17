@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTranslations } from "@/i18n/compat/client";
 import { CHINA_REGIONS } from "@/config/chinaRegions";
+import { joinRegion, splitRegion } from "@/lib/region";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -10,30 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-/**
- * 把「省 市」拼成一个字符串。
- *
- * 直辖市（北京市/上海市/天津市/重庆市）省市同名，只留一个，
- * 否则会得到「北京市 北京市」。
- */
-export const joinRegion = (province: string, city: string): string => {
-  if (!province) return city;
-  if (!city || city === province) return province;
-  return `${province} ${city}`;
-};
-
-/** 从已存字符串里反解出省市。解析不出时把整串当作城市 */
-export const splitRegion = (value: string): { province: string; city: string } => {
-  if (!value) return { province: "", city: "" };
-
-  const trimmed = value.trim();
-  const province = CHINA_REGIONS.find((p) => trimmed.startsWith(p.name));
-  if (!province) return { province: "", city: trimmed };
-
-  const rest = trimmed.slice(province.name.length).trim();
-  return { province: province.name, city: rest || province.name };
-};
-
 interface Props {
   value: string;
   onChange: (value: string) => void;
@@ -41,23 +18,28 @@ interface Props {
 
 export const RegionSelector = ({ value, onChange }: Props) => {
   const t = useTranslations("profile");
-  const { province, city } = useMemo(() => splitRegion(value), [value]);
+  const { province, city, district } = useMemo(() => splitRegion(value), [value]);
 
   const cities = useMemo(
     () => CHINA_REGIONS.find((p) => p.name === province)?.cities ?? [],
     [province]
   );
+  const districts = useMemo(
+    () => cities.find((c) => c.name === city)?.districts ?? [],
+    [cities, city]
+  );
 
   return (
     <div className="space-y-1.5">
       <Label className="text-xs text-muted-foreground">{t("basic.location")}</Label>
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <Select
           value={province || undefined}
           onValueChange={(next) => {
             const list = CHINA_REGIONS.find((p) => p.name === next)?.cities ?? [];
-            // 换省时把市重置为该省的第一项，避免留下上一个省的市
-            onChange(joinRegion(next, list[0] ?? ""));
+            // 换省时把市 / 区县重置为新省的第一项，避免留下上一个省的残留
+            const firstCity = list[0];
+            onChange(joinRegion(next, firstCity?.name ?? "", firstCity?.districts[0] ?? ""));
           }}
         >
           <SelectTrigger className="flex-1">
@@ -75,15 +57,36 @@ export const RegionSelector = ({ value, onChange }: Props) => {
         <Select
           value={city || undefined}
           disabled={!province}
-          onValueChange={(next) => onChange(joinRegion(province, next))}
+          onValueChange={(next) => {
+            const list = cities.find((c) => c.name === next)?.districts ?? [];
+            onChange(joinRegion(province, next, list[0] ?? ""));
+          }}
         >
           <SelectTrigger className="flex-1">
             <SelectValue placeholder={t("basic.selectCity")} />
           </SelectTrigger>
           <SelectContent className="max-h-72">
             {cities.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
+              <SelectItem key={c.name} value={c.name}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* 港澳台等无区县数据的地方，第三级禁用而不是给一个空列表 */}
+        <Select
+          value={district || undefined}
+          disabled={districts.length === 0}
+          onValueChange={(next) => onChange(joinRegion(province, city, next))}
+        >
+          <SelectTrigger className="flex-1">
+            <SelectValue placeholder={t("basic.selectDistrict")} />
+          </SelectTrigger>
+          <SelectContent className="max-h-72">
+            {districts.map((d) => (
+              <SelectItem key={d} value={d}>
+                {d}
               </SelectItem>
             ))}
           </SelectContent>

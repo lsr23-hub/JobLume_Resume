@@ -1,18 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Sparkles } from "lucide-react";
 import { useTranslations } from "@/i18n/compat/client";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { SECTION_DEFS } from "@/config/sections";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { EntityList } from "./EntityList";
 import { BasicPanel } from "./BasicPanel";
 import { SkillGroupPanel } from "./SkillGroupPanel";
 import { SelfEvaluationPanel } from "./SelfEvaluationPanel";
-import { GenerateGenericModal } from "./GenerateGenericModal";
 import { CertificatesPanel } from "./CertificatesPanel";
 import { SaveBar } from "./SaveBar";
 import { ImportProfileDialog } from "./ImportProfileDialog";
+import { ExportProfileButton } from "./ExportProfileButton";
 
 /** 走「条目列表」形态的板块；其余由专属面板负责 */
 const ENTITY_SECTIONS = new Set([
@@ -28,7 +26,6 @@ export const ProfileWorkbench = () => {
   const t = useTranslations("profile");
   const { profile, ensureProfile } = useCareerProfileStore();
   const [activeSection, setActiveSection] = useState("basic");
-  const [generateOpen, setGenerateOpen] = useState(false);
 
   useEffect(() => {
     ensureProfile();
@@ -67,10 +64,7 @@ export const ProfileWorkbench = () => {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <ImportProfileDialog />
-          <Button onClick={() => setGenerateOpen(true)}>
-            <Sparkles className="mr-2 h-4 w-4" />
-            {t("generateGeneric")}
-          </Button>
+          <ExportProfileButton />
         </div>
       </header>
 
@@ -109,8 +103,6 @@ export const ProfileWorkbench = () => {
       </div>
 
       <SaveBar />
-
-      <GenerateGenericModal open={generateOpen} onOpenChange={setGenerateOpen} />
     </div>
   );
 };
