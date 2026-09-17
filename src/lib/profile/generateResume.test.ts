@@ -216,6 +216,65 @@ describe("generateResume — 模板排版参数", () => {
   });
 });
 
+describe("generateResume — 页数预算的接入", () => {
+  it("生成时默认开启 autoOnePage —— 不显式打开，第 1 步的自动缩放永远不会发生", () => {
+    expect(run().globalSettings.autoOnePage).toBe(true);
+  });
+
+  it("模板自带排版参数时也不会把 autoOnePage 覆盖掉", () => {
+    const resume = run({ templateId: "elegant" });
+    expect(resume.globalSettings.autoOnePage).toBe(true);
+    expect(resume.globalSettings.themeColor).toBe(
+      DEFAULT_TEMPLATES.find((t) => t.id === "elegant")!.colorScheme.primary
+    );
+  });
+});
+
+describe("generateResume — AI 优先级进入简历", () => {
+  const twoExperiences = () =>
+    profile({
+      entities: {
+        a: entity("a", "experience", { order: 0, title: "甲" }),
+        b: entity("b", "experience", { order: 1, title: "乙" }),
+      },
+    });
+
+  const analysis = (rankedIds: string[]) => ({
+    items: {},
+    rankedIds,
+    topN: 5,
+    summary: { recommendedCount: 0, coverage: { covered: [], weak: [], missing: [] }, advice: "" },
+    modelId: "test",
+    promptVersion: "test",
+    analyzedAt: NOW,
+  });
+
+  it("岗位专用简历按 AI 序列排板块内部顺序", () => {
+    const resume = run({
+      profile: twoExperiences(),
+      mode: "targeted",
+      target: target({ matchAnalysis: analysis(["b", "a"]) as never }),
+      selection: { experience: ["a", "b"] },
+    });
+    expect(resume.experience.map((e) => e.company)).toEqual(["乙", "甲"]);
+  });
+
+  it("没有匹配结果时退回数据库顺序", () => {
+    const resume = run({
+      profile: twoExperiences(),
+      mode: "targeted",
+      target: target(),
+      selection: { experience: ["a", "b"] },
+    });
+    expect(resume.experience.map((e) => e.company)).toEqual(["甲", "乙"]);
+  });
+
+  it("通用简历没有序列可依，同样退回数据库顺序", () => {
+    const resume = run({ profile: twoExperiences(), selection: { experience: ["a", "b"] } });
+    expect(resume.experience.map((e) => e.company)).toEqual(["甲", "乙"]);
+  });
+});
+
 describe("generateResume — 纯函数", () => {
   it("同一输入两次调用结果逐字节一致", () => {
     const input = {

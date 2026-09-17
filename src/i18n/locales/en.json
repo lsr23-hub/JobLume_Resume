@@ -162,7 +162,19 @@
           "position": "Senior Software Engineer",
           "present": "Present",
           "workDescription": "Led the frontend team and improved page performance by 40%."
-        }
+        },
+        "fitTitle": "Content overflows",
+        "fitSummary": "About {pages} pages now; target is {target}.",
+        "fitAfter": "Removing the {count} items below brings it to about {pages} pages.",
+        "fitRelaxed": "Fitting one page would require cutting more than half, so the advice is now based on {target} pages.",
+        "fitAiHint": "These are the entries the AI considers least relevant to this role, listed least-relevant first.",
+        "fitPlainHint": "No job target, so these are listed from the end of your database ordering.",
+        "fitNoReason": "Not part of this match analysis",
+        "fitExhausted": "Every section is down to a single entry and it still needs {pages} pages. The rest has to come from tightening descriptions or trimming in the editor.",
+        "fitMeasuring": "Measuring length…",
+        "fitApply": "Apply and generate",
+        "fitKeepAll": "Keep everything and generate",
+        "fitNoAnalysisHint": "This job target has not been match-analyzed yet, so these are listed from the end of your database ordering."
       },
       "generatedGenericTitle": "General Resume",
       "needProfile": "Your career database is empty. Add some content under Career Database, then come back.",

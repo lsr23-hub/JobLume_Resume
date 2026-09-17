@@ -20,7 +20,7 @@ import { useResumeStore } from "@/store/useResumeStore";
 import { useAIConfigStore } from "@/store/useAIConfigStore";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { useJobTargetStore } from "@/store/useJobTargetStore";
-import { generateResume, selectAllEntities } from "@/lib/profile/generateResume";
+import { generateResume } from "@/lib/profile/generateResume";
 import { generateUUID } from "@/utils/uuid";
 import { CreateResumeWizard, type WizardChoice } from "./CreateResumeWizard";
 import { ImportResumeDialog } from "./ImportResumeDialog";
@@ -156,7 +156,8 @@ export const ResumeWorkbench = () => {
             id,
             title,
             now,
-            selection: selectAllEntities(profile),
+            // 篇幅取舍后可能是精简过的集合，不再一律全选
+            selection: choice.selection,
             tSection: tSection,
             certificateLabel: tSection("certificatesLabel"),
         });

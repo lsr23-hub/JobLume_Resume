@@ -139,14 +139,23 @@ export const generateResume = (input: GenerateResumeInput): ResumeData => {
     selection,
     sections,
     meta: { id, title, now, templateId },
-    globalSettings: template
-      ? {
-          themeColor: template.colorScheme.primary,
-          sectionSpacing: template.spacing.sectionGap,
-          paragraphSpacing: template.spacing.itemGap,
-          pagePadding: template.spacing.contentPadding,
-        }
-      : undefined,
+    // AI 的优先级序列 —— 板块内部按「与岗位的相关度」排，最相关的在最前。
+    // 通用简历没有投递目标，也就没有序列，`materialize` 会退回数据库里的排列顺序
+    priorityOrder: target?.matchAnalysis?.rankedIds,
+    globalSettings: {
+      // 「一页为最佳」是需求本身，所以默认开启自动缩放。
+      // 上游默认是关的（`DEFAULT_GLOBAL_SETTINGS` 里根本没有这个键），
+      // 不显式打开的话，页数取舍的第 1 步（不改内容、只缩排版）永远不会发生
+      autoOnePage: true,
+      ...(template
+        ? {
+            themeColor: template.colorScheme.primary,
+            sectionSpacing: template.spacing.sectionGap,
+            paragraphSpacing: template.spacing.itemGap,
+            pagePadding: template.spacing.contentPadding,
+          }
+        : {}),
+    },
     certificateLabel,
     snapshot:
       mode === "targeted" && target

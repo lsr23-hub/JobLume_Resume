@@ -1,11 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Target, FileText, ChevronLeft, X, Plus } from "lucide-react";
+import {
+  Target,
+  FileText,
+  ChevronLeft,
+  X,
+  Plus,
+  TriangleAlert,
+  Loader2,
+} from "lucide-react";
 import { useTranslations } from "@/i18n/compat/client";
 import { useRouter } from "@/lib/navigation";
-import { useJobTargetStore, selectSortedTargets } from "@/store/useJobTargetStore";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { hasUsableProfile } from "@/lib/profile/generateResume";
+import { useJobTargetStore, selectSortedTargets } from "@/store/useJobTargetStore";
+import { useTemplateFit } from "./useTemplateFit";
+import { FitProposal } from "./FitProposal";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,6 +30,12 @@ export interface WizardChoice {
   /** 岗位专用简历才有 */
   targetId: string | null;
   templateId: string;
+  /**
+   * 最终收进简历的条目。
+   *
+   * 通常是全选；只有篇幅超出、用户点了「应用并生成」时才是精简过的集合。
+   */
+  selection: Record<string, string[]>;
 }
 
 interface Props {
@@ -28,7 +44,7 @@ interface Props {
   onComplete: (choice: WizardChoice) => void;
 }
 
-type Step = "mode" | "target" | "template";
+type Step = "mode" | "target" | "template" | "fit";
 
 /**
  * 新建简历向导。
@@ -38,12 +54,19 @@ type Step = "mode" | "target" | "template";
  */
 export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) => {
   const t = useTranslations();
+  // 板块标题在 profile 命名空间下（与 materialize 的其它调用方保持一致）
+  const tSection = useTranslations("profile");
   const router = useRouter();
   const { targets } = useJobTargetStore();
   const { profile } = useCareerProfileStore();
   const [step, setStep] = useState<Step>("mode");
   const [mode, setMode] = useState<ResumeKind>("generic");
   const [targetId, setTargetId] = useState<string | null>(null);
+  const { measuring, pending, pickTemplate, reset, measureHost } = useTemplateFit({
+    mode,
+    targetId,
+    onFits: (templateId, selection) => onComplete({ mode, targetId, templateId, selection }),
+  });
 
   const sortedTargets = useMemo(() => selectSortedTargets(targets), [targets]);
 
@@ -54,9 +77,10 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
       setStep("mode");
       setMode("generic");
       setTargetId(null);
+      reset();
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [open]);
+  }, [open, reset]);
 
   const pickMode = (next: ResumeKind) => {
     setMode(next);
@@ -70,8 +94,20 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
     setStep("template");
   };
 
+  /**
+   * 当前展示哪一步。
+   *
+   * 「篇幅提议」这一步**由 `pending` 派生**，而不是另外存一个 step ——
+   * 存放两份状态就会有对不上的时候（提炼 hook 时就踩过：`setStep("fit")`
+   * 留在向导里，而 setPending 搬进了 hook，结果提议算出来了却不显示）。
+   */
+  const currentStep: Step = pending ? "fit" : step;
+
   const goBack = () => {
-    if (step === "template" && mode === "targeted") setStep("target");
+    if (currentStep === "fit") {
+      reset();
+      setStep("template");
+    } else if (currentStep === "template" && mode === "targeted") setStep("target");
     else setStep("mode");
   };
 
@@ -90,7 +126,7 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
 
         <div className="relative w-full h-full min-h-0 flex flex-col">
           <div className="flex-none px-8 py-6 flex items-center gap-4 z-10">
-            {step !== "mode" && (
+            {currentStep !== "mode" && (
               <button
                 type="button"
                 onClick={goBack}
@@ -102,9 +138,10 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
             )}
 
             <div className="flex-1 text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400">
-              {step === "mode" && t("dashboard.resumes.createDialog.modeTitle")}
-              {step === "target" && t("dashboard.resumes.createDialog.selectTargetTitle")}
-              {step === "template" && t("dashboard.resumes.createDialog.selectTemplateTitle")}
+              {currentStep === "mode" && t("dashboard.resumes.createDialog.modeTitle")}
+              {currentStep === "target" && t("dashboard.resumes.createDialog.selectTargetTitle")}
+              {currentStep === "template" && t("dashboard.resumes.createDialog.selectTemplateTitle")}
+              {currentStep === "fit" && t("dashboard.resumes.createDialog.fitTitle")}
             </div>
 
             <button
@@ -120,7 +157,7 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
           <div className="flex-1 min-h-0 relative w-full">
             <ScrollArea className="h-full w-full">
               <div className="px-8 pb-12 max-w-7xl mx-auto">
-                {step === "mode" && !profileReady && (
+                {currentStep === "mode" && !profileReady && (
                   <div className="max-w-3xl mx-auto pt-4">
                     <div className="rounded-2xl border border-dashed border-border/60 p-12 text-center space-y-4">
                       <p className="text-sm text-muted-foreground">
@@ -140,7 +177,7 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
                   </div>
                 )}
 
-                {step === "mode" && profileReady && (
+                {currentStep === "mode" && profileReady && (
                   <div className="grid gap-6 sm:grid-cols-2 max-w-3xl mx-auto pt-4">
                     <ModeCard
                       icon={<FileText className="w-10 h-10" />}
@@ -157,7 +194,7 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
                   </div>
                 )}
 
-                {step === "target" && (
+                {currentStep === "target" && (
                   <div className="max-w-3xl mx-auto pt-4 space-y-3">
                     <p className="text-sm text-muted-foreground">
                       {t("dashboard.resumes.createDialog.selectTargetDesc")}
@@ -208,14 +245,46 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
                   </div>
                 )}
 
-                {step === "template" && (
-                  <TemplateGallery
-                    onPick={(templateId) => onComplete({ mode, targetId, templateId })}
+                {currentStep === "template" && (
+                  <TemplateGallery onPick={pickTemplate} />
+                )}
+
+                {currentStep === "fit" && pending && (
+                  <FitProposal
+                    plan={pending.plan}
+                    hintKey={pending.hintKey}
+                    onApply={() =>
+                      onComplete({
+                        mode,
+                        targetId,
+                        templateId: pending.templateId,
+                        selection: pending.plan.kept,
+                      })
+                    }
+                    onKeepAll={() =>
+                      onComplete({
+                        mode,
+                        targetId,
+                        templateId: pending.templateId,
+                        selection: pending.selection,
+                      })
+                    }
                   />
                 )}
               </div>
             </ScrollArea>
           </div>
+
+          {measureHost}
+
+          {measuring && (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-white/70 dark:bg-gray-950/70 backdrop-blur-sm">
+              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+              <p className="text-sm text-muted-foreground">
+                {t("dashboard.resumes.createDialog.fitMeasuring")}
+              </p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

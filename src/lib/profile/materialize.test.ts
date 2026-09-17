@@ -461,3 +461,56 @@ describe("materialize — fieldOrder 兜底", () => {
     expect(materialize(input).basic.fieldOrder).toEqual(custom);
   });
 });
+
+describe("materialize — AI 优先级序列", () => {
+  const withExperience = (orders: Record<string, number>) => {
+    const input = buildInput({
+      sections: [section("experience", 0)],
+      selection: { experience: Object.keys(orders) },
+    });
+    input.profile.entities = Object.fromEntries(
+      Object.entries(orders).map(([id, order]) => [
+        id,
+        entity(id, "experience", { order, title: id }),
+      ])
+    );
+    return input;
+  };
+
+  it("不传序列时按 entity.order 排（保持原有行为）", () => {
+    const input = withExperience({ a: 0, b: 1, c: 2 });
+    expect(materialize(input).experience.map((e) => e.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("传了序列就按序列排 —— 即使它与 order 相反", () => {
+    const input = withExperience({ a: 0, b: 1, c: 2 });
+    input.priorityOrder = ["c", "a", "b"];
+    expect(materialize(input).experience.map((e) => e.id)).toEqual(["c", "a", "b"]);
+  });
+
+  it("序列里没有的条目排在后面，内部仍按 order", () => {
+    // 用户手动勾选的「不推荐」条目、分析之后才新增的经历，都不在序列里
+    const input = withExperience({ a: 0, b: 1, c: 2, d: 3 });
+    input.priorityOrder = ["c"];
+    expect(materialize(input).experience.map((e) => e.id)).toEqual(["c", "a", "b", "d"]);
+  });
+
+  it("序列只影响排序，不影响收哪些条目", () => {
+    const input = withExperience({ a: 0, b: 1 });
+    input.priorityOrder = ["b", "a"];
+    expect(materialize(input).experience).toHaveLength(2);
+  });
+
+  it("自定义板块（走 customData 通道）同样按序列排", () => {
+    const input = buildInput({
+      sections: [section("campus", 0)],
+      selection: { campus: ["x", "y"] },
+    });
+    input.profile.entities = {
+      x: entity("x", "campus", { order: 0, title: "学生会" }),
+      y: entity("y", "campus", { order: 1, title: "ACM 集训队" }),
+    };
+    input.priorityOrder = ["y", "x"];
+    expect(materialize(input).customData.campus.map((i) => i.id)).toEqual(["y", "x"]);
+  });
+});

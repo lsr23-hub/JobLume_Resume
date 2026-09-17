@@ -51,6 +51,14 @@ export interface MaterializeInput {
   snapshot?: ResumeSnapshot;
 
   /**
+   * AI 给出的优先级序列（`MatchAnalysis.rankedIds`，推荐强度降序）。
+   *
+   * 只影响**板块内部**的排列顺序，不影响收哪些条目 —— 收哪些由 `selection` 决定。
+   * 不传则按 `entity.order`（用户在数据库里拖拽的顺序）。
+   */
+  priorityOrder?: string[];
+
+  /**
    * 证书那一行的标签（如「证书奖项」）。
    *
    * 由调用方从 i18n 取好传进来 —— 本模块是纯函数，不碰 i18n。
@@ -90,20 +98,32 @@ export const renderSkillContent = (
   return `<div class="skill-content">\n  <ul>\n${items.map((i) => `    ${i}`).join("\n")}\n  </ul>\n</div>`;
 };
 
-/** 板块内按 order 排序并过滤隐藏项 */
+/**
+ * 板块内排序并过滤隐藏项。
+ *
+ * 有 `priorityOrder` 就按它排（AI 认为最相关的排最前，服务 HR 的阅读顺序）；
+ * 序列里没有的条目 —— 例如用户手动勾选的「不推荐」条目、分析之后才新增的经历
+ * —— 一律排在后面，内部仍按 `entity.order`。
+ */
 const pickEntities = (
   profile: CareerProfile,
   sectionId: string,
-  selection: Record<string, string[]>
+  selection: Record<string, string[]>,
+  priorityOrder?: string[]
 ): ProfileEntity[] => {
   const ids = selection[sectionId];
   if (!ids?.length) return [];
+
+  const rank = priorityOrder
+    ? new Map(priorityOrder.map((id, index) => [id, index]))
+    : null;
+  const rankOf = (id: string) => rank?.get(id) ?? Number.MAX_SAFE_INTEGER;
 
   const byId = profile.entities;
   return ids
     .map((id) => byId[id])
     .filter((e): e is ProfileEntity => Boolean(e) && !e?.hidden)
-    .sort((a, b) => a.order - b.order);
+    .sort((a, b) => rankOf(a.id) - rankOf(b.id) || a.order - b.order);
 };
 
 /**
@@ -115,12 +135,20 @@ const pickEntities = (
  * 也是 `selection` 的键，两者保持一致。
  */
 export const materialize = (input: MaterializeInput): ResumeData => {
-  const { profile, selection, sections, meta, globalSettings, snapshot, certificateLabel } =
-    input;
+  const {
+    profile,
+    selection,
+    sections,
+    meta,
+    globalSettings,
+    snapshot,
+    certificateLabel,
+    priorityOrder,
+  } = input;
 
   const sourceMap: Record<string, string> = {};
 
-  const education: Education[] = pickEntities(profile, "education", selection).map((e) => {
+  const education: Education[] = pickEntities(profile, "education", selection, priorityOrder).map((e) => {
     const [startDate, endDate] = splitDateRange(e.dateRange);
     sourceMap[e.id] = e.id;
     return {
@@ -136,7 +164,7 @@ export const materialize = (input: MaterializeInput): ResumeData => {
     };
   });
 
-  const experience: Experience[] = pickEntities(profile, "experience", selection).map((e) => {
+  const experience: Experience[] = pickEntities(profile, "experience", selection, priorityOrder).map((e) => {
     sourceMap[e.id] = e.id;
     return {
       id: e.id,
@@ -148,7 +176,7 @@ export const materialize = (input: MaterializeInput): ResumeData => {
     };
   });
 
-  const projects: Project[] = pickEntities(profile, "projects", selection).map((e) => {
+  const projects: Project[] = pickEntities(profile, "projects", selection, priorityOrder).map((e) => {
     sourceMap[e.id] = e.id;
     return {
       id: e.id,
@@ -165,7 +193,7 @@ export const materialize = (input: MaterializeInput): ResumeData => {
   // 走 customData 通道的板块：模板对未识别的 sectionId 会回退到 CustomSection
   const customData: Record<string, CustomItem[]> = {};
   for (const section of sections) {
-    const items = pickEntities(profile, section.id, selection);
+    const items = pickEntities(profile, section.id, selection, priorityOrder);
     if (items.length === 0) continue;
 
     const isBuiltin =
