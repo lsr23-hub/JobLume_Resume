@@ -11,6 +11,8 @@ import { SkillGroupPanel } from "./SkillGroupPanel";
 import { SelfEvaluationPanel } from "./SelfEvaluationPanel";
 import { GenerateGenericModal } from "./GenerateGenericModal";
 import { CertificatesPanel } from "./CertificatesPanel";
+import { SaveBar } from "./SaveBar";
+import { ImportProfileDialog } from "./ImportProfileDialog";
 
 /** 走「条目列表」形态的板块；其余由专属面板负责 */
 const ENTITY_SECTIONS = new Set([
@@ -63,10 +65,13 @@ export const ProfileWorkbench = () => {
           <h1 className="text-xl font-bold tracking-tight">{t("title")}</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
-        <Button onClick={() => setGenerateOpen(true)} className="shrink-0">
-          <Sparkles className="mr-2 h-4 w-4" />
-          {t("generateGeneric")}
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <ImportProfileDialog />
+          <Button onClick={() => setGenerateOpen(true)}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            {t("generateGeneric")}
+          </Button>
+        </div>
       </header>
 
       {/* 窄屏：板块导航收成顶部横向滚动条；宽屏：左侧竖向栏 */}
@@ -102,6 +107,8 @@ export const ProfileWorkbench = () => {
           <div className="mx-auto max-w-3xl">{renderPanel()}</div>
         </section>
       </div>
+
+      <SaveBar />
 
       <GenerateGenericModal open={generateOpen} onOpenChange={setGenerateOpen} />
     </div>

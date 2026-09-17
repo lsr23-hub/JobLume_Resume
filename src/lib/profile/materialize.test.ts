@@ -406,3 +406,21 @@ describe("materialize — 与上游模板的契约", () => {
     }
   });
 });
+
+describe("materialize — fieldOrder 兜底", () => {
+  it("profile 缺 fieldOrder 时自动补上默认字段顺序", () => {
+    // 模板在 fieldOrder 为空时只渲染 email，电话/所在地/生日/状态会全部丢失
+    const input = buildInput();
+    const resume = materialize(input);
+    expect(resume.basic.fieldOrder).toBeDefined();
+    expect(resume.basic.fieldOrder!.map((f) => f.key)).toContain("phone");
+    expect(resume.basic.fieldOrder!.map((f) => f.key)).toContain("location");
+  });
+
+  it("profile 已有 fieldOrder 时原样保留", () => {
+    const custom = [{ id: "1", key: "phone" as const, label: "电话", visible: true }];
+    const input = buildInput();
+    input.profile.basic = { ...input.profile.basic, fieldOrder: custom };
+    expect(materialize(input).basic.fieldOrder).toEqual(custom);
+  });
+});

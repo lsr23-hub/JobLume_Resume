@@ -9,6 +9,7 @@ import type {
   ResumeData,
   ResumeSnapshot,
 } from "@/types/resume";
+import { DEFAULT_FIELD_ORDER } from "@/config/constants";
 import { splitDateRange } from "./entityUtils";
 
 /** 上游 `initialResumeData.ts` 中的默认全局设置，保持一致 */
@@ -169,7 +170,12 @@ export const materialize = (input: MaterializeInput): ResumeData => {
     createdAt: meta.now,
     updatedAt: meta.now,
     templateId: meta.templateId,
-    basic: { ...profile.basic },
+    // fieldOrder 缺失时兜底：模板在 fieldOrder 为空时**只渲染 email**，
+    // 电话 / 所在地 / 生日 / 状态会全部丢失（BaseInfo.tsx 的 getOrderedFields）
+    basic: {
+      ...profile.basic,
+      fieldOrder: profile.basic.fieldOrder ?? DEFAULT_FIELD_ORDER,
+    },
     education,
     experience,
     projects,

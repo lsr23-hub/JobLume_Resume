@@ -882,8 +882,8 @@
       "email": "Email",
       "phone": "Phone",
       "location": "Location",
-      "photo": "Photo URL",
-      "photoNote": "Local images live in IndexedDB, so they don't consume the localStorage quota. You can also paste an external URL.",
+      "photo": "Photo",
+      "photoNote": "Uploaded locally, auto-cropped to 3:4 and compressed into browser IndexedDB — it does not consume the localStorage quota.",
       "customFields": "Custom fields",
       "customFieldsNote": "The toggle controls whether the field appears on the resume. Empty fields are hidden.",
       "toggleVisible": "visible",
@@ -896,7 +896,14 @@
         "availability": "Availability"
       },
       "uploadPhoto": "Upload photo",
-      "photoStored": "Stored locally (upload again to replace)"
+      "photoStored": "Stored locally (upload again to replace)",
+      "jobTitleHint": "The line right under your name in the resume header. Put your professional headline here, not the job you're applying for.",
+      "statusHint": "A contact-area field for your current job-seeking status, e.g. \"Open to offers\" or \"Available immediately\". Usually omitted on Western resumes.",
+      "selectProvince": "Province",
+      "selectCity": "City",
+      "locationNote": "Pick province and city; add a detailed address in a custom field below if needed.",
+      "birthDatePlaceholder": "Pick year & month",
+      "birthDateNote": "Month precision only — that's all a resume needs."
     },
     "skills": {
       "empty": "No skill groups yet — add one to start",
@@ -943,6 +950,41 @@
       "campus": "Campus",
       "honors": "Honors",
       "languages": "Languages"
+    },
+    "photo": {
+      "none": "No photo",
+      "upload": "Upload photo",
+      "replace": "Replace",
+      "remove": "Remove",
+      "processing": "Processing…",
+      "saved": "Photo saved",
+      "saveFailed": "Failed to save photo",
+      "cropTitle": "Crop photo",
+      "cropHint": "Drag to reposition, use the slider to zoom. The ratio is fixed at 3:4 (ID-photo standard).",
+      "cropConfirm": "Apply crop",
+      "ratioNote": "Outputs 450×600 at 3:4"
+    },
+    "save": {
+      "saved": "Saved",
+      "saving": "Saving…",
+      "never": "No changes yet",
+      "button": "Save",
+      "success": "Saved locally",
+      "failed": "Save failed — browser storage may be full",
+      "autoNote": "Changes persist as you type; switching sections won't lose anything."
+    },
+    "import": {
+      "button": "Import data",
+      "title": "Import career database",
+      "desc": "The selected file will replace your current career database.",
+      "askArchive": "Current content will be replaced. Archive it first?",
+      "archiveHint": "\"Yes\" exports a backup of the current database before replacing it.",
+      "yes": "Yes, archive first",
+      "no": "No, replace now",
+      "cancel": "Cancel",
+      "invalid": "This file is not a backup exported by this tool",
+      "success": "Career database imported",
+      "archived": "Current database archived, importing…"
     }
   },
   "targets": {

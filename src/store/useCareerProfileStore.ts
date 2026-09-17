@@ -11,6 +11,7 @@ import {
 } from "@/types/profile";
 import type { BasicInfo, Certificate, CustomFieldType, PhotoConfig } from "@/types/resume";
 import { DEFAULT_SECTION_ORDER, PRESET_BASIC_FIELDS } from "@/config/sections";
+import { DEFAULT_FIELD_ORDER } from "@/config/constants";
 import { parseDateRange } from "@/lib/profile/entityUtils";
 import { generateUUID } from "@/utils/uuid";
 
@@ -42,6 +43,7 @@ const createEmptyBasic = (): BasicInfo => ({
     employementStatus: "Briefcase",
     location: "MapPin",
   },
+  fieldOrder: DEFAULT_FIELD_ORDER.map((f) => ({ ...f })),
   customFields: PRESET_BASIC_FIELDS.map((f: CustomFieldType) => ({ ...f })),
   githubKey: "",
   githubUseName: "",

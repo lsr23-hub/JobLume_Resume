@@ -136,3 +136,61 @@ export const mergeById = <T extends { id: string }>(
 /** 预估备份大小，导出前提示用 */
 export const estimateBackupSize = (payload: BackupPayload): number =>
   new Blob([JSON.stringify(payload)]).size;
+
+// ─────────────────────────────────────────────────────────────
+// 职业数据库档案（只含 profile，不含简历与投递目标）
+// ─────────────────────────────────────────────────────────────
+
+export interface ProfileArchive {
+  app: typeof BACKUP_APP_ID;
+  kind: "profile";
+  version: number;
+  exportedAt: string;
+  profile: CareerProfile;
+}
+
+export const buildProfileArchive = (
+  profile: CareerProfile,
+  now: string
+): ProfileArchive => ({
+  app: BACKUP_APP_ID,
+  kind: "profile",
+  version: BACKUP_VERSION,
+  exportedAt: now,
+  profile,
+});
+
+/**
+ * 从文件内容中取出职业数据库。
+ *
+ * 同时接受两种格式：
+ * - 职业数据库档案（`kind: "profile"`，本模块导出）
+ * - 全库备份（含简历与投递目标）—— 用户手上更可能存的是这一种
+ *
+ * 只取 `profile` 字段，其余部分由调用方决定是否处理。
+ */
+export const parseProfileArchive = (
+  text: string
+): { ok: true; profile: CareerProfile; source: "profile" | "backup" } | { ok: false; error: string } => {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return { ok: false, error: "文件不是合法的 JSON" };
+  }
+
+  if (!isObject(raw)) return { ok: false, error: "文件内容不是对象" };
+  if (raw.app !== BACKUP_APP_ID) return { ok: false, error: "这不是本工具导出的文件" };
+  if (typeof raw.version === "number" && raw.version > BACKUP_VERSION) {
+    return { ok: false, error: `文件版本 ${raw.version} 不受支持` };
+  }
+  if (!isObject(raw.profile)) {
+    return { ok: false, error: "文件中不包含职业数据库" };
+  }
+
+  return {
+    ok: true,
+    profile: raw.profile as unknown as CareerProfile,
+    source: raw.kind === "profile" ? "profile" : "backup",
+  };
+};

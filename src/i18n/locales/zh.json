@@ -884,8 +884,8 @@
       "email": "邮箱",
       "phone": "电话",
       "location": "所在地",
-      "photo": "照片链接",
-      "photoNote": "本地图片存于浏览器 IndexedDB，不占用 localStorage 配额；也可直接填写图片外链。",
+      "photo": "照片",
+      "photoNote": "本地上传，自动按 3:4 裁剪并压缩后存入浏览器 IndexedDB，不占用 localStorage 配额。",
       "customFields": "自定义字段",
       "customFieldsNote": "开关控制该字段是否出现在简历上，留空则不显示。",
       "toggleVisible": "是否显示",
@@ -898,7 +898,14 @@
         "availability": "到岗时间"
       },
       "uploadPhoto": "上传照片",
-      "photoStored": "已存储本地图片（如需更换请重新上传）"
+      "photoStored": "已存储本地图片（如需更换请重新上传）",
+      "jobTitleHint": "简历抬头、姓名下方的那一行。填「专业头衔」而不是「应聘岗位」，如「高级前端工程师」。",
+      "statusHint": "联系方式区的一个字段，表示当前求职状态，如「离职 · 随时到岗」「在职看机会」「应届生」。外企简历通常不写。",
+      "selectProvince": "省份",
+      "selectCity": "城市",
+      "locationNote": "按省市两级选择，也可直接在下方自定义字段里补充详细地址。",
+      "birthDatePlaceholder": "选择年月",
+      "birthDateNote": "只取到年月 —— 简历上的生日写到月份即可。"
     },
     "skills": {
       "empty": "还没有技能组，添加一组开始",
@@ -945,6 +952,41 @@
       "campus": "校园经历",
       "honors": "荣誉课程",
       "languages": "语言能力"
+    },
+    "photo": {
+      "none": "未上传",
+      "upload": "上传照片",
+      "replace": "更换照片",
+      "remove": "移除",
+      "processing": "处理中…",
+      "saved": "照片已保存",
+      "saveFailed": "照片保存失败",
+      "cropTitle": "裁剪照片",
+      "cropHint": "拖动图片调整位置，用滑块缩放。比例固定为 3:4（证件照标准）。",
+      "cropConfirm": "确认裁剪",
+      "ratioNote": "输出 450×600，比例 3:4"
+    },
+    "save": {
+      "saved": "已保存",
+      "saving": "保存中…",
+      "never": "尚未修改",
+      "button": "保存",
+      "success": "已保存到本地",
+      "failed": "保存失败，可能是浏览器存储空间不足",
+      "autoNote": "改动会实时写入本地存储，切换板块不会丢失。"
+    },
+    "import": {
+      "button": "导入数据",
+      "title": "导入职业数据库",
+      "desc": "将用所选文件替换当前的职业数据库。",
+      "askArchive": "当前内容将被替换，是否先存档？",
+      "archiveHint": "选择「是」会先导出一份当前数据库的备份文件，再执行替换。",
+      "yes": "是，先存档",
+      "no": "否，直接替换",
+      "cancel": "取消",
+      "invalid": "文件不是本工具导出的职业数据库备份",
+      "success": "已导入职业数据库",
+      "archived": "已存档当前数据库，正在导入…"
     }
   },
   "targets": {
