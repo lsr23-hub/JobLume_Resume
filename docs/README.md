@@ -15,6 +15,7 @@
 | [03-generation-algorithm.md](./03-generation-algorithm.md) | 通用排序（时效 × 同类衰减）、LLM 推荐标注、可复现性工程、降级策略 | 理解「怎么排序、怎么匹配、怎么保证稳定」 |
 | [04-development-plan.md](./04-development-plan.md) | 阶段划分、文件清单、验收标准、工时 | 理解「怎么做、做多久」 |
 | [05-api-and-config.md](./05-api-and-config.md) | DeepSeek 配置、`/api/match` 路由、安全模型、图片存储 | 实现 AI 相关功能时查阅 |
+| [06-ai-enablement-map.md](./06-ai-enablement-map.md) | AI 赋能全景：11 个候选点的五层链路、幻觉边界三分法、5 个跨领域决策 | 规划 AI 功能、做总设计时查阅 |
 
 ---
 
