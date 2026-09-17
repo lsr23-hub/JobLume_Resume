@@ -1,17 +1,20 @@
 import { cn } from "@/lib/utils";
 import { useResumeStore } from "@/store/useResumeStore";
 import { Reorder } from "framer-motion";
-import { PlusCircle } from "lucide-react";
 import { useTranslations } from "@/i18n/compat/client";
-import { Button } from "@/components/ui/button";
 import EducationItem from "./EducationItem";
 import { Education } from "@/types/resume";
 import { generateUUID } from "@/utils/uuid";
+import { SectionItemsPicker } from "@/components/editor/shared/SectionItemsPicker";
+import { useAddSectionEntities } from "@/components/editor/shared/useAddSectionEntities";
+import { useEnsureSectionEnabled } from "@/components/editor/shared/useEnsureSectionEnabled";
 
 const EducationPanel = () => {
   const t = useTranslations('workbench.educationPanel');
   const { activeResume, updateEducation, updateEducationBatch } =
     useResumeStore();
+  const addFromProfile = useAddSectionEntities();
+  const ensureEnabled = useEnsureSectionEnabled();
   const { education = [] } = activeResume || {};
   const handleCreateProject = () => {
     const newEducation: Education = {
@@ -25,6 +28,7 @@ const EducationPanel = () => {
       visible: true,
     };
     updateEducation(newEducation);
+    ensureEnabled("education");
   };
 
   return (
@@ -49,10 +53,13 @@ const EducationPanel = () => {
           ></EducationItem>
         ))}
 
-        <Button onClick={handleCreateProject} className="w-full">
-          <PlusCircle className="w-4 h-4 mr-2" />
-          {t('addButton')}
-        </Button>
+        <SectionItemsPicker
+          sectionId="education"
+          existingIds={education.map((e) => e.id)}
+          label={t("addButton")}
+          onCreateBlank={handleCreateProject}
+          onAdd={(entities) => addFromProfile("education", entities)}
+        />
       </Reorder.Group>
     </div>
   );

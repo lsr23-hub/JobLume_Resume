@@ -599,6 +599,15 @@
       "width": "Width (%)",
       "delete": "Delete",
       "empty": "No images yet. Please upload or paste images."
+    },
+    "addFromProfile": {
+      "title": "Add {section}",
+      "desc": "Pick entries from your career database. They are copied in — later edits here never write back to the database.",
+      "empty": "Your career database has no entries under “{section}” yet.",
+      "goFill": "Open career database",
+      "blank": "Create blank",
+      "confirm": "Add selected ({count})",
+      "allAdded": "Every entry for this section is already in this resume."
     }
   },
   "field": {

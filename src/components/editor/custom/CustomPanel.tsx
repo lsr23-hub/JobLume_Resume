@@ -6,14 +6,25 @@ import { PlusCircle } from "lucide-react";
 import CustomItem from "./CustomItem";
 import { useResumeStore } from "@/store/useResumeStore";
 import { CustomItem as CustomItemType } from "@/types/resume";
+import { getSectionDef } from "@/config/sections";
+import { SectionItemsPicker } from "@/components/editor/shared/SectionItemsPicker";
+import { useAddSectionEntities } from "@/components/editor/shared/useAddSectionEntities";
+import { useEnsureSectionEnabled } from "@/components/editor/shared/useEnsureSectionEnabled";
 
 const CustomPanel = memo(({ sectionId }: { sectionId: string }) => {
   const { addCustomItem, updateCustomData, activeResume } = useResumeStore();
+  const addFromProfile = useAddSectionEntities();
+  const ensureEnabled = useEnsureSectionEnabled();
   const { customData } = activeResume || {};
   const items = customData?.[sectionId] || [];
   const handleCreateItem = () => {
     addCustomItem(sectionId);
+    ensureEnabled(sectionId);
   };
+
+  // 校园经历 / 荣誉课程 / 语言能力在职业数据库里有对应板块；
+  // 用户自建的模块没有，那种情况保持原来的「只加空白」。
+  const hasProfileSection = Boolean(getSectionDef(sectionId));
 
   return (
     <div
@@ -34,10 +45,20 @@ const CustomPanel = memo(({ sectionId }: { sectionId: string }) => {
           <CustomItem key={item.id} item={item} sectionId={sectionId} />
         ))}
 
-        <Button onClick={handleCreateItem} className={cn("w-full")}>
-          <PlusCircle className="w-4 h-4 mr-2" />
-          添加
-        </Button>
+        {hasProfileSection ? (
+          <SectionItemsPicker
+            sectionId={sectionId}
+            existingIds={items.map((item) => item.id)}
+            label="添加"
+            onCreateBlank={handleCreateItem}
+            onAdd={(entities) => addFromProfile(sectionId, entities)}
+          />
+        ) : (
+          <Button onClick={handleCreateItem} className={cn("w-full")}>
+            <PlusCircle className="w-4 h-4 mr-2" />
+            添加
+          </Button>
+        )}
       </Reorder.Group>
     </div>
   );

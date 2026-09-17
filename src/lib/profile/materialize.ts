@@ -10,7 +10,12 @@ import type {
   ResumeSnapshot,
 } from "@/types/resume";
 import { DEFAULT_FIELD_ORDER } from "@/config/constants";
-import { splitDateRange } from "./entityUtils";
+import {
+  entityToCustomItem,
+  entityToEducation,
+  entityToExperience,
+  entityToProject,
+} from "./toResumeItem";
 
 /** 上游 `initialResumeData.ts` 中的默认全局设置，保持一致 */
 export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
@@ -148,46 +153,34 @@ export const materialize = (input: MaterializeInput): ResumeData => {
 
   const sourceMap: Record<string, string> = {};
 
-  const education: Education[] = pickEntities(profile, "education", selection, priorityOrder).map((e) => {
-    const [startDate, endDate] = splitDateRange(e.dateRange);
+  const education: Education[] = pickEntities(
+    profile,
+    "education",
+    selection,
+    priorityOrder
+  ).map((e) => {
     sourceMap[e.id] = e.id;
-    return {
-      id: e.id,
-      school: e.title,
-      major: e.subtitle,
-      degree: e.degree ?? "",
-      startDate,
-      endDate,
-      gpa: e.gpa ?? "",
-      description: e.description,
-      visible: true,
-    };
+    return entityToEducation(e);
   });
 
-  const experience: Experience[] = pickEntities(profile, "experience", selection, priorityOrder).map((e) => {
+  const experience: Experience[] = pickEntities(
+    profile,
+    "experience",
+    selection,
+    priorityOrder
+  ).map((e) => {
     sourceMap[e.id] = e.id;
-    return {
-      id: e.id,
-      company: e.title,
-      position: e.subtitle,
-      date: e.dateRange,
-      details: e.description,
-      visible: true,
-    };
+    return entityToExperience(e);
   });
 
-  const projects: Project[] = pickEntities(profile, "projects", selection, priorityOrder).map((e) => {
+  const projects: Project[] = pickEntities(
+    profile,
+    "projects",
+    selection,
+    priorityOrder
+  ).map((e) => {
     sourceMap[e.id] = e.id;
-    return {
-      id: e.id,
-      name: e.title,
-      role: e.subtitle,
-      date: e.dateRange,
-      description: e.description,
-      visible: true,
-      link: e.link,
-      linkLabel: e.linkLabel,
-    };
+    return entityToProject(e);
   });
 
   // 走 customData 通道的板块：模板对未识别的 sectionId 会回退到 CustomSection
@@ -202,14 +195,7 @@ export const materialize = (input: MaterializeInput): ResumeData => {
 
     customData[section.id] = items.map((e) => {
       sourceMap[e.id] = e.id;
-      return {
-        id: e.id,
-        title: e.title,
-        subtitle: e.subtitle,
-        dateRange: e.dateRange,
-        description: e.description,
-        visible: true,
-      };
+      return entityToCustomItem(e);
     });
   }
 
