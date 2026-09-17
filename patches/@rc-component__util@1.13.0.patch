@@ -1,0 +1,118 @@
+diff --git a/es/Dom/dynamicCSS.js b/es/Dom/dynamicCSS.js
+index f616a155b630da1a58189a88369d87b0e40f9019..307ae0e745a1e9111845ea5a86cb14127140f1d5 100644
+--- a/es/Dom/dynamicCSS.js
++++ b/es/Dom/dynamicCSS.js
+@@ -30,7 +30,7 @@ function getOrder(prepend) {
+  * Find style which inject by rc-util
+  */
+ function findStyles(container) {
+-  return Array.from((containerCache.get(container) || container).children).filter(node => node.tagName === 'STYLE');
++  return Array.from((containerCache.get(container) || container)?.children || []).filter(node => node.tagName === 'STYLE');
+ }
+ export function injectCSS(css, option = {}) {
+   if (!canUseDom()) {
+@@ -53,10 +53,9 @@ export function injectCSS(css, option = {}) {
+   }
+   styleNode.innerHTML = css;
+   const container = getContainer(option);
+-  const {
+-    firstChild
+-  } = container;
+-  if (prepend) {
++  // 容器可能不存在（useInsertionEffect 早于 <head>/<body> 触发时）
++  const firstChild = container?.firstChild;
++  if (prepend && container) {
+     // If is queue `prepend`, it will prepend first style and then append rest style
+     if (isPrependQueue) {
+       const existStyle = (option.styles || findStyles(container)).filter(node => {
+@@ -77,7 +76,7 @@ export function injectCSS(css, option = {}) {
+ 
+     // Use `insertBefore` as `prepend`
+     container.insertBefore(styleNode, firstChild);
+-  } else {
++  } else if (container) {
+     container.appendChild(styleNode);
+   }
+   return styleNode;
+@@ -93,7 +92,7 @@ export function removeCSS(key, option = {}) {
+   const existNode = findExistNode(key, option);
+   if (existNode) {
+     const container = getContainer(option);
+-    container.removeChild(existNode);
++    container?.removeChild(existNode);
+   }
+ }
+ 
+@@ -106,9 +105,10 @@ function syncRealContainer(container, option) {
+   // Find real container when not cached or cached container removed
+   if (!cachedRealContainer || !contains(document, cachedRealContainer)) {
+     const placeholderStyle = injectCSS('', option);
+-    const {
+-      parentNode
+-    } = placeholderStyle;
++    const parentNode = placeholderStyle?.parentNode;
++    if (!parentNode) {
++      return;
++    }
+     containerCache.set(container, parentNode);
+     container.removeChild(placeholderStyle);
+   }
+diff --git a/lib/Dom/dynamicCSS.js b/lib/Dom/dynamicCSS.js
+index 89f939247c743f41db1e956549a0f951ed8306f9..0b30d68b738b7b45c3c8c629db41e42cdfea1617 100644
+--- a/lib/Dom/dynamicCSS.js
++++ b/lib/Dom/dynamicCSS.js
+@@ -40,7 +40,7 @@ function getOrder(prepend) {
+  * Find style which inject by rc-util
+  */
+ function findStyles(container) {
+-  return Array.from((containerCache.get(container) || container).children).filter(node => node.tagName === 'STYLE');
++  return Array.from((containerCache.get(container) || container)?.children || []).filter(node => node.tagName === 'STYLE');
+ }
+ function injectCSS(css, option = {}) {
+   if (!(0, _canUseDom.default)()) {
+@@ -63,10 +63,9 @@ function injectCSS(css, option = {}) {
+   }
+   styleNode.innerHTML = css;
+   const container = getContainer(option);
+-  const {
+-    firstChild
+-  } = container;
+-  if (prepend) {
++  // 容器可能不存在（useInsertionEffect 早于 <head>/<body> 触发时）
++  const firstChild = container?.firstChild;
++  if (prepend && container) {
+     // If is queue `prepend`, it will prepend first style and then append rest style
+     if (isPrependQueue) {
+       const existStyle = (option.styles || findStyles(container)).filter(node => {
+@@ -87,7 +86,7 @@ function injectCSS(css, option = {}) {
+ 
+     // Use `insertBefore` as `prepend`
+     container.insertBefore(styleNode, firstChild);
+-  } else {
++  } else if (container) {
+     container.appendChild(styleNode);
+   }
+   return styleNode;
+@@ -103,7 +102,7 @@ function removeCSS(key, option = {}) {
+   const existNode = findExistNode(key, option);
+   if (existNode) {
+     const container = getContainer(option);
+-    container.removeChild(existNode);
++    container?.removeChild(existNode);
+   }
+ }
+ 
+@@ -116,9 +115,10 @@ function syncRealContainer(container, option) {
+   // Find real container when not cached or cached container removed
+   if (!cachedRealContainer || !(0, _contains.default)(document, cachedRealContainer)) {
+     const placeholderStyle = injectCSS('', option);
+-    const {
+-      parentNode
+-    } = placeholderStyle;
++    const parentNode = placeholderStyle?.parentNode;
++    if (!parentNode) {
++      return;
++    }
+     containerCache.set(container, parentNode);
+     container.removeChild(placeholderStyle);
+   }
