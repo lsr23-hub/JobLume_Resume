@@ -37,6 +37,9 @@ export const CandidateList = ({
   disabledSections,
 }: Props) => {
   const t = useTranslations("targets");
+  // 板块名挂在 profile 命名空间下（与 SECTION_DEFS.titleKey 对应）。
+  // 用 targets 命名空间取会拿到原始 key，界面上显示成 "sections.basic"。
+  const tSection = useTranslations("profile");
   const [openEvidence, setOpenEvidence] = useState<Set<string>>(new Set());
 
   const byId = new Map(entities.map((e) => [e.id, e]));
@@ -80,7 +83,7 @@ export const CandidateList = ({
               disabled={section.required}
               onCheckedChange={(v) => onToggleSection(section.id, v)}
             />
-            {t(section.titleKey)}
+            {tSection(section.titleKey)}
           </label>
         ))}
       </div>
@@ -100,7 +103,7 @@ export const CandidateList = ({
       {grouped.map(({ section, items }) => (
         <div key={section.id} className="space-y-1.5">
           <p className="text-sm font-semibold">
-            {section.icon} {t(section.titleKey)}
+            {section.icon} {tSection(section.titleKey)}
           </p>
           {items.map((entity) => (
             <EntityRow

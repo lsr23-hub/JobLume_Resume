@@ -24,6 +24,8 @@ import { CandidateList } from "./CandidateList";
 
 export const TargetsWorkbench = () => {
   const t = useTranslations("targets");
+  // 板块名挂在 profile 命名空间下，见 CandidateList 的同名说明
+  const tSection = useTranslations("profile");
   const router = useRouter();
 
   const { targets, addTarget, updateTarget, removeTarget, setAnalysis } = useJobTargetStore();
@@ -154,7 +156,7 @@ export const TargetsWorkbench = () => {
 
     const sections: MenuSection[] = SECTION_DEFS.map((def, index) => ({
       id: def.id,
-      title: t(def.titleKey),
+      title: tSection(def.titleKey),
       icon: def.icon,
       enabled: (def.required || !disabledSections.has(def.id)) && hasContent(def.id),
       order: index,
