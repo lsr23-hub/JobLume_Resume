@@ -4,9 +4,12 @@ import type { ProfileEntity } from "@/types/profile";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import RichTextEditor from "@/components/shared/rich-editor/RichEditor";
+import { UnifiedDateInput } from "@/components/ui/unified-date-input";
+import { UnifiedDateRangeInput } from "@/components/ui/unified-date-range-input";
+import { cn } from "@/lib/utils";
 import { TagsInput } from "./TagsInput";
 
-type FieldType = "text" | "editor";
+type FieldType = "text" | "editor" | "date" | "date-range";
 
 interface FieldDef {
   key: keyof ProfileEntity;
@@ -20,24 +23,30 @@ const SECTION_FIELDS: Record<string, FieldDef[]> = {
     { key: "title", labelKey: "field.school", type: "text" },
     { key: "subtitle", labelKey: "field.major", type: "text" },
     { key: "degree", labelKey: "field.degree", type: "text" },
-    { key: "dateRange", labelKey: "field.dateRange", type: "text" },
+    { key: "dateRange", labelKey: "field.dateRange", type: "date-range" },
     { key: "gpa", labelKey: "field.gpa", type: "text" },
   ],
   experience: [
     { key: "title", labelKey: "field.company", type: "text" },
     { key: "subtitle", labelKey: "field.position", type: "text" },
-    { key: "dateRange", labelKey: "field.dateRange", type: "text" },
+    { key: "dateRange", labelKey: "field.dateRange", type: "date-range" },
   ],
   projects: [
     { key: "title", labelKey: "field.projectName", type: "text" },
     { key: "subtitle", labelKey: "field.role", type: "text" },
-    { key: "dateRange", labelKey: "field.dateRange", type: "text" },
+    { key: "dateRange", labelKey: "field.dateRange", type: "date-range" },
     { key: "link", labelKey: "field.link", type: "text" },
     { key: "linkLabel", labelKey: "field.linkLabel", type: "text" },
   ],
   languages: [
     { key: "title", labelKey: "field.language", type: "text" },
     { key: "subtitle", labelKey: "field.level", type: "text" },
+  ],
+  // 荣誉只到月份单点，没有区间
+  honors: [
+    { key: "title", labelKey: "field.title", type: "text" },
+    { key: "subtitle", labelKey: "field.subtitle", type: "text" },
+    { key: "dateRange", labelKey: "field.dateRange", type: "date" },
   ],
 };
 
@@ -61,12 +70,29 @@ export const EntityEditor = ({ entity }: { entity: ProfileEntity }) => {
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {fields.map((field) => (
-          <div key={String(field.key)} className="space-y-1.5">
+          <div
+            key={String(field.key)}
+            // 选择器比文本框宽，占满整行才放得下两个月份
+            className={cn("space-y-1.5", field.type !== "text" && "sm:col-span-2")}
+          >
             <Label className="text-xs text-muted-foreground">{t(field.labelKey)}</Label>
-            <Input
-              value={(entity[field.key] as string) ?? ""}
-              onChange={(e) => patch(field.key, e.target.value)}
-            />
+            {field.type === "date-range" ? (
+              <UnifiedDateRangeInput
+                value={(entity[field.key] as string) ?? ""}
+                onChange={(value) => patch(field.key, value)}
+                showPresentSwitch
+              />
+            ) : field.type === "date" ? (
+              <UnifiedDateInput
+                value={(entity[field.key] as string) ?? ""}
+                onChange={(value) => patch(field.key, value)}
+              />
+            ) : (
+              <Input
+                value={(entity[field.key] as string) ?? ""}
+                onChange={(e) => patch(field.key, e.target.value)}
+              />
+            )}
           </div>
         ))}
       </div>

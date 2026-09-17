@@ -1,9 +1,5 @@
-
-import { DateInput } from "@heroui/date-input";
-import { HeroUIProvider } from "@heroui/react";
-import { CalendarDate, parseDate } from "@internationalized/date";
-import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
+import { DatePicker } from "antd";
+import { MONTH_FORMAT, isPresent, parseDayjs } from "@/lib/dayjsValue";
 
 interface UnifiedDateInputProps {
   value: string;
@@ -14,63 +10,35 @@ interface UnifiedDateInputProps {
   className?: string;
 }
 
+/**
+ * 单个月份选择器（antd DatePicker，`picker="month"`）。
+ *
+ * 取值格式 `YYYY/MM` —— 与简历层 `startDate` / `endDate` 的既有格式一致，
+ * 所以调用方（`editor/Field.tsx`）无需改动。
+ *
+ * 值形如「至今」时（该条目仍在进行中），控件置灰：这是从别处推导出来的
+ * 状态，不该在这里被改掉。
+ */
 export function UnifiedDateInput({
   value,
   onChange,
-  label,
+  placeholder,
   isRequired,
   className,
 }: UnifiedDateInputProps) {
-  const parseValue = (input: string): CalendarDate | null => {
-    if (!input) return null;
-    try {
-      let normalized = input.replace(/[./]/g, "-");
-      if (normalized.length === 7) normalized = `${normalized}-01`;
-      return parseDate(normalized);
-    } catch {
-      return null;
-    }
-  };
-
-  const isPresent = value === "至今" || value === "Present" || value.includes("Present") || value.includes("至今");
-
-  const [selectedDate, setSelectedDate] = useState<CalendarDate | null>(() =>
-    parseValue(value)
-  );
-
-  useEffect(() => {
-    setSelectedDate(parseValue(value));
-  }, [value]);
-
-  const handleDateChange = (date: CalendarDate | null) => {
-    setSelectedDate(date);
-    if (!date) {
-      onChange("");
-      return;
-    }
-    const month = date.month.toString().padStart(2, "0");
-    onChange(`${date.year}/${month}`);
-  };
+  const present = isPresent(value);
 
   return (
-    <div className={className}>
-      <HeroUIProvider locale="ja-JP">
-        <DateInput
-          value={isPresent ? null : selectedDate}
-          onChange={handleDateChange}
-          isRequired={isRequired}
-          granularity={"month" as any}
-          variant="bordered"
-          labelPlacement="outside"
-          shouldForceLeadingZeros
-          isDisabled={isPresent}
-          className={cn(isPresent && "opacity-50")}
-          classNames={{
-            inputWrapper:
-              "shadow-sm hover:border-primary/50 focus-within:ring-2 focus-within:ring-primary focus-within:border-primary bg-background",
-          }}
-        />
-      </HeroUIProvider>
-    </div>
+    <DatePicker
+      picker="month"
+      value={present ? null : parseDayjs(value, "month")}
+      onChange={(date) => onChange(date ? date.format(MONTH_FORMAT) : "")}
+      format={MONTH_FORMAT}
+      placeholder={placeholder}
+      disabled={present}
+      aria-required={isRequired}
+      style={{ width: "100%" }}
+      className={className}
+    />
   );
 }
