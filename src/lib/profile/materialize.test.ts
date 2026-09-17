@@ -61,7 +61,7 @@ const buildInput = (over: Partial<MaterializeInput> = {}): MaterializeInput => (
     entities: {},
     sectionOrder: [],
     skillGroups: [],
-    certificates: [],
+    certificateText: "",
     selfEvaluationContent: "",
     meta: { createdAt: NOW, updatedAt: NOW, lastBackupAt: null },
   },
@@ -98,6 +98,33 @@ describe("renderSkillContent", () => {
 
   it("无技能组时返回空串，而非空壳标签", () => {
     expect(renderSkillContent(buildInput().profile)).toBe("");
+  });
+
+  it("证书并进技能列表，排在技能组之后、格式一致", () => {
+    const profile = buildInput().profile;
+    profile.skillGroups = [{ id: "g1", name: "前端框架", content: "React", order: 0 }];
+    // 首尾空白与空行都应被清掉
+    profile.certificateText = "CET-6\n\n  ACM-ICPC 银奖  ";
+
+    const html = renderSkillContent(profile, "证书奖项");
+    expect(html).toContain("<li>证书奖项：CET-6；ACM-ICPC 银奖</li>");
+    expect(html.indexOf("前端框架")).toBeLessThan(html.indexOf("证书奖项"));
+  });
+
+  it("只有证书没有技能组时也产出列表", () => {
+    const profile = buildInput().profile;
+    profile.certificateText = "CET-6";
+
+    expect(renderSkillContent(profile, "证书奖项")).toBe(
+      `<div class="skill-content">\n  <ul>\n    <li>证书奖项：CET-6</li>\n  </ul>\n</div>`
+    );
+  });
+
+  it("没传证书标签时不产出证书行（英文站等未配置的场景）", () => {
+    const profile = buildInput().profile;
+    profile.certificateText = "CET-6";
+
+    expect(renderSkillContent(profile)).toBe("");
   });
 });
 
@@ -290,6 +317,16 @@ describe("materialize — 选择与过滤", () => {
     expect(resume.projects).toEqual([]);
     expect(resume.customData).toEqual({});
     expect(resume.skillContent).toBe("");
+  });
+
+  it("证书不再产出独立板块（已并进技能文本）", () => {
+    const profile = buildInput().profile;
+    profile.certificateText = "CET-6";
+    profile.skillGroups = [{ id: "g1", name: "语言", content: "英语", order: 0 }];
+
+    const resume = materialize({ ...buildInput({ profile }), certificateLabel: "证书奖项" });
+    expect(resume.certificates).toEqual([]);
+    expect(resume.skillContent).toContain("证书奖项：CET-6");
   });
 });
 

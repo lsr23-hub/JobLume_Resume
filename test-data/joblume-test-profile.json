@@ -385,7 +385,6 @@
       "education",
       "experience",
       "skills",
-      "certificates",
       "projects",
       "selfEvaluation",
       "campus",
@@ -424,23 +423,12 @@
         "order": 4
       }
     ],
-    "certificates": [
-      {
-        "id": "9e4262c2-89f1-430b-9eaf-981d6e1c5e91",
-        "url": "/avatar.png",
-        "width": 32
-      },
-      {
-        "id": "4abfcb0b-3117-49e4-8b90-cbc5cfaa5f9a",
-        "url": "/demo-avatar.png",
-        "width": 32
-      }
-    ],
     "selfEvaluationContent": "<p>六年前端研发经验，长期深耕中后台与数据可视化方向，擅长从 0 到 1 搭建大型前端架构。主导过覆盖百万级用户的活动页搭建平台，在性能治理与工程化建设上有可量化的落地成果。</p><p>习惯用数据驱动技术决策，能把模糊的业务诉求拆解为可执行的技术方案，并推动跨团队协作落地。带过 3 人小组，有技术方案评审与新人培养经验。</p>",
     "meta": {
       "createdAt": "2026-09-17T03:00:00.000Z",
       "updatedAt": "2026-09-17T03:00:00.000Z",
       "lastBackupAt": null
-    }
+    },
+    "certificateText": "CET-6（642 分）\nACM-ICPC 亚洲区域赛 银奖\n软件设计师（中级）"
   }
 }

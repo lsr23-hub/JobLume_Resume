@@ -18,8 +18,11 @@ import { getConfig, getFileHandle } from "@/utils/fileSystem";
 import { preloadFontFamily } from "@/utils/fonts";
 import { useResumeStore } from "@/store/useResumeStore";
 import { useAIConfigStore } from "@/store/useAIConfigStore";
-import { DEFAULT_TEMPLATES } from "@/config";
-import { CreateResumeModal } from "./CreateResumeModal";
+import { useCareerProfileStore } from "@/store/useCareerProfileStore";
+import { useJobTargetStore } from "@/store/useJobTargetStore";
+import { generateResume, selectAllEntities } from "@/lib/profile/generateResume";
+import { generateUUID } from "@/utils/uuid";
+import { CreateResumeWizard, type WizardChoice } from "./CreateResumeWizard";
 import { ImportResumeDialog } from "./ImportResumeDialog";
 import { ResumeCardItem } from "./ResumeCardItem";
 import { AnimatedImportButton } from "./AnimatedImportButton";
@@ -36,14 +39,17 @@ const PDF_MAX_IMAGE_WIDTH = 1600;
 
 export const ResumeWorkbench = () => {
     const t = useTranslations();
+    // 板块名与证书标签都挂在 profile 命名空间下（见 SECTION_DEFS.titleKey）
+    const tSection = useTranslations("profile");
     const locale = useLocale();
     const {
         resumes,
         setActiveResume,
         addResume,
         deleteResume,
-        createResume,
     } = useResumeStore();
+    const { profile } = useCareerProfileStore();
+    const { targets } = useJobTargetStore();
     const {
         geminiApiKey,
         geminiModelId,
@@ -114,36 +120,50 @@ export const ResumeWorkbench = () => {
         };
     }, [resumes]);
 
-    const handleCreateFromModal = (templateId: string | null) => {
-        const isBlank = !templateId;
-        const newId = createResume(templateId, isBlank);
-
-        if (templateId) {
-            const template = DEFAULT_TEMPLATES.find((t) => t.id === templateId);
-            if (template) {
-                const { resumes, updateResume } = useResumeStore.getState();
-                const resume = resumes[newId];
-                if (resume) {
-                    updateResume(newId, {
-                        globalSettings: {
-                            ...resume.globalSettings,
-                            themeColor: template.colorScheme.primary,
-                            sectionSpacing: template.spacing.sectionGap,
-                            paragraphSpacing: template.spacing.itemGap,
-                            pagePadding: template.spacing.contentPadding,
-                        },
-                        basic: {
-                            ...resume.basic,
-                            layout: template.basic.layout,
-                        },
-                    });
-                }
-            }
+    /**
+     * 向导选完类型 / 投递目标 / 模板后，直接从职业数据库生成一份简历。
+     *
+     * 不再走「先用示例数据建一份空简历、再二次改写」的老路 ——
+     * `generateResume` 一次产出完整内容，模板排版参数也一并带上。
+     */
+    const handleWizardComplete = (choice: WizardChoice) => {
+        if (!profile) {
+            toast.error(t("dashboard.resumes.needProfile"));
+            return;
         }
 
+        const now = new Date().toISOString();
+        const id = generateUUID();
+        const target = choice.targetId ? targets[choice.targetId] ?? null : null;
+
+        const baseTitle =
+            choice.mode === "targeted" && target
+                ? `${target.company} · ${target.position}`
+                : t("dashboard.resumes.generatedGenericTitle");
+
+        // 同步目录里文件名就是标题（`syncResumeToFile`）。同名会直接覆盖上一份，
+        // 所以只在真的撞名时才加后缀，平时保持标题干净
+        const taken = new Set(Object.values(resumes).map((r) => r.title));
+        const title = taken.has(baseTitle)
+            ? `${baseTitle} ${id.slice(0, 6)}`
+            : baseTitle;
+
+        const resume = generateResume({
+            profile,
+            mode: choice.mode,
+            target,
+            templateId: choice.templateId,
+            id,
+            title,
+            now,
+            selection: selectAllEntities(profile),
+            tSection: tSection,
+            certificateLabel: tSection("certificatesLabel"),
+        });
+
+        addResume(resume);
         setIsCreateModalOpen(false);
-        setActiveResume(newId);
-        router.push({ to: "/app/workbench/$id", params: { id: newId } });
+        router.push({ to: "/app/workbench/$id", params: { id } });
     };
 
     // 同一投递目标下的版本号：按生成时间正序编号，最早的是 v1
@@ -493,10 +513,10 @@ export const ResumeWorkbench = () => {
                     </div>
                 </motion.div>
 
-                <CreateResumeModal
+                <CreateResumeWizard
                     open={isCreateModalOpen}
                     onOpenChange={setIsCreateModalOpen}
-                    onCreate={handleCreateFromModal}
+                    onComplete={handleWizardComplete}
                 />
 
                 <ImportResumeDialog

@@ -9,7 +9,7 @@ import {
   type ProfileEntity,
   type SkillGroup,
 } from "@/types/profile";
-import type { BasicInfo, Certificate, CustomFieldType, PhotoConfig } from "@/types/resume";
+import type { BasicInfo, CustomFieldType, PhotoConfig } from "@/types/resume";
 import { DEFAULT_SECTION_ORDER, PRESET_BASIC_FIELDS } from "@/config/sections";
 import { DEFAULT_FIELD_ORDER } from "@/config/constants";
 import { parseDateRange } from "@/lib/profile/entityUtils";
@@ -73,7 +73,7 @@ interface ProfileStore {
   removeSkillGroup: (id: string) => void;
 
   updateBasic: (patch: Partial<BasicInfo>) => void;
-  setCertificates: (certificates: Certificate[]) => void;
+  setCertificateText: (certificateText: string) => void;
   setSelfEvaluationContent: (content: string) => void;
 
   /** 整库替换（导入备份时使用） */
@@ -145,6 +145,20 @@ const syncBasicPresets = (profile: CareerProfile): CareerProfile => {
   };
 };
 
+/**
+ * 补齐 `certificateText`。
+ *
+ * 该字段是新增的（证书从图片列表改成了纯文本），存量数据库里没有。
+ * 只在缺失时重建对象 —— 迁移不该让 SaveBar 变成「已保存」。
+ *
+ * 刻意**不删**旧的 `certificates` 数组：里面的 `idb:` 引用是那些图片在
+ * IndexedDB 里唯一的线索，删了就再也找不回来了。
+ */
+const syncCertificateText = (profile: CareerProfile): CareerProfile =>
+  typeof (profile as Partial<CareerProfile>).certificateText === "string"
+    ? profile
+    : { ...profile, certificateText: "" };
+
 const touch = (profile: CareerProfile): CareerProfile => ({
   ...profile,
   meta: { ...profile.meta, updatedAt: new Date().toISOString() },
@@ -158,7 +172,7 @@ export const useCareerProfileStore = create<ProfileStore>()(
       ensureProfile: () => {
         const existing = get().profile;
         if (existing) {
-          const synced = syncBasicPresets(existing);
+          const synced = syncCertificateText(syncBasicPresets(existing));
           if (synced !== existing) set({ profile: synced });
           return synced;
         }
@@ -297,9 +311,9 @@ export const useCareerProfileStore = create<ProfileStore>()(
         set({ profile: touch({ ...profile, basic: { ...profile.basic, ...patch } }) });
       },
 
-      setCertificates: (certificates) => {
+      setCertificateText: (certificateText) => {
         const profile = get().ensureProfile();
-        set({ profile: touch({ ...profile, certificates }) });
+        set({ profile: touch({ ...profile, certificateText }) });
       },
 
       setSelfEvaluationContent: (selfEvaluationContent) => {

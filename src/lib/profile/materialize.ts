@@ -49,6 +49,14 @@ export interface MaterializeInput {
 
   globalSettings?: Partial<GlobalSettings>;
   snapshot?: ResumeSnapshot;
+
+  /**
+   * 证书那一行的标签（如「证书奖项」）。
+   *
+   * 由调用方从 i18n 取好传进来 —— 本模块是纯函数，不碰 i18n。
+   * 不传则不产出证书行。
+   */
+  certificateLabel?: string;
 }
 
 /**
@@ -56,12 +64,26 @@ export interface MaterializeInput {
  *
  * 结构必须与 `initialResumeData.ts` 中的 `skillContent` 一致
  * （`div.skill-content > ul > li`），否则 9 套模板的 SkillSection 样式会失效。
+ *
+ * 证书并进同一份列表 —— 数据库里它已不是独立板块，简历上也不该独立成块。
  */
-export const renderSkillContent = (profile: CareerProfile): string => {
+export const renderSkillContent = (
+  profile: CareerProfile,
+  certificateLabel?: string
+): string => {
   const items = [...profile.skillGroups]
     .filter((g) => g.content.trim())
     .sort((a, b) => a.order - b.order)
     .map((g) => `<li>${g.name}：${g.content}</li>`);
+
+  const certificates = (profile.certificateText ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (certificates.length > 0 && certificateLabel) {
+    items.push(`<li>${certificateLabel}：${certificates.join("；")}</li>`);
+  }
 
   if (items.length === 0) return "";
 
@@ -93,7 +115,8 @@ const pickEntities = (
  * 也是 `selection` 的键，两者保持一致。
  */
 export const materialize = (input: MaterializeInput): ResumeData => {
-  const { profile, selection, sections, meta, globalSettings, snapshot } = input;
+  const { profile, selection, sections, meta, globalSettings, snapshot, certificateLabel } =
+    input;
 
   const sourceMap: Record<string, string> = {};
 
@@ -179,9 +202,11 @@ export const materialize = (input: MaterializeInput): ResumeData => {
     education,
     experience,
     projects,
-    certificates: [...profile.certificates],
+    // 证书已下沉为技能板块里的一行文字，不再产出独立板块。
+    // 简历层自己的证书模块（编辑器里手动加）不受影响，那是另一个概念。
+    certificates: [],
     customData,
-    skillContent: renderSkillContent(profile),
+    skillContent: renderSkillContent(profile, certificateLabel),
     selfEvaluationContent: profile.selfEvaluationContent,
     activeSection: enabled[0]?.id ?? "basic",
     draggingProjectId: null,

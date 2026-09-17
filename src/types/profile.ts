@@ -1,4 +1,4 @@
-import type { BasicInfo, Certificate } from "./resume";
+import type { BasicInfo } from "./resume";
 
 /**
  * 条目的语义类型。
@@ -95,8 +95,13 @@ export interface CareerProfile {
   /** 技能组 */
   skillGroups: SkillGroup[];
 
-  /** 证书（复用简历层的 Certificate 类型） */
-  certificates: Certificate[];
+  /**
+   * 证书奖项。纯文本，一行一条。
+   *
+   * 原为 `Certificate[]` 图片列表（二进制存 IndexedDB），但实际用起来证书多是
+   * 「CET-6」这类一行文字，传图是负担。生成简历时并进技能板块的一行。
+   */
+  certificateText: string;
 
   /** 自我评价 */
   selfEvaluationContent: string;
@@ -115,7 +120,7 @@ export const createEmptyProfile = (basic: BasicInfo, now: string): CareerProfile
   entities: {},
   sectionOrder: [],
   skillGroups: [],
-  certificates: [],
+  certificateText: "",
   selfEvaluationContent: "",
   meta: { createdAt: now, updatedAt: now, lastBackupAt: null },
 });

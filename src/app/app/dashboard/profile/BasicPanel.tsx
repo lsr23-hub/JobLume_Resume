@@ -188,7 +188,7 @@ const PhotoField = () => {
           const f = e.target.files?.[0];
           if (f) {
             if (!f.type.startsWith("image/")) {
-              toast.error(t("certificates.notImage", { name: f.name }));
+              toast.error(t("photo.notImage", { name: f.name }));
             } else {
               setPending(f);
             }

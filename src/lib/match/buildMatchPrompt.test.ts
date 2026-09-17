@@ -52,7 +52,8 @@ describe("orderEntitiesForPrompt", () => {
       entity("e", { sectionId: "experience" }),
       entity("d", { sectionId: "education" }),
     ];
-    // SECTION_DEFS 顺序：education(1) → experience(2) → projects(5)
+    // SECTION_DEFS 顺序：education(1) → experience(2) → projects(4)
+    // （certificates 已下沉为技能板块下的纯文本，不再是独立板块）
     expect(orderEntitiesForPrompt(list).map((x) => x.id)).toEqual(["d", "e", "p"]);
   });
 

@@ -8,11 +8,9 @@ import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { useResumeStore } from "@/store/useResumeStore";
 import { useAIConfigStore } from "@/store/useAIConfigStore";
 import { AI_MODEL_CONFIGS } from "@/config/ai";
-import { SECTION_DEFS } from "@/config/sections";
 import { analyzeMatch } from "@/lib/match/analyzeMatch";
 import type { JobTarget } from "@/types/jobTarget";
-import type { MenuSection } from "@/types/resume";
-import { materialize } from "@/lib/profile/materialize";
+import { generateResume } from "@/lib/profile/generateResume";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -146,22 +144,6 @@ export const TargetsWorkbench = () => {
   const handleGenerate = () => {
     if (!current || !profile) return;
 
-    const hasContent = (sectionId: string): boolean => {
-      if (sectionId === "basic") return true;
-      if (sectionId === "skills") return profile.skillGroups.length > 0;
-      if (sectionId === "certificates") return profile.certificates.length > 0;
-      if (sectionId === "selfEvaluation") return profile.selfEvaluationContent.trim() !== "";
-      return selection.some((id) => profile.entities[id]?.sectionId === sectionId);
-    };
-
-    const sections: MenuSection[] = SECTION_DEFS.map((def, index) => ({
-      id: def.id,
-      title: tSection(def.titleKey),
-      icon: def.icon,
-      enabled: (def.required || !disabledSections.has(def.id)) && hasContent(def.id),
-      order: index,
-    }));
-
     const now = new Date().toISOString();
     const id = generateUUID();
     const selectedBySection: Record<string, string[]> = {};
@@ -171,27 +153,22 @@ export const TargetsWorkbench = () => {
       (selectedBySection[entity.sectionId] ??= []).push(entityId);
     }
 
-    const resume = materialize({
+    const resume = generateResume({
       profile,
+      mode: "targeted",
+      target: current,
+      templateId: "classic",
+      id,
+      title: `${current.company} · ${current.position}`,
+      now,
       selection: selectedBySection,
-      sections,
-      meta: {
-        id,
-        title: `${current.company} · ${current.position}`,
-        now,
-        templateId: "classic",
-      },
-      snapshot: {
-        mode: "targeted",
-        jobTargetId: current.id,
-        jdSnapshot: current.jdRaw,
-        matchAnalysisSnapshot: current.matchAnalysis ?? undefined,
-        selectedEntityIds: selectedBySection,
-        manuallyAdjustedIds: Object.entries(current.matchAnalysis?.items ?? {})
-          .filter(([, item]) => item.manuallyAdjusted)
-          .map(([entityId]) => entityId),
-        generatedAt: now,
-      },
+      disabledSections,
+      tSection,
+      certificateLabel: tSection("certificatesLabel"),
+      // 只有这条路径知道用户在页面上手动改过哪些勾选
+      manuallyAdjustedIds: Object.entries(current.matchAnalysis?.items ?? {})
+        .filter(([, item]) => item.manuallyAdjusted)
+        .map(([entityId]) => entityId),
     });
 
     addResume(resume);

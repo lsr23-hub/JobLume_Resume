@@ -144,23 +144,18 @@
       "deleteConfirmDescription": "This action cannot be undone. This will permanently delete this resume and remove the data from your device.",
       "createDialog": {
         "title": "Create New Resume",
-        "description": "Start a new resume from a blank template",
-        "tabs": {
-          "fromTemplate": "From Template",
-          "uploadFile": "Upload File"
-        },
-        "namePlaceholder": "Name",
-        "switchTemplate": "Switch Template",
-        "cancel": "Cancel",
-        "create": "Create",
-        "blankTitle": "Blank Resume",
-        "startFromBlank": "Start from Blank",
-        "startFromTemplate": "Start from Template",
-        "blankCardDescription": "Use a default built-in layout and start from scratch.",
-        "blankThumbnailDescription": "Start with a clean page and shape a code-driven resume with complete creative control.",
-        "createNow": "Create Now",
+        "modeTitle": "Choose a resume type",
+        "genericTitle": "Generate a general resume",
+        "genericDesc": "Pulls in every experience from your career database. Not tied to a specific role — good as a baseline.",
+        "targetedTitle": "Generate a job-specific resume",
+        "targetedDesc": "Pick a job target first, then tailor the content to that role in the editor.",
+        "selectTargetTitle": "Choose a job target",
+        "selectTargetDesc": "Pick a role from your Job Targets.",
+        "noTargets": "No job targets yet. Create one under Job Targets — or generate the resume from there directly.",
+        "goCreateTarget": "Create a job target",
+        "selectTemplateTitle": "Choose a template",
+        "back": "Back",
         "backToGrid": "Back to template grid",
-        "blankPreviewDescription": "Choose a blank page and build everything from zero, without any preset constraints.",
         "useThisTemplate": "Use This Template",
         "sample": {
           "company": "Google",
@@ -168,7 +163,10 @@
           "present": "Present",
           "workDescription": "Led the frontend team and improved page performance by 40%."
         }
-      }
+      },
+      "generatedGenericTitle": "General Resume",
+      "needProfile": "Your career database is empty. Add some content under Career Database, then come back.",
+      "goFillProfile": "Fill in your career database"
     },
     "settings": {
       "title": "Settings",
@@ -911,21 +909,14 @@
       "newGroupPlaceholder": "New group name, e.g. Frontend frameworks",
       "addGroup": "Add group",
       "defaultGroupName": "New group",
-      "note": "Renders as \"Group name: content\" on the resume. Skill names are extracted later by the AI matching step — no need to split them yourself."
+      "note": "Renders as \"Group name: content\" on the resume. Skill names are extracted later by the AI matching step — no need to split them yourself.",
+      "certificateLabel": "Certificates & awards",
+      "certificatePlaceholder": "One per line, e.g.\nCET-6 (642)\nACM-ICPC Asia Regional — Silver",
+      "certificateNote": "One per line. These are folded into the Skills section on the resume as \"Certificates: first; second\"."
     },
     "selfEvaluation": {
       "placeholder": "A few sentences on your strengths and positioning",
       "note": "This text appears verbatim in the resume's summary section and can be edited per resume after generation."
-    },
-    "certificates": {
-      "title": "Certificates",
-      "empty": "No certificates yet. Upload scans or photos — they'll be laid out side by side at the width you pick.",
-      "upload": "Upload certificate",
-      "uploading": "Processing…",
-      "widthHint": "Display width",
-      "notImage": "\"{name}\" is not an image file",
-      "uploadFailed": "Failed to save image",
-      "storageNote": "Images live in IndexedDB (auto-compressed to 1200px max edge) and don't consume the localStorage quota. Full backups exclude these binaries — re-upload after switching devices."
     },
     "generic": {
       "title": "Generate General Resume",
@@ -943,7 +934,6 @@
       "education": "Education",
       "experience": "Work Experience",
       "skills": "Skills",
-      "certificates": "Certificates",
       "projects": "Projects",
       "selfEvaluation": "Summary",
       "campus": "Campus",
@@ -961,7 +951,8 @@
       "cropTitle": "Crop photo",
       "cropHint": "Drag to reposition, use the slider to zoom. The ratio is fixed at 3:4 (ID-photo standard).",
       "cropConfirm": "Apply crop",
-      "ratioNote": "Outputs 450×600 at 3:4"
+      "ratioNote": "Outputs 450×600 at 3:4",
+      "notImage": "\"{name}\" is not an image file"
     },
     "save": {
       "saved": "Saved",
@@ -988,7 +979,8 @@
     "export": {
       "button": "Export",
       "success": "Career database saved to a file"
-    }
+    },
+    "certificatesLabel": "Certificates"
   },
   "targets": {
     "title": "Job Targets",

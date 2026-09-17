@@ -145,23 +145,18 @@
       "deleteConfirmDescription": "此操作无法撤销。这将永久删除此简历，并从设备中移除数据。",
       "createDialog": {
         "title": "新建简历",
-        "description": "从空白模板开始创建新简历",
-        "tabs": {
-          "fromTemplate": "从模板创建",
-          "uploadFile": "上传文件"
-        },
-        "namePlaceholder": "姓名",
-        "switchTemplate": "切换模板",
-        "cancel": "取消",
-        "create": "创建",
-        "blankTitle": "空白简历",
-        "startFromBlank": "从空白开始",
-        "startFromTemplate": "从模板开始",
-        "blankCardDescription": "从内置默认模板创建，空白开始",
-        "blankThumbnailDescription": "一张白纸，不受任何预设干扰，自由发挥您的创意，打造完全属于您个人风格的代码级简历",
-        "createNow": "立即创建",
+        "modeTitle": "选择简历类型",
+        "genericTitle": "生成通用简历",
+        "genericDesc": "把职业数据库里的经历全部收进来，不针对特定岗位。适合先做一份打底版本。",
+        "targetedTitle": "生成岗位专用简历",
+        "targetedDesc": "先选一个投递目标，生成后可在编辑器里针对该岗位调整内容。",
+        "selectTargetTitle": "选择投递目标",
+        "selectTargetDesc": "从「投递目标」板块里挑一个岗位。",
+        "noTargets": "还没有投递目标。先去投递目标板块新建一个岗位，或在那边直接生成简历。",
+        "goCreateTarget": "去新建投递目标",
+        "selectTemplateTitle": "选择模板",
+        "back": "返回上一步",
         "backToGrid": "返回模板列表",
-        "blankPreviewDescription": "选择这张白纸，一切从零开始。不受任何预设干扰，打造完全属于您个人风格的代码级可控精美简历。",
         "useThisTemplate": "就用这个模板开始",
         "sample": {
           "company": "Google",
@@ -169,7 +164,10 @@
           "present": "至今",
           "workDescription": "主导前端团队，页面性能提升 40%。"
         }
-      }
+      },
+      "generatedGenericTitle": "通用简历",
+      "needProfile": "职业数据库还是空的。先去「职业数据库」填一些内容，再回来生成简历。",
+      "goFillProfile": "去填职业数据库"
     },
     "settings": {
       "title": "设置",
@@ -913,21 +911,14 @@
       "newGroupPlaceholder": "新分组名称，如「前端框架」",
       "addGroup": "添加分组",
       "defaultGroupName": "新分组",
-      "note": "简历上会显示为「分组名称：内容」。技能名的识别由后续的 AI 匹配分析完成，无需手动拆分。"
+      "note": "简历上会显示为「分组名称：内容」。技能名的识别由后续的 AI 匹配分析完成，无需手动拆分。",
+      "certificateLabel": "证书奖项",
+      "certificatePlaceholder": "一行一条，如：\nCET-6（642 分）\nACM-ICPC 亚洲区域赛 银奖",
+      "certificateNote": "一行一条。简历上会并进「专业技能」板块，显示成「证书奖项：第一条；第二条」。"
     },
     "selfEvaluation": {
       "placeholder": "用几句话概括你的优势与定位",
       "note": "这段文字会原样出现在简历的「自我评价」板块，可在生成后单独调整。"
-    },
-    "certificates": {
-      "title": "证书",
-      "empty": "还没有证书。上传证书扫描件或照片，会按下方宽度并排显示。",
-      "upload": "上传证书图片",
-      "uploading": "处理中…",
-      "widthHint": "显示宽度",
-      "notImage": "「{name}」不是图片文件",
-      "uploadFailed": "图片保存失败",
-      "storageNote": "图片存于浏览器 IndexedDB（自动压缩至最长边 1200px），不占用 localStorage 配额。全库备份不包含这些二进制 —— 换设备后需重新上传。"
     },
     "generic": {
       "title": "生成通用简历",
@@ -945,7 +936,6 @@
       "education": "教育经历",
       "experience": "工作经验",
       "skills": "专业技能",
-      "certificates": "证书作品",
       "projects": "项目经历",
       "selfEvaluation": "自我评价",
       "campus": "校园经历",
@@ -963,7 +953,8 @@
       "cropTitle": "裁剪照片",
       "cropHint": "拖动图片调整位置，用滑块缩放。比例固定为 3:4（证件照标准）。",
       "cropConfirm": "确认裁剪",
-      "ratioNote": "输出 450×600，比例 3:4"
+      "ratioNote": "输出 450×600，比例 3:4",
+      "notImage": "「{name}」不是图片文件"
     },
     "save": {
       "saved": "已保存",
@@ -990,7 +981,8 @@
     "export": {
       "button": "导出数据",
       "success": "职业数据库已另存为文件"
-    }
+    },
+    "certificatesLabel": "证书奖项"
   },
   "targets": {
     "title": "投递目标",

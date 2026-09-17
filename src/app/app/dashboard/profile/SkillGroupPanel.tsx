@@ -5,10 +5,12 @@ import { useTranslations } from "@/i18n/compat/client";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export const SkillGroupPanel = () => {
   const t = useTranslations("profile");
-  const { profile, addSkillGroup, updateSkillGroup, removeSkillGroup } =
+  const { profile, addSkillGroup, updateSkillGroup, removeSkillGroup, setCertificateText } =
     useCareerProfileStore();
   const [draftName, setDraftName] = useState("");
 
@@ -80,6 +82,18 @@ export const SkillGroupPanel = () => {
       </div>
 
       <p className="text-xs text-muted-foreground">{t("skills.note")}</p>
+
+      {/* 证书：原为独立板块的图片画廊，现并入本板块，纯文本一行一条 */}
+      <div className="space-y-1.5 border-t border-border/40 pt-4">
+        <Label className="text-sm font-medium">{t("skills.certificateLabel")}</Label>
+        <Textarea
+          value={profile.certificateText ?? ""}
+          onChange={(e) => setCertificateText(e.target.value)}
+          placeholder={t("skills.certificatePlaceholder")}
+          rows={3}
+        />
+        <p className="text-xs text-muted-foreground">{t("skills.certificateNote")}</p>
+      </div>
     </div>
   );
 };

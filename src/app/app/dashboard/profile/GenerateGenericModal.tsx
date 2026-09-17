@@ -6,8 +6,7 @@ import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { useResumeStore } from "@/store/useResumeStore";
 import { SECTION_DEFS } from "@/config/sections";
 import { rankGeneric } from "@/lib/profile/rankGeneric";
-import { materialize } from "@/lib/profile/materialize";
-import type { MenuSection } from "@/types/resume";
+import { generateResume } from "@/lib/profile/generateResume";
 import {
   Dialog,
   DialogContent,
@@ -87,33 +86,20 @@ export const GenerateGenericModal = ({ open, onOpenChange }: Props) => {
   const handleGenerate = () => {
     if (!profile) return;
 
-    // 必备板块锁定开启；但完全没有内容的板块不渲染 —— 否则模板会输出一个
-    // 只有标题、下面空无一物的板块
-    const hasContent = (sectionId: string): boolean => {
-      if (sectionId === "basic") return true;
-      if (sectionId === "skills") return profile.skillGroups.length > 0;
-      if (sectionId === "certificates") return profile.certificates.length > 0;
-      if (sectionId === "selfEvaluation") return profile.selfEvaluationContent.trim() !== "";
-      return (selected[sectionId]?.length ?? 0) > 0;
-    };
-
-    const sections: MenuSection[] = SECTION_DEFS.map((def, index) => ({
-      id: def.id,
-      title: t(def.titleKey),
-      icon: def.icon,
-      enabled: (def.required || !disabledSections.has(def.id)) && hasContent(def.id),
-      order: index,
-    }));
-
     const now = new Date().toISOString();
     const id = generateUUID();
 
-    const resume = materialize({
+    const resume = generateResume({
       profile,
+      mode: "generic",
+      templateId: "classic",
+      id,
+      title: t("generatedTitle"),
+      now,
       selection: selected,
-      sections,
-      meta: { id, title: t("generatedTitle"), now, templateId: "classic" },
-      snapshot: { mode: "generic", jobTargetId: null, generatedAt: now },
+      disabledSections,
+      tSection: t,
+      certificateLabel: t("certificatesLabel"),
     });
 
     addResume(resume);

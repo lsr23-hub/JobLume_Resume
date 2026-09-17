@@ -15,7 +15,7 @@ export interface SectionDef {
   /** 系统预设板块不可删除，只能停用 */
   preset: boolean;
 
-  /** 该板块接受的条目类型（空数组表示不使用 entities，如技能/证书） */
+  /** 该板块接受的条目类型（空数组表示不使用 entities，如技能） */
   accepts: EntityType[];
 }
 
@@ -32,13 +32,17 @@ export interface SectionDef {
  * 与 `@/config/modules` 的 `STANDARD_MODULES` 是不同层的概念：
  * 后者是「简历里可以添加哪些模块」，这里是「数据库有哪些板块」，
  * 两者共享同一套 id 字符串。
+ *
+ * 这里**没有** `certificates` —— 证书已下沉为「专业技能」板块下的纯文本
+ * （`CareerProfile.certificateText`），生成简历时并进技能板块的一行，
+ * 不再产出独立的证书板块。简历层自己的证书模块（`STANDARD_MODULES`）
+ * 是另一回事，操作单份简历，不受影响。
  */
 export const SECTION_DEFS: SectionDef[] = [
   { id: "basic", title: "基本信息", titleKey: "sections.basic", icon: "👤", required: true, preset: true, accepts: [] },
   { id: "education", title: "教育经历", titleKey: "sections.education", icon: "🎓", required: true, preset: true, accepts: ["education"] },
   { id: "experience", title: "工作经验", titleKey: "sections.experience", icon: "💼", required: true, preset: true, accepts: ["experience"] },
   { id: "skills", title: "专业技能", titleKey: "sections.skills", icon: "⚡", required: true, preset: true, accepts: [] },
-  { id: "certificates", title: "证书作品", titleKey: "sections.certificates", icon: "🏆", required: true, preset: true, accepts: [] },
   { id: "projects", title: "项目经历", titleKey: "sections.projects", icon: "🚀", required: false, preset: true, accepts: ["project"] },
   { id: "selfEvaluation", title: "自我评价", titleKey: "sections.selfEvaluation", icon: "💬", required: false, preset: true, accepts: [] },
   { id: "campus", title: "校园经历", titleKey: "sections.campus", icon: "🏫", required: false, preset: true, accepts: ["campus"] },

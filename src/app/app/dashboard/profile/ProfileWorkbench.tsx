@@ -7,7 +7,6 @@ import { EntityList } from "./EntityList";
 import { BasicPanel } from "./BasicPanel";
 import { SkillGroupPanel } from "./SkillGroupPanel";
 import { SelfEvaluationPanel } from "./SelfEvaluationPanel";
-import { CertificatesPanel } from "./CertificatesPanel";
 import { SaveBar } from "./SaveBar";
 import { ImportProfileDialog } from "./ImportProfileDialog";
 import { ExportProfileButton } from "./ExportProfileButton";
@@ -45,8 +44,6 @@ export const ProfileWorkbench = () => {
     if (activeSection === "basic") return <BasicPanel />;
     if (activeSection === "skills") return <SkillGroupPanel />;
     if (activeSection === "selfEvaluation") return <SelfEvaluationPanel />;
-
-    if (activeSection === "certificates") return <CertificatesPanel />;
 
     if (ENTITY_SECTIONS.has(activeSection)) {
       return <EntityList sectionId={activeSection} />;
