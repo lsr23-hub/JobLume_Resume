@@ -41,11 +41,21 @@ export function EditPanel() {
       case "certificates":
         return <CertificatesPanel />;
       default:
-        if (activeSection?.startsWith("custom")) {
-          return <CustomPanel sectionId={activeSection} />;
-        } else {
-          return <BasicPanel />;
-        }
+        // 其余一律按「自定义板块」编辑 —— 与模板层的规则对齐。
+        //
+        // 模板是 `if (sectionId in data.customData) return <CustomSection/>`，
+        // 生成简历时 campus / honors / languages 走的就是这条通道。
+        // 上游这里原本只认 id 以 "custom" 开头的（SidePanel 添加模块时的命名），
+        // 于是这几个板块会掉进 BasicPanel —— 不但编辑界面不对，
+        // 在那边改内容还会写进 basic，把基本信息改坏。
+        //
+        // 这里比模板再放宽一点：非内置 id 全部交给 CustomPanel，
+        // 好让「还没有条目」的自定义板块也能打开去添加。
+        return activeSection ? (
+          <CustomPanel sectionId={activeSection} />
+        ) : (
+          <BasicPanel />
+        );
     }
   };
 
