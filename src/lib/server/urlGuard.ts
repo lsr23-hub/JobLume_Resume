@@ -49,10 +49,8 @@ const isBlockedIpv6 = (host: string): boolean => {
   const h = stripBrackets(host).toLowerCase();
   if (h === "::" || h === "::1") return true;
 
-  // IPv4-mapped 有两种写法，URL 解析会把点分那版规范成十六进制
-  // （::ffff:127.0.0.1 → ::ffff:7f00:1），两种都要认
-  const dotted = h.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-  if (dotted) return isBlockedIpv4(dotted[1]);
+  // IPv4-mapped 只处理十六进制那种写法：URL 解析会把点分那版
+  // 规范成十六进制（::ffff:127.0.0.1 → ::ffff:7f00:1），点分写法到不了这里
   const hex = h.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
   if (hex) return isBlockedIpv4(hexPairToIpv4(hex[1], hex[2]));
 
@@ -60,7 +58,7 @@ const isBlockedIpv6 = (host: string): boolean => {
   return /^f[cd][0-9a-f]{0,2}:/.test(h) || /^fe[89ab][0-9a-f]?:/.test(h);
 };
 
-export type UrlVerdict = { ok: true; url: URL } | { ok: false; reason: string };
+type UrlVerdict = { ok: true; url: URL } | { ok: false; reason: string };
 
 /**
  * 这个 URL 能不能拿来当远程图片源。

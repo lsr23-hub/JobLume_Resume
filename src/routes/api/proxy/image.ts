@@ -74,13 +74,7 @@ const readCapped = async (
     chunks.push(value);
   }
 
-  const bytes = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return { ok: true, bytes };
+  return { ok: true, bytes: new Uint8Array(await new Blob(chunks).arrayBuffer()) };
 };
 
 export const Route = createFileRoute("/api/proxy/image")({

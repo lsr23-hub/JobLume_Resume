@@ -246,7 +246,7 @@ export const buildReport = (input: ReportInput): string => {
         // 模型每次实际报出的缺口 —— 读者可以自己看它报的是不是同一件事
         const reported = Array.from(
           new Set(
-            (input.runs[caseId]?.analysis?.summary.coverage.missing ?? []).map((x) => x)
+            input.runs[caseId]?.analysis?.summary.coverage.missing ?? []
           )
         );
         if (reported.length > 0) {

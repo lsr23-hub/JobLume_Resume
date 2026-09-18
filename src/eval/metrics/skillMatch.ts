@@ -29,14 +29,14 @@
  */
 
 /** 归一化：小写、去空白与常见标点，让「Python 」和「python」算同一条 */
-export const normalizeSkill = (s: string): string =>
+const normalizeSkill = (s: string): string =>
   s
     .toLowerCase()
     .replace(/[\s·、,，;；/|（）()【】\[\]]/g, "")
     .trim();
 
 /** 拉丁/数字词 */
-export const latinTokens = (text: string): string[] =>
+const latinTokens = (text: string): string[] =>
   text.match(/[a-z][a-z0-9+#.]*/g) ?? [];
 
 /**
@@ -101,7 +101,7 @@ const isBoilerplateRun = (run: string): boolean =>
  * 任意片段一定也被某个极大公共子串包含，反过来说，非套话的片段
  * 必然属于某个非套话的极大公共子串。
  */
-export const maximalCommonRuns = (a: string, b: string): string[] => {
+const maximalCommonRuns = (a: string, b: string): string[] => {
   const rows = a.length;
   const cols = b.length;
   if (rows === 0 || cols === 0) return [];
