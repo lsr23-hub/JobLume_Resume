@@ -1,0 +1,46 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    /* 要求 → 经历 的连线：虚线流动，表示「这条要求由这条经历支撑」 */
+    @keyframes flow { from { stroke-dashoffset: 20; } to { stroke-dashoffset: 0; } }
+    @keyframes dot-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+    .flow { animation: flow 1.4s linear infinite; }
+    .dot { animation: dot-pulse 3s ease-in-out infinite; }
+    .dot-2 { animation: dot-pulse 3s ease-in-out infinite; animation-delay: 0.6s; }
+    .dot-3 { animation: dot-pulse 3s ease-in-out infinite; animation-delay: 1.2s; }
+  </style>
+
+  <!-- 背景卡片 -->
+  <rect x="80" y="50" width="240" height="200" rx="12" fill="#F9F9F7" stroke="#E6E6E3" stroke-width="2"/>
+  <rect x="80" y="50" width="240" height="30" rx="12" fill="#F2F0E9" fill-opacity="0.5"/>
+  <rect x="80" y="70" width="240" height="10" fill="#F2F0E9" fill-opacity="0.5"/>
+  <circle cx="100" cy="65" r="4" fill="#E6E6E3"/>
+  <circle cx="115" cy="65" r="4" fill="#E6E6E3"/>
+
+  <!-- 左：JD 拆出的要求项 -->
+  <g>
+    <circle cx="100" cy="103" r="4" fill="#1B1B18" class="dot"/>
+    <rect x="112" y="96" width="80" height="14" rx="3" fill="#1B1B18"/>
+
+    <circle cx="100" cy="137" r="4" fill="#91918E" class="dot-2"/>
+    <rect x="112" y="130" width="64" height="14" rx="3" fill="#91918E" fill-opacity="0.55"/>
+
+    <circle cx="100" cy="171" r="4" fill="#91918E" class="dot-3"/>
+    <rect x="112" y="164" width="72" height="14" rx="3" fill="#91918E" fill-opacity="0.55"/>
+  </g>
+
+  <!-- 右：经历条目 -->
+  <g>
+    <rect x="248" y="90" width="56" height="26" rx="6" fill="#F2F0E9" stroke="#E6E6E3" stroke-width="2"/>
+    <rect x="256" y="99" width="40" height="8" rx="2" fill="#1B1B18" fill-opacity="0.35"/>
+
+    <rect x="248" y="154" width="56" height="26" rx="6" fill="#F2F0E9" stroke="#E6E6E3" stroke-width="2"/>
+    <rect x="256" y="163" width="40" height="8" rx="2" fill="#1B1B18" fill-opacity="0.35"/>
+  </g>
+
+  <!-- 支撑关系连线 -->
+  <g stroke="#1B1B18" stroke-width="2" fill="none" stroke-dasharray="4 4" opacity="0.45">
+    <path d="M204 103 C 226 103, 226 103, 246 103" class="flow"/>
+    <path d="M204 137 C 226 137, 226 167, 246 167" class="flow"/>
+    <path d="M204 171 C 226 171, 226 167, 246 167" class="flow"/>
+  </g>
+</svg>

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "@/i18n/compat/client";
 import {
-  AlertCircle,
   ShieldCheck,
   ShieldAlert,
   Edit2,
@@ -14,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import PdfExport from "../shared/PdfExport";
 import ThemeToggle from "../shared/ThemeToggle";
 import { useResumeStore } from "@/store/useResumeStore";
-import { useGrammarCheck } from "@/hooks/useGrammarCheck";
 import {
   Tooltip,
   TooltipContent,
@@ -22,7 +20,6 @@ import {
   TooltipTrigger
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { GrammarCheckDrawer } from "./grammar/GrammarCheckDrawer";
 import { getFileHandle, getConfig } from "@/utils/fileSystem";
 
 interface EditorHeaderProps {
@@ -38,7 +35,6 @@ export function EditorHeader({ isMobile }: EditorHeaderProps) {
     canUndo,
     canRedo,
   } = useResumeStore();
-  const { errors } = useGrammarCheck();
   const router = useRouter();
   const t = useTranslations();
   const undoLabel = t("richEditor.undo");
@@ -227,19 +223,6 @@ export function EditorHeader({ isMobile }: EditorHeaderProps) {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <GrammarCheckDrawer />
-          {errors.length > 0 && (
-             <div 
-                className="flex items-center space-x-1 cursor-pointer animate-pulse"
-                onClick={() => document.dispatchEvent(new CustomEvent('open-grammar-drawer'))}
-             >
-                  <AlertCircle className="w-4 h-4 text-red-500" />
-                  <span className="text-sm text-red-500">
-                    {t("grammarCheck.found_issues", { count: errors.length })}
-                  </span>
-             </div>
-          )}
-
           <ThemeToggle></ThemeToggle>
           <div className="md:flex items-center ">
             <PdfExport />

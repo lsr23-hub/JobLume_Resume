@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, memo } from "react";
+import { useState, useEffect, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, Edit2, Menu, PanelLeft, Minimize2 } from "lucide-react";
 import { EditorHeader } from "@/components/editor/EditorHeader";
@@ -166,12 +166,6 @@ export default function Home() {
   const [editPanelCollapsed, setEditPanelCollapsed] = useState(false);
   const [previewPanelCollapsed, setPreviewPanelCollapsed] = useState(false);
   const [panelSizes, setPanelSizes] = useState<number[]>(LAYOUT_CONFIG.DEFAULT);
-
-  // Create a ref for the resume content that PreviewDock can access
-  // Currently we can't get the inner ref easily across component boundaries
-  // But we need to pass a mock or implement forwardRef in PreviewPanel later
-  // For now we pass null to satisfy the prop requirement
-  const resumeContentRef = React.useRef<HTMLDivElement>(null);
 
   const toggleSidePanel = () => {
     setSidePanelCollapsed(!sidePanelCollapsed);
@@ -366,7 +360,6 @@ export default function Home() {
           toggleSidePanel={toggleSidePanel}
           toggleEditPanel={toggleEditPanel}
           togglePreviewPanel={togglePreviewPanel}
-          resumeContentRef={resumeContentRef}
         />
       </div>
 

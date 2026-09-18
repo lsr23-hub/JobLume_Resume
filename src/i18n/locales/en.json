@@ -37,13 +37,13 @@
       "title": "Why Choose JobLume?",
       "subtitle": "We provide an all-in-one resume solution to make your job search journey smoother",
       "ai": {
-        "badge": "AI Smart Check",
-        "title": "Smart Detection, Professional Advice",
-        "description": "Built-in smart grammar check, automatically identifies inappropriate expressions, provides professional modification suggestions, making your resume more outstanding.",
-        "item1": "Intelligent enhancement",
-        "item1_description": "AI automatically optimizes content expression, making your resume more professional",
-        "item2": "Grammar check",
-        "item2_description": "Automatically detects and corrects grammar and spelling errors"
+        "badge": "AI Judgement",
+        "title": "AI judges, never rewrites",
+        "description": "Breaks a job description into individual requirements, checks each one against your experience, and ranks what fits. Every judgement opens to the evidence behind it.",
+        "item1": "Requirement by requirement",
+        "item1_description": "Hard, nice-to-have and duties, each pointing at the experience behind it",
+        "item2": "Automatic categorisation",
+        "item2_description": "Tags your experience so the generic resume ranks it sensibly"
       },
       "storage": {
         "badge": "Local Storage",
@@ -64,7 +64,7 @@
     },
     "news": {
       "label": "News",
-      "content": "New AI Resume Enhancement Feature is Live"
+      "content": "New: AI matching against a job description is live"
     },
     "footer": {
       "copyright": " 2025 JobLume. All rights reserved."
@@ -285,13 +285,6 @@
   },
   "previewDock": {
     "switchTemplate": "Switch Template",
-    "grammarCheck": {
-      "idle": "AI Grammar Check",
-      "checking": "Checking...",
-      "configurePrompt": "Please configure AI Model",
-      "configureButton": "Configure",
-      "errorToast": "Grammar check failed, please try again"
-    },
     "sidePanel": {
       "expand": "Expand Side Panel",
       "collapse": "Collapse Side Panel"
@@ -615,7 +608,6 @@
     "orderedList": "Ordered List",
     "undo": "Undo",
     "redo": "Redo",
-    "aiPolish": "AI Polish",
     "paragraph": "Paragraph",
     "heading1": "Heading 1",
     "heading2": "Heading 2",
@@ -712,36 +704,6 @@
       "skill": "Skill"
     }
   },
-  "aiPolishDialog": {
-    "title": "AI Polish",
-    "description": {
-      "ready": "Add optional instructions, then click \"Start polish\"",
-      "polishing": "Polishing your content...",
-      "finished": "Content has been optimized, please check the result"
-    },
-    "error": {
-      "configRequired": "Please configure AI model first",
-      "polishFailed": "Polish failed",
-      "applied": "Polish content applied"
-    },
-    "content": {
-      "original": "Original Content",
-      "polished": "Polished Content",
-      "preview": "Polished",
-      "diff": "Changes",
-      "diffHint": "Word-by-word against the original: highlighted = not in the original, struck through = removed or rewritten. This view shows the raw Markdown.",
-      "diffSummary": "{added} additions (~{chars} chars) · {removed} removals/rewrites",
-      "diffNoChange": "Identical to the original — nothing added or removed"
-    },
-    "customInstructions": "Custom instructions",
-    "customInstructionsPlaceholder": "e.g. Use more technical terms, highlight metrics, keep tone formal… (optional)",
-    "button": {
-      "start": "Start polish",
-      "regenerate": "Regenerate",
-      "generating": "Generating...",
-      "apply": "Apply Content"
-    }
-  },
   "photoConfig": {
     "title": "Photo Settings",
     "description": "Customize your resume photo",
@@ -795,24 +757,6 @@
       "confirmText": "Delete",
       "cancelText": "Cancel"
     }
-  },
-  "grammarCheck": {
-    "title": "AI Grammar Check",
-    "description": "Found {count} suggestions",
-    "exit": "Exit",
-    "spelling": "Spelling",
-    "punctuation": "Punctuation",
-    "original": "Original",
-    "error_point": "Error",
-    "suggestion": "Suggestion",
-    "reason": "Reason",
-    "accept": "Apply",
-    "ignore": "Ignore",
-    "found_issues": "Found {count} issues",
-    "applied_success": "Changes applied",
-    "apply_error": "Text not found, cannot apply automatically",
-    "no_errors_title": "Perfect!",
-    "no_errors_desc": "No grammar or punctuation errors found."
   },
   "faqDialog": {
     "title": "Frequently Asked Questions (FAQ)",

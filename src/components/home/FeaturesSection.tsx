@@ -16,12 +16,12 @@ const features = [
       {
         title: "features.ai.item1",
         description: "features.ai.item1_description",
-        image: "/features/svg/polish.svg",
+        image: "/features/svg/requirements.svg",
       },
       {
         title: "features.ai.item2",
         description: "features.ai.item2_description",
-        image: "/features/svg/grammar.svg",
+        image: "/features/svg/categories.svg",
       },
     ],
   },

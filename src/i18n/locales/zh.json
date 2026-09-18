@@ -37,13 +37,13 @@
       "title": "为什么选择职光简历？",
       "subtitle": "我们提供一站式简历解决方案，让您的求职之路更加顺畅",
       "ai": {
-        "badge": "AI 驱动",
-        "title": "智能识别，专业建议",
-        "description": "内置智能语法检查，自动识别不恰当的表达，提供专业的修改建议，让您的简历更加出色。",
-        "item1": "智能润色",
-        "item1_description": "AI 自动优化文案表达，让简历更专业",
-        "item2": "语法检查",
-        "item2_description": "自动检测并修正语法和拼写错误"
+        "badge": "AI 判定",
+        "title": "AI 只做判断，不改你的文字",
+        "description": "把招聘要求拆成一条条，逐条对照你的经历，给出匹配名次与覆盖情况。每条判断都能展开看依据 —— AI 不代写任何内容。",
+        "item1": "要求逐条对照",
+        "item1_description": "拆出硬性、加分与职责，每条指向支撑它的经历",
+        "item2": "经历自动归类",
+        "item2_description": "为数据库里的经历补上类别，通用简历的排序因此更合理"
       },
       "storage": {
         "badge": "隐私安全",
@@ -65,7 +65,7 @@
     },
     "news": {
       "label": "新闻",
-      "content": " 全新的 AI 简历优化功能已上线"
+      "content": "新：针对岗位 JD 的智能匹配分析已上线"
     },
     "cta": {
       "title": "开启你的新职业篇章",
@@ -565,7 +565,6 @@
     "orderedList": "有序列表",
     "undo": "撤销",
     "redo": "重做",
-    "aiPolish": "AI 润色",
     "paragraph": "正文",
     "heading1": "标题 1",
     "heading2": "标题 2",
@@ -707,13 +706,6 @@
   },
   "previewDock": {
     "switchTemplate": "切换模板",
-    "grammarCheck": {
-      "idle": "AI语法纠错",
-      "checking": "检查中...",
-      "configurePrompt": "请先配置 ApiKey 和 模型Id",
-      "configureButton": "去配置",
-      "errorToast": "语法检查失败，请重试"
-    },
     "sidePanel": {
       "expand": "展开侧边栏",
       "collapse": "收起侧边栏"
@@ -757,36 +749,6 @@
       "clickToConfigure": "点击前往设置"
     }
   },
-  "aiPolishDialog": {
-    "title": "AI 润色",
-    "description": {
-      "ready": "填写可选的自定义要求后，点击「开始润色」",
-      "polishing": "正在为您润色内容...",
-      "finished": "已经为您优化了内容，请查看效果"
-    },
-    "error": {
-      "configRequired": "请先配置 AI 模型",
-      "polishFailed": "润色失败",
-      "applied": "已应用润色内容"
-    },
-    "content": {
-      "original": "原始内容",
-      "polished": "润色后的内容",
-      "preview": "润色后",
-      "diff": "改动",
-      "diffHint": "与原文逐字对比：高亮＝原文没有的内容，删除线＝被删改的内容。此视图显示原始 Markdown 文本。",
-      "diffSummary": "新增 {added} 处（约 {chars} 字）· 删改 {removed} 处",
-      "diffNoChange": "与原文一致，没有新增或删改"
-    },
-    "customInstructions": "自定义要求",
-    "customInstructionsPlaceholder": "例如：请用更技术化的表述、突出量化成果、语气偏正式…（选填，留空则按默认规则润色）",
-    "button": {
-      "start": "开始润色",
-      "regenerate": "重新生成",
-      "generating": "生成中...",
-      "apply": "应用内容"
-    }
-  },
   "templates": {
     "switchTemplate": "切换模板"
   },
@@ -797,24 +759,6 @@
       "confirmText": "删除",
       "cancelText": "取消"
     }
-  },
-  "grammarCheck": {
-    "title": "AI 语法检查",
-    "description": "发现 {count} 个建议优化项",
-    "exit": "退出检查",
-    "spelling": "错别字",
-    "punctuation": "标点符号",
-    "original": "原文",
-    "error_point": "错误点",
-    "suggestion": "建议修改",
-    "reason": "原因",
-    "accept": "应用",
-    "ignore": "忽略",
-    "found_issues": "发现 {count} 个问题",
-    "applied_success": "已应用修改",
-    "apply_error": "未找到对应文本，无法自动修改",
-    "no_errors_title": "太棒了！",
-    "no_errors_desc": "文档非常完美，没有发现任何错别字或标点错误。"
   },
   "faqDialog": {
     "title": "常见问题 (FAQ)",

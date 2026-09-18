@@ -13,8 +13,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import RichTextEditor from "../shared/rich-editor/RichEditor";
-import AIPolishDialog from "../shared/ai/AIPolishDialog";
-import { useAIConfiguration } from "@/hooks/useAIConfiguration";
 import { UnifiedDateInput } from "../ui/unified-date-input";
 import { UnifiedDateRangeInput } from "../ui/unified-date-range-input";
 
@@ -42,8 +40,6 @@ const Field = ({
   const [yearInput, setYearInput] = useState("");
   const [displayMonth, setDisplayMonth] = useState<Date>(new Date());
   const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
-  const [showPolishDialog, setShowPolishDialog] = useState(false);
-  const { checkConfiguration } = useAIConfiguration();
   const t = useTranslations();
 
   const currentDate = useMemo(
@@ -177,22 +173,8 @@ const Field = ({
             content={value || ""}
             onChange={onChange}
             placeholder={placeholder}
-            onPolish={() => {
-              if (checkConfiguration()) {
-                setShowPolishDialog(true);
-              }
-            }}
           />
         </div>
-
-        <AIPolishDialog
-          open={showPolishDialog}
-          onOpenChange={setShowPolishDialog}
-          content={value || ""}
-          onApply={(content) => {
-            onChange(content);
-          }}
-        />
       </motion.div>
     );
   }

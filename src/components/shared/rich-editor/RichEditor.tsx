@@ -29,7 +29,6 @@ import {
   Redo,
   PaintBucket,
   Highlighter,
-  Wand2,
   Link2,
   Unlink,
 } from "lucide-react";
@@ -49,7 +48,6 @@ interface RichTextEditorProps {
   content?: string;
   onChange: (content: string) => void;
   placeholder?: string;
-  onPolish?: () => void;
 }
 
 interface ColorOption {
@@ -433,7 +431,6 @@ const RichTextEditor = ({
   content = "",
   placeholder = "",
   onChange,
-  onPolish,
 }: RichTextEditorProps) => {
   const t = useTranslations("richEditor");
   const initialContent = useMemo(
@@ -657,22 +654,6 @@ const RichTextEditor = ({
           >
             <Redo className="h-4 w-4" />
           </MenuButton>
-          {onPolish && (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onPolish();
-              }}
-              className="h-8 px-3 text-xs gap-1.5 ml-1 border-primary/20 hover:border-primary/40 text-primary hover:bg-primary/5 transition-all duration-300 group"
-            >
-              <Wand2 className="h-3 w-3 group-hover:rotate-12 transition-transform" />
-              {t("aiPolish")}
-            </Button>
-          )}
         </div>
       </div>
 
