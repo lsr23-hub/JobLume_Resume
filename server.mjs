@@ -92,11 +92,54 @@ function appendSetCookie(res, value) {
   res.setHeader("set-cookie", [String(existing), value]);
 }
 
+const startedAt = Date.now();
+
+/**
+ * 健康检查。
+ *
+ * 放在静态文件与路由之前，所以它不经过应用渲染，也不受 /api 的限流影响 ——
+ * 探针被限流会把一次限流误报成服务不可用。
+ *
+ * 能返回 200 就说明：HTTP 服务在收连接，且 dist/server/server.js 已经加载成功
+ * （加载失败的话进程起不来）。刻意不做更深的依赖检查：这个应用没有数据库，
+ * 上游 LLM 是用户自带 key、按需调用的，把它们算进存活判定会让探针在
+ * 用户没配 key 时误报故障。
+ */
+function handleHealthz(req, res) {
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    res.statusCode = 405;
+    res.setHeader("Allow", "GET, HEAD");
+    res.end();
+    return;
+  }
+
+  const body = JSON.stringify({
+    status: "ok",
+    uptimeSec: Math.round((Date.now() - startedAt) / 1000)
+  });
+
+  res.statusCode = 200;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Content-Length", Buffer.byteLength(body));
+
+  if (req.method === "HEAD") {
+    res.end();
+    return;
+  }
+  res.end(body);
+}
+
 createServer(async (req, res) => {
   try {
     const hostHeader = req.headers.host || `localhost:${port}`;
     const protocol = (req.headers["x-forwarded-proto"] || "http").toString().split(",")[0].trim();
     const url = new URL(req.url || "/", `${protocol}://${hostHeader}`);
+
+    if (url.pathname === "/healthz") {
+      handleHealthz(req, res);
+      return;
+    }
 
     if (tryServeStatic(req, res, url)) return;
 

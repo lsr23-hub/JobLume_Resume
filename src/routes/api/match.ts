@@ -23,10 +23,15 @@ interface MatchRequest {
   prompt: string;
 }
 
+import { guardRequest } from "@/lib/server/rateLimit";
+
 export const Route = createFileRoute("/api/match")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const limited = guardRequest(request, "ai");
+        if (limited) return limited;
+
         try {
           const { apiKey, model, modelType, apiEndpoint, prompt } =
             (await request.json()) as MatchRequest;

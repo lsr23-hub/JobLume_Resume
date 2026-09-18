@@ -77,10 +77,15 @@ const readCapped = async (
   return { ok: true, bytes: new Uint8Array(await new Blob(chunks).arrayBuffer()) };
 };
 
+import { guardRequest } from "@/lib/server/rateLimit";
+
 export const Route = createFileRoute("/api/proxy/image")({
   server: {
     handlers: {
       GET: async ({ request }) => {
+        const limited = guardRequest(request, "image");
+        if (limited) return limited;
+
         try {
           const raw = new URL(request.url).searchParams.get("url");
           if (!raw) return fail("缺少图片URL参数", 400);

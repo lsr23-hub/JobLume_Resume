@@ -8,4 +8,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      # 前面挂了反向代理就打开它，否则所有请求会被当成同一个来源共用一个限流额度。
+      # compose 这里是直接暴露端口，所以默认不设。详见 README「部署」。
+      # - TRUST_PROXY=1
     restart: always

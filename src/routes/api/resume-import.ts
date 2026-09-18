@@ -39,10 +39,15 @@ const extractBase64Payload = (value: string) => {
   };
 };
 
+import { guardRequest } from "@/lib/server/rateLimit";
+
 export const Route = createFileRoute("/api/resume-import")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const limited = guardRequest(request, "ai");
+        if (limited) return limited;
+
         try {
           const body = await request.json();
           const { apiKey, model, content, images, locale } = body as {

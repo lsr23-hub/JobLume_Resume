@@ -18,10 +18,15 @@ const parseUpstreamError = (raw: string, fallback: string) => {
   }
 };
 
+import { guardRequest } from "@/lib/server/rateLimit";
+
 export const Route = createFileRoute("/api/grammar")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const limited = guardRequest(request, "ai");
+        if (limited) return limited;
+
         try {
           const body = await request.json();
           const { apiKey, model, content, modelType, apiEndpoint } = body as {
