@@ -1,0 +1,166 @@
+{
+  "id": "fin-01",
+  "note": "金融+AI 档案 × 量化研究员 JD。最强匹配场景，取舍必然触发",
+  "dimensions": [
+    "强匹配",
+    "量化充分",
+    "触发取舍",
+    "长JD",
+    "中英混排"
+  ],
+  "profileFile": "fin-ai.json",
+  "jd": {
+    "company": "云图资本",
+    "position": "量化研究员（机器学习选股方向）",
+    "jdRaw": "岗位名称：量化研究员（机器学习选股方向）\n所属团队：量化投资部 · 股票alpha组\n工作地点：上海 · 浦东新区\n\n【岗位职责】\n1. 负责股票中高频因子的挖掘、检验与迭代，构建可持续的alpha来源；\n2. 应用机器学习与深度学习方法做因子合成、收益预测与组合优化；\n3. 建设与维护因子研究平台，推动研究流程的工程化与自动化；\n4. 与交易、风控团队协作，推动策略从研究到实盘的落地；\n5. 跟踪海内外量化研究前沿，定期输出研究报告。\n\n【任职要求】\n1. 硕士及以上学历，金融工程、数学、统计、计算机等相关专业；\n2. 3 年以上量化研究经验，有实盘策略或指数增强产品经验者优先；\n3. 精通 Python，熟悉 NumPy/Pandas 及至少一种深度学习框架（PyTorch/TensorFlow）；\n4. 扎实的数理统计基础，熟悉时间序列分析与组合优化理论；\n5. 熟悉常见机器学习模型，有因子合成或收益预测的实战经验；\n6. 良好的沟通协作能力，能独立承担研究课题并推动落地。\n\n【加分项】\n1. 有 NLP / 大模型在金融文本上的应用经验（研报、公告、舆情）；\n2. 有图神经网络或大规模图计算的工程经验；\n3. 持有 CFA / FRM 等金融证书；\n4. 有顶会论文或开源项目贡献。"
+  },
+  "gold": {
+    "requirements": {
+      "must": [
+        "硕士及以上学历",
+        "3 年以上量化研究经验",
+        "精通 Python",
+        "数理统计与时间序列",
+        "机器学习与因子合成实战"
+      ],
+      "nice": [
+        "实盘或指数增强产品经验",
+        "NLP/大模型金融文本",
+        "图神经网络工程经验",
+        "CFA/FRM",
+        "顶会论文或开源贡献"
+      ],
+      "responsibility": [
+        "因子挖掘与迭代",
+        "因子合成与收益预测",
+        "组合优化",
+        "研究平台工程化",
+        "研究与实盘落地"
+      ]
+    },
+    "entities": {
+      "edu-上海交通大学": {
+        "relevance": 3,
+        "level": "recommended",
+        "mustHave": true,
+        "reason": "金融学硕士，直接满足学历与专业要求"
+      },
+      "edu-南京大学": {
+        "relevance": 2,
+        "level": "recommended",
+        "reason": "数学本科，数理统计基础"
+      },
+      "exp-华泰证券": {
+        "relevance": 3,
+        "level": "recommended",
+        "mustHave": true,
+        "reason": "因子挖掘+组合优化+实盘指增，与职责 1/2/4 逐条对应"
+      },
+      "exp-蚂蚁集团": {
+        "relevance": 3,
+        "level": "recommended",
+        "reason": "图神经网络与大规模图计算，命中加分项 2"
+      },
+      "exp-九坤投资": {
+        "relevance": 3,
+        "level": "recommended",
+        "reason": "量化研究实习，因子研究与机器学习合成"
+      },
+      "exp-中信建投证券": {
+        "relevance": 2,
+        "level": "recommended",
+        "reason": "卖方金工研究，衍生品定价基础"
+      },
+      "exp-励学教育科技": {
+        "relevance": 0,
+        "level": "not_recommended",
+        "reason": "教育公司数据分析，与本岗位无关"
+      },
+      "proj-多因子选股平台「沧海」": {
+        "relevance": 3,
+        "level": "recommended",
+        "mustHave": true,
+        "reason": "因子研究平台建设，正对职责 3"
+      },
+      "proj-金融文本情感因子（FinBERT 微调）": {
+        "relevance": 3,
+        "level": "recommended",
+        "reason": "NLP 在金融文本上的应用，命中加分项 1"
+      },
+      "proj-图神经网络反欺诈系统「天网」": {
+        "relevance": 3,
+        "level": "recommended",
+        "reason": "2 亿节点图上的工程落地，命中加分项 2"
+      },
+      "proj-大学生数学建模竞赛培训平台": {
+        "relevance": 0,
+        "level": "not_recommended",
+        "reason": "培训平台项目，技术栈与量化研究无关"
+      },
+      "campus-上海交通大学金融学院研究生会": {
+        "relevance": 1,
+        "level": "not_recommended",
+        "reason": "学生工作，岗位未涉及组织协调类职责"
+      },
+      "campus-南京大学数学建模协会": {
+        "relevance": 0,
+        "level": "not_recommended",
+        "reason": "本科社团经历，与岗位要求无关"
+      },
+      "campus-上海交通大学": {
+        "relevance": 0,
+        "level": "not_recommended",
+        "reason": "助教经历，岗位未要求教学能力"
+      },
+      "honor-国家奖学金（硕士）": {
+        "relevance": 1,
+        "level": "not_recommended",
+        "reason": "荣誉类信息，不体现岗位所需能力"
+      },
+      "honor-全国大学生数学建模竞赛 · 省一等奖": {
+        "relevance": 0,
+        "level": "not_recommended",
+        "reason": "本科竞赛奖项，距今较久"
+      },
+      "honor-Kaggle 量化金融竞赛 Top 3%": {
+        "relevance": 2,
+        "level": "recommended",
+        "reason": "量化金融竞赛成绩，可佐证建模与因子研究能力"
+      },
+      "lang-英语": {
+        "relevance": 1,
+        "level": "not_recommended",
+        "reason": "岗位未对英语水平提出明确要求"
+      },
+      "lang-日语": {
+        "relevance": 0,
+        "level": "not_recommended",
+        "reason": "岗位未要求日语能力"
+      },
+      "lang-普通话": {
+        "relevance": 0,
+        "level": "not_recommended",
+        "reason": "岗位未对普通话等级提出要求"
+      }
+    },
+    "idealSelection": [
+      "edu-上海交通大学",
+      "edu-南京大学",
+      "exp-华泰证券",
+      "exp-蚂蚁集团",
+      "exp-九坤投资",
+      "proj-多因子选股平台「沧海」",
+      "proj-金融文本情感因子（FinBERT 微调）",
+      "proj-图神经网络反欺诈系统「天网」",
+      "exp-中信建投证券",
+      "honor-Kaggle 量化金融竞赛 Top 3%"
+    ],
+    "targetPages": 1,
+    "missingSkills": [
+      "顶会论文或开源项目贡献"
+    ],
+    "unsupportedSkills": [
+      "FRM"
+    ]
+  }
+}

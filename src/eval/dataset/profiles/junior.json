@@ -1,0 +1,338 @@
+{
+ "refs": {
+  "edu-苏州大学": "junior-edu-苏州大学",
+  "exp-苏州银行": "junior-exp-苏州银行",
+  "exp-苏州中学生涯": "junior-exp-苏州中学生涯",
+  "proj-用户流失预测": "junior-proj-用户流失预测",
+  "campus-学生会": "junior-campus-学生会",
+  "honor-奖学金": "junior-honor-奖学金",
+  "lang-英语": "junior-lang-英语"
+ },
+ "profile": {
+  "version": 1,
+  "basic": {
+   "name": "苏晚",
+   "title": "",
+   "employementStatus": "",
+   "email": "suwan.data@example.com",
+   "phone": "138 0013 8002",
+   "location": "江苏省 苏州市 姑苏区",
+   "birthDate": "2004/02/11",
+   "photo": "",
+   "photoConfig": {
+    "width": 90,
+    "height": 120,
+    "aspectRatio": "1:1",
+    "borderRadius": "none",
+    "customBorderRadius": 0,
+    "visible": false
+   },
+   "icons": {
+    "email": "Mail",
+    "phone": "Phone",
+    "birthDate": "CalendarRange",
+    "employementStatus": "Briefcase",
+    "location": "MapPin"
+   },
+   "fieldOrder": [
+    {
+     "id": "1",
+     "key": "name",
+     "label": "姓名",
+     "type": "text",
+     "visible": true
+    },
+    {
+     "id": "2",
+     "key": "title",
+     "label": "职位",
+     "type": "text",
+     "visible": true
+    },
+    {
+     "id": "3",
+     "key": "employementStatus",
+     "label": "状态",
+     "type": "text",
+     "visible": true
+    },
+    {
+     "id": "4",
+     "key": "birthDate",
+     "label": "生日",
+     "type": "date",
+     "visible": true
+    },
+    {
+     "id": "5",
+     "key": "email",
+     "label": "邮箱",
+     "type": "text",
+     "visible": true
+    },
+    {
+     "id": "6",
+     "key": "phone",
+     "label": "电话",
+     "type": "text",
+     "visible": true
+    },
+    {
+     "id": "7",
+     "key": "location",
+     "label": "所在地",
+     "type": "text",
+     "visible": true
+    }
+   ],
+   "customFields": [
+    {
+     "id": "title",
+     "label": "职位",
+     "value": "数据分析（应届）",
+     "icon": "Briefcase",
+     "visible": true,
+     "displayLabel": false
+    },
+    {
+     "id": "status",
+     "label": "状态",
+     "value": "在校 · 2026 届",
+     "icon": "Activity",
+     "visible": true,
+     "displayLabel": false
+    },
+    {
+     "id": "politics",
+     "label": "政治面貌",
+     "value": "共青团员",
+     "icon": "Flag",
+     "visible": true,
+     "displayLabel": false
+    },
+    {
+     "id": "website",
+     "label": "个人网站",
+     "value": "",
+     "icon": "Globe",
+     "visible": false,
+     "displayLabel": false
+    },
+    {
+     "id": "portfolio",
+     "label": "作品集",
+     "value": "github.com/suwan-data",
+     "icon": "Github",
+     "visible": true,
+     "displayLabel": false
+    },
+    {
+     "id": "hometown",
+     "label": "籍贯",
+     "value": "江苏苏州",
+     "icon": "MapPin",
+     "visible": false,
+     "displayLabel": false
+    },
+    {
+     "id": "salary",
+     "label": "期望薪资",
+     "value": "8-12K",
+     "icon": "Wallet",
+     "visible": false,
+     "displayLabel": false
+    },
+    {
+     "id": "availability",
+     "label": "到岗时间",
+     "value": "2026 年 7 月",
+     "icon": "Clock",
+     "visible": false,
+     "displayLabel": false
+    }
+   ],
+   "githubKey": "",
+   "githubUseName": "",
+   "githubContributionsVisible": false,
+   "layout": "left"
+  },
+  "entities": {
+   "junior-edu-苏州大学": {
+    "id": "junior-edu-苏州大学",
+    "type": "education",
+    "sectionId": "education",
+    "title": "苏州大学",
+    "subtitle": "统计学 · 本科 · GPA 3.5/4.0",
+    "dateRange": "2022/09 - 2026/06",
+    "description": "<ul><li>主修课程：概率论与数理统计、回归分析、多元统计、时间序列、R 语言与数据分析</li><li>毕业论文《基于逻辑回归的用户流失预测模型》</li></ul>",
+    "tags": [
+     "统计"
+    ],
+    "skills": [],
+    "metrics": [],
+    "order": 0,
+    "createdAt": "2026-09-18T00:00:00.000Z",
+    "updatedAt": "2026-09-18T00:00:00.000Z",
+    "degree": "学士",
+    "gpa": "3.5/4.0",
+    "endTimestamp": 1782777600000,
+    "isCurrent": false
+   },
+   "junior-exp-苏州银行": {
+    "id": "junior-exp-苏州银行",
+    "type": "experience",
+    "sectionId": "experience",
+    "title": "苏州银行",
+    "subtitle": "数据分析实习生（零售业务部）",
+    "dateRange": "2025/07 - 2025/12",
+    "description": "<ul><li>用 SQL 从数仓取数，产出零售客户分层报表，供 3 个业务团队周会使用</li><li>用 Excel 与 Python 清洗 8 万条客户交易记录，修正 1200 条异常值</li></ul>",
+    "tags": [
+     "金融"
+    ],
+    "skills": [
+     "SQL",
+     "Python",
+     "Excel"
+    ],
+    "metrics": [],
+    "order": 0,
+    "createdAt": "2026-09-18T00:00:00.000Z",
+    "updatedAt": "2026-09-18T00:00:00.000Z",
+    "endTimestamp": 1767139200000,
+    "isCurrent": false
+   },
+   "junior-exp-苏州中学生涯": {
+    "id": "junior-exp-苏州中学生涯",
+    "type": "experience",
+    "sectionId": "experience",
+    "title": "苏州中学",
+    "subtitle": "教务数据整理（勤工助学）",
+    "dateRange": "2024/09 - 2025/01",
+    "description": "<ul><li>整理 6 个学期的成绩数据，输出各班成绩分布与教师评价汇总表</li></ul>",
+    "tags": [
+     "教育"
+    ],
+    "skills": [
+     "Excel"
+    ],
+    "metrics": [],
+    "order": 1,
+    "createdAt": "2026-09-18T00:00:00.000Z",
+    "updatedAt": "2026-09-18T00:00:00.000Z",
+    "endTimestamp": 1738281600000,
+    "isCurrent": false
+   },
+   "junior-proj-用户流失预测": {
+    "id": "junior-proj-用户流失预测",
+    "type": "project",
+    "sectionId": "projects",
+    "title": "用户流失预测模型",
+    "subtitle": "课程项目 · 独立完成",
+    "dateRange": "2025/03 - 2025/06",
+    "description": "<ul><li>基于 5 万条脱敏数据，用逻辑回归与随机森林做流失预测，AUC 0.79</li><li>用 SHAP 解释特征贡献，输出业务可读的结论</li></ul>",
+    "tags": [
+     "数据"
+    ],
+    "skills": [
+     "Python",
+     "scikit-learn",
+     "SHAP"
+    ],
+    "metrics": [],
+    "order": 0,
+    "createdAt": "2026-09-18T00:00:00.000Z",
+    "updatedAt": "2026-09-18T00:00:00.000Z",
+    "endTimestamp": 1751241600000,
+    "isCurrent": false
+   },
+   "junior-campus-学生会": {
+    "id": "junior-campus-学生会",
+    "type": "campus",
+    "sectionId": "campus",
+    "title": "苏州大学数学科学学院学生会",
+    "subtitle": "学习部干事",
+    "dateRange": "2023/09 - 2024/06",
+    "description": "<ul><li>组织 4 场学业分享会，累计参与 300+ 人次</li></ul>",
+    "tags": [],
+    "skills": [],
+    "metrics": [],
+    "order": 0,
+    "createdAt": "2026-09-18T00:00:00.000Z",
+    "updatedAt": "2026-09-18T00:00:00.000Z",
+    "endTimestamp": 1719705600000,
+    "isCurrent": false
+   },
+   "junior-honor-奖学金": {
+    "id": "junior-honor-奖学金",
+    "type": "honors",
+    "sectionId": "honors",
+    "title": "校级二等奖学金",
+    "subtitle": "",
+    "dateRange": "2024/10",
+    "description": "",
+    "tags": [],
+    "skills": [],
+    "metrics": [],
+    "order": 0,
+    "createdAt": "2026-09-18T00:00:00.000Z",
+    "updatedAt": "2026-09-18T00:00:00.000Z",
+    "endTimestamp": 1727740800000,
+    "isCurrent": false
+   },
+   "junior-lang-英语": {
+    "id": "junior-lang-英语",
+    "type": "languages",
+    "sectionId": "languages",
+    "title": "英语",
+    "subtitle": "CET-6 · 可阅读英文文档",
+    "dateRange": "",
+    "description": "",
+    "tags": [],
+    "skills": [],
+    "metrics": [],
+    "order": 0,
+    "createdAt": "2026-09-18T00:00:00.000Z",
+    "updatedAt": "2026-09-18T00:00:00.000Z",
+    "isCurrent": false
+   }
+  },
+  "sectionOrder": [
+   "basic",
+   "education",
+   "experience",
+   "skills",
+   "projects",
+   "selfEvaluation",
+   "campus",
+   "honors",
+   "languages"
+  ],
+  "skillGroups": [
+   {
+    "id": "skill-j1",
+    "name": "数据分析",
+    "content": "SQL、Python（pandas / numpy / scikit-learn）、Excel 高级函数",
+    "order": 0
+   },
+   {
+    "id": "skill-j2",
+    "name": "统计方法",
+    "content": "回归分析、假设检验、时间序列、A/B 实验基础",
+    "order": 1
+   },
+   {
+    "id": "skill-j3",
+    "name": "可视化",
+    "content": "Matplotlib、Tableau 基础",
+    "order": 2
+   }
+  ],
+  "certificateText": "大学英语六级 CET-6（548 分）",
+  "selfEvaluationContent": "<p>统计学本科应届，做过银行零售业务部的数据分析实习，习惯先确认业务口径再动手取数。</p>",
+  "meta": {
+   "createdAt": "2026-09-18T00:00:00.000Z",
+   "updatedAt": "2026-09-18T00:00:00.000Z",
+   "lastBackupAt": null
+  }
+ }
+}

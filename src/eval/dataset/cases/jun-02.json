@@ -1,0 +1,31 @@
+{
+  "id": "jun-02",
+  "note": "应届生 × 数据开发岗。统计学背景相关但工程栈完全缺失 —— 弱匹配下的诚实度测试",
+  "dimensions": ["弱匹配", "跨领域", "经历少", "不触发取舍"],
+  "profileFile": "junior.json",
+  "jd": {
+    "company": "启元科技",
+    "position": "数据开发工程师（校招）",
+    "jdRaw": "岗位名称：数据开发工程师（2026 届校招）\n所属团队：数据平台部\n工作地点：杭州\n\n【岗位职责】\n1. 负责离线与实时数据管道的开发与维护；\n2. 参与数据仓库分层建模，保障数据质量与时效；\n3. 配合数据分析师完成指标口径落地；\n4. 参与数据平台工具的建设与优化。\n\n【任职要求】\n1. 本科及以上学历，计算机、软件工程相关专业；\n2. 熟悉 Java 或 Scala，了解 Spark / Flink 等大数据计算框架；\n3. 熟练使用 SQL，理解数据仓库建模理论（维度建模）；\n4. 了解 Hadoop 生态与常见调度工具；\n5. 有大数据相关项目经验者优先。"
+  },
+  "gold": {
+    "requirements": {
+      "must": ["计算机/软件工程相关专业", "Java 或 Scala", "Spark/Flink 大数据框架", "SQL 与数据仓库建模"],
+      "nice": ["Hadoop 生态与调度工具", "大数据项目经验"],
+      "responsibility": ["数据管道开发", "数仓分层建模", "指标口径落地", "数据平台工具建设"]
+    },
+    "entities": {
+      "edu-苏州大学": { "relevance": 2, "level": "recommended", "reason": "统计学本科，数理基础相关但专业不完全对口，且缺工程课程" },
+      "exp-苏州银行": { "relevance": 2, "level": "recommended", "reason": "SQL 取数与数仓使用经验可用，但是使用方不是开发者" },
+      "exp-苏州中学生涯": { "relevance": 0, "level": "not_recommended", "reason": "成绩数据整理，与数据开发无关" },
+      "proj-用户流失预测": { "relevance": 1, "level": "not_recommended", "reason": "建模项目，与数据管道开发不是一回事" },
+      "campus-学生会": { "relevance": 0, "level": "not_recommended", "reason": "学生工作，与本岗位无关" },
+      "honor-奖学金": { "relevance": 1, "level": "not_recommended", "reason": "荣誉信息，不体现工程能力" },
+      "lang-英语": { "relevance": 1, "level": "not_recommended", "reason": "岗位未对英语提出要求" }
+    },
+    "idealSelection": ["edu-苏州大学", "exp-苏州银行"],
+    "targetPages": 1,
+    "missingSkills": ["Java / Scala 编程能力", "Spark / Flink 大数据框架", "数据仓库维度建模理论"],
+    "unsupportedSkills": []
+  }
+}

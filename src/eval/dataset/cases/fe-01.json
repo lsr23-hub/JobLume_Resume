@@ -1,0 +1,39 @@
+{
+  "id": "fe-01",
+  "note": "前端档案 × 可视化方向。经历与岗位高度对口，但精确缺一项（可视化渲染）—— 测能不能识别出这个缺口",
+  "dimensions": ["强匹配", "量化充分", "触发取舍", "隐含要求"],
+  "profileFile": "frontend.json",
+  "jd": {
+    "company": "星图智能科技",
+    "position": "高级前端工程师（数据可视化方向）",
+    "jdRaw": "岗位名称：高级前端工程师（数据可视化方向）\n所属团队：企业智能产品部\n工作地点：北京 · 海淀区\n\n【岗位职责】\n1. 负责企业级数据分析与可视化产品的前端架构设计与核心模块开发；\n2. 主导大规模数据表格、图表等高性能渲染方案的选型与落地，保障万行级数据的流畅交互；\n3. 建设并维护团队内部组件库与设计规范，提升跨业务线的研发效率；\n4. 参与前端性能治理，持续优化首屏加载、交互响应等核心指标；\n5. 与产品、设计、后端紧密协作，推动技术方案评审与落地。\n\n【任职要求】\n1. 本科及以上学历，计算机相关专业，5 年以上前端开发经验；\n2. 精通 React 与 TypeScript，熟悉其原理与生态，有大型 SPA 架构经验；\n3. 有复杂数据可视化或大数据量渲染的实战经验（虚拟滚动、Canvas/WebGL、图表库等）；\n4. 熟悉前端工程化体系（构建工具、CI/CD、单元测试），有组件库或基建建设经验；\n5. 具备良好的性能优化意识，能定位并解决首屏、内存、渲染等性能问题；\n6. 有良好的沟通协作能力，能独立负责中等规模项目的技术方案与推进。\n\n【加分项】\n1. 有低代码 / 搭建平台相关经验；\n2. 有开源项目贡献经历；\n3. 有团队带教或技术管理经验。"
+  },
+  "gold": {
+    "requirements": {
+      "must": ["计算机相关专业", "5 年以上前端经验", "精通 React 与 TypeScript", "大数据量渲染或可视化", "前端工程化与组件库", "性能优化能力"],
+      "nice": ["低代码/搭建平台经验", "开源贡献", "团队带教经验"],
+      "responsibility": ["前端架构设计", "大数据量渲染方案", "组件库与设计规范", "性能治理", "跨职能协作"]
+    },
+    "entities": {
+      "edu-清华大学": { "relevance": 3, "level": "recommended", "mustHave": true, "reason": "计算机科学与技术硕士，满足学历与专业要求" },
+      "edu-武汉大学": { "relevance": 2, "level": "recommended", "reason": "软件工程本科，专业对口" },
+      "exp-字节跳动": { "relevance": 3, "level": "recommended", "mustHave": true, "reason": "高级前端 + 性能治理 + 低代码物料协议，与职责 3/4 逐条对应" },
+      "exp-美团": { "relevance": 3, "level": "recommended", "reason": "复杂表单渲染优化，属高性能渲染范畴" },
+      "proj-大促活动页搭建平台": { "relevance": 3, "level": "recommended", "mustHave": true, "reason": "搭建平台 + 渲染引擎优化，命中加分项 1" },
+      "proj-Aurora Design 组件库": { "relevance": 3, "level": "recommended", "reason": "组件库与 Design Token 体系，正对职责 3" },
+      "campus-清华大学计算机系研究生会": { "relevance": 1, "level": "not_recommended", "reason": "学生工作，岗位未要求" },
+      "campus-武汉大学 ACM 集训队": { "relevance": 0, "level": "not_recommended", "reason": "算法竞赛经历，与前端岗位无关" },
+      "honor-国家奖学金": { "relevance": 1, "level": "not_recommended", "reason": "荣誉信息，不体现前端能力" },
+      "honor-清华大学优秀毕业生": { "relevance": 1, "level": "not_recommended", "reason": "荣誉信息，与岗位能力无关" },
+      "lang-英语": { "relevance": 1, "level": "not_recommended", "reason": "岗位未对英语提出要求" },
+      "lang-日语": { "relevance": 0, "level": "not_recommended", "reason": "岗位未要求日语" }
+    },
+    "idealSelection": [
+      "edu-清华大学", "edu-武汉大学", "exp-字节跳动", "exp-美团",
+      "proj-大促活动页搭建平台", "proj-Aurora Design 组件库"
+    ],
+    "targetPages": 1,
+    "missingSkills": ["复杂数据可视化经验（Canvas/WebGL/图表库）"],
+    "unsupportedSkills": []
+  }
+}

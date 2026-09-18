@@ -1,0 +1,636 @@
+{
+ "refs": {
+  "edu-上海交通大学": "education-0000",
+  "edu-南京大学": "education-0001",
+  "exp-华泰证券": "experience-0002",
+  "exp-蚂蚁集团": "experience-0003",
+  "exp-九坤投资": "experience-0004",
+  "exp-中信建投证券": "experience-0005",
+  "exp-励学教育科技": "experience-0006",
+  "proj-多因子选股平台「沧海」": "projects-0007",
+  "proj-金融文本情感因子（FinBERT 微调）": "projects-0008",
+  "proj-图神经网络反欺诈系统「天网」": "projects-0009",
+  "proj-大学生数学建模竞赛培训平台": "projects-0010",
+  "campus-上海交通大学金融学院研究生会": "campus-0011",
+  "campus-南京大学数学建模协会": "campus-0012",
+  "campus-上海交通大学": "campus-0013",
+  "honor-国家奖学金（硕士）": "honors-0014",
+  "honor-全国大学生数学建模竞赛 · 省一等奖": "honors-0015",
+  "honor-Kaggle 量化金融竞赛 Top 3%": "honors-0016",
+  "lang-英语": "languages-0017",
+  "lang-日语": "languages-0018",
+  "lang-普通话": "languages-0019"
+ },
+ "profile": {
+  "version": 1,
+  "basic": {
+   "name": "沈亦舟",
+   "title": "",
+   "employementStatus": "",
+   "email": "shen.yizhou@example.com",
+   "phone": "138 0013 8001",
+   "location": "上海市 浦东新区 张江镇",
+   "birthDate": "1995/07/22",
+   "photo": "/demo-avatar.png",
+   "photoConfig": {
+    "width": 90,
+    "height": 120,
+    "aspectRatio": "3:4",
+    "borderRadius": "none",
+    "customBorderRadius": 0,
+    "visible": true
+   },
+   "icons": {
+    "email": "Mail",
+    "phone": "Phone",
+    "birthDate": "CalendarRange",
+    "employementStatus": "Briefcase",
+    "location": "MapPin"
+   },
+   "fieldOrder": [
+    {
+     "id": "1",
+     "key": "name",
+     "label": "姓名",
+     "type": "text",
+     "visible": true
+    },
+    {
+     "id": "2",
+     "key": "title",
+     "label": "职位",
+     "type": "text",
+     "visible": true
+    },
+    {
+     "id": "3",
+     "key": "employementStatus",
+     "label": "状态",
+     "type": "text",
+     "visible": true
+    },
+    {
+     "id": "4",
+     "key": "birthDate",
+     "label": "生日",
+     "type": "date",
+     "visible": true
+    },
+    {
+     "id": "5",
+     "key": "email",
+     "label": "邮箱",
+     "type": "text",
+     "visible": true
+    },
+    {
+     "id": "6",
+     "key": "phone",
+     "label": "电话",
+     "type": "text",
+     "visible": true
+    },
+    {
+     "id": "7",
+     "key": "location",
+     "label": "所在地",
+     "type": "text",
+     "visible": true
+    }
+   ],
+   "customFields": [
+    {
+     "id": "title",
+     "label": "职位",
+     "value": "量化研究员（AI 选股方向）",
+     "icon": "Briefcase",
+     "visible": true,
+     "displayLabel": false
+    },
+    {
+     "id": "status",
+     "label": "状态",
+     "value": "在职 · 考虑机会",
+     "icon": "Activity",
+     "visible": true,
+     "displayLabel": false
+    },
+    {
+     "id": "politics",
+     "label": "政治面貌",
+     "value": "群众",
+     "icon": "Flag",
+     "visible": true,
+     "displayLabel": false
+    },
+    {
+     "id": "website",
+     "label": "个人网站",
+     "value": "yizhou-shen.dev",
+     "icon": "Globe",
+     "visible": true,
+     "displayLabel": false
+    },
+    {
+     "id": "portfolio",
+     "label": "作品集",
+     "value": "github.com/yizhou-shen",
+     "icon": "Github",
+     "visible": true,
+     "displayLabel": false
+    },
+    {
+     "id": "hometown",
+     "label": "籍贯",
+     "value": "江苏南京",
+     "icon": "MapPin",
+     "visible": false,
+     "displayLabel": false
+    },
+    {
+     "id": "salary",
+     "label": "期望薪资",
+     "value": "50-70K",
+     "icon": "Wallet",
+     "visible": false,
+     "displayLabel": false
+    },
+    {
+     "id": "availability",
+     "label": "到岗时间",
+     "value": "一个月内",
+     "icon": "Clock",
+     "visible": false,
+     "displayLabel": false
+    }
+   ],
+   "githubKey": "",
+   "githubUseName": "",
+   "githubContributionsVisible": false,
+   "layout": "left"
+  },
+  "entities": {
+   "education-0000": {
+    "id": "education-0000",
+    "type": "education",
+    "sectionId": "education",
+    "title": "上海交通大学",
+    "subtitle": "金融学 · 硕士 · GPA 3.9/4.0",
+    "dateRange": "2017/09 - 2020/06",
+    "description": "<ul><li>研究方向为资产定价与机器学习，导师主持国家自然科学基金面上项目</li><li>学位论文《基于注意力机制的因子收益预测研究》获评学院优秀硕士论文</li><li>主修课程：高级计量经济学、随机过程、机器学习、固定收益证券、金融风险管理</li></ul>",
+    "tags": [
+     "金融"
+    ],
+    "skills": [],
+    "metrics": [],
+    "order": 0,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "gpa": "3.9/4.0",
+    "degree": "硕士",
+    "endTimestamp": 1593475200000,
+    "isCurrent": false
+   },
+   "education-0001": {
+    "id": "education-0001",
+    "type": "education",
+    "sectionId": "education",
+    "title": "南京大学",
+    "subtitle": "数学与应用数学 · 学士 · GPA 3.7/4.0",
+    "dateRange": "2013/09 - 2017/06",
+    "description": "<ul><li>主修课程：概率论、数理统计、数值分析、实变函数、随机过程、时间序列分析</li><li>辅修金融工程，完成 6 门专业核心课</li></ul>",
+    "tags": [
+     "数学"
+    ],
+    "skills": [],
+    "metrics": [],
+    "order": 1,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "gpa": "3.7/4.0",
+    "degree": "学士",
+    "endTimestamp": 1498780800000,
+    "isCurrent": false
+   },
+   "experience-0002": {
+    "id": "experience-0002",
+    "type": "experience",
+    "sectionId": "experience",
+    "title": "华泰证券",
+    "subtitle": "量化研究员（因子挖掘与组合优化）",
+    "dateRange": "2022/04 - 至今",
+    "description": "<ul><li>搭建基于 Transformer 的价量因子挖掘流水线，从 1,200+ 候选因子中自动筛选，样本外 IC 从 0.032 提升至 0.051</li><li>负责中证 500 指数增强产品的组合优化模块，年化超额收益 8.7%，信息比率 1.9</li><li>自研因子回测框架（Python + DolphinDB），全市场单次回测从 40 分钟压缩到 3 分钟</li><li>与交易台协作落地日内择时信号，日均收益提升 2.3bp</li></ul>",
+    "tags": [
+     "金融"
+    ],
+    "skills": [
+     "因子挖掘",
+     "组合优化",
+     "Python",
+     "Transformer"
+    ],
+    "metrics": [],
+    "order": 0,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "isCurrent": true
+   },
+   "experience-0003": {
+    "id": "experience-0003",
+    "type": "experience",
+    "sectionId": "experience",
+    "title": "蚂蚁集团",
+    "subtitle": "风控算法工程师",
+    "dateRange": "2020/07 - 2022/03",
+    "description": "<ul><li>负责支付反欺诈的图神经网络模型，在 2 亿节点的交易图上做团伙欺诈识别，召回率提升 11 个百分点</li><li>设计基于行为序列的异常检测模型（LSTM + Attention），资损率下降 27%</li><li>推动模型上线链路自动化，特征到线上模型的迭代周期从 2 周缩短至 3 天</li><li>与风控策略团队共建特征平台，沉淀 300+ 特征，跨场景复用率 60%</li></ul>",
+    "tags": [
+     "互联网"
+    ],
+    "skills": [
+     "图神经网络",
+     "PyTorch",
+     "风控建模",
+     "特征工程"
+    ],
+    "metrics": [],
+    "order": 1,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "endTimestamp": 1648684800000,
+    "isCurrent": false
+   },
+   "experience-0004": {
+    "id": "experience-0004",
+    "type": "experience",
+    "sectionId": "experience",
+    "title": "九坤投资",
+    "subtitle": "量化研究实习生",
+    "dateRange": "2019/06 - 2019/12",
+    "description": "<ul><li>复现并改进 12 篇因子研究论文，其中 3 个因子进入实盘观察池</li><li>用随机森林做因子非线性合成，样本外夏普比率从 1.4 提升到 1.8</li><li>独立完成高频量价数据的清洗与复权处理，覆盖 10 年全市场日频行情</li></ul>",
+    "tags": [
+     "金融"
+    ],
+    "skills": [
+     "机器学习",
+     "因子研究",
+     "Python"
+    ],
+    "metrics": [],
+    "order": 2,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "endTimestamp": 1577750400000,
+    "isCurrent": false
+   },
+   "experience-0005": {
+    "id": "experience-0005",
+    "type": "experience",
+    "sectionId": "experience",
+    "title": "中信建投证券",
+    "subtitle": "金融工程组 · 行业研究实习生",
+    "dateRange": "2018/07 - 2018/12",
+    "description": "<ul><li>撰写 8 篇金融工程专题报告，其中《可转债定价模型比较》被纳入客户路演材料</li><li>维护可转债与期权数据库，覆盖 400+ 标的的日频行情与条款数据</li></ul>",
+    "tags": [
+     "金融"
+    ],
+    "skills": [
+     "衍生品定价",
+     "研究报告",
+     "Wind"
+    ],
+    "metrics": [],
+    "order": 3,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "endTimestamp": 1546214400000,
+    "isCurrent": false
+   },
+   "experience-0006": {
+    "id": "experience-0006",
+    "type": "experience",
+    "sectionId": "experience",
+    "title": "励学教育科技",
+    "subtitle": "数据分析实习生",
+    "dateRange": "2017/07 - 2017/09",
+    "description": "<ul><li>用 SQL + Tableau 搭建课程转化漏斗看板，供周会复盘使用</li><li>分析 3 万条用户问卷，输出课程定价与排期建议</li></ul>",
+    "tags": [
+     "教育"
+    ],
+    "skills": [
+     "SQL",
+     "Tableau"
+    ],
+    "metrics": [],
+    "order": 4,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "endTimestamp": 1506729600000,
+    "isCurrent": false
+   },
+   "projects-0007": {
+    "id": "projects-0007",
+    "type": "project",
+    "sectionId": "projects",
+    "title": "多因子选股平台「沧海」",
+    "subtitle": "项目负责人",
+    "dateRange": "2023/02 - 2023/11",
+    "description": "<ul><li>从 0 搭建因子研究到组合构建的一体化平台，服务团队 6 名研究员</li><li>因子库覆盖 800+ 因子，内置去极值、中性化、正交化等标准处理链</li><li>引入 Optuna 做超参搜索，策略调优的迭代次数提升约 5 倍</li></ul>",
+    "tags": [
+     "金融"
+    ],
+    "skills": [
+     "Python",
+     "Airflow",
+     "ClickHouse",
+     "组合优化"
+    ],
+    "metrics": [],
+    "order": 0,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "link": "https://example.com/canghai",
+    "linkLabel": "项目主页",
+    "endTimestamp": 1701302400000,
+    "isCurrent": false
+   },
+   "projects-0008": {
+    "id": "projects-0008",
+    "type": "project",
+    "sectionId": "projects",
+    "title": "金融文本情感因子（FinBERT 微调）",
+    "subtitle": "独立开发",
+    "dateRange": "2021/05 - 2021/11",
+    "description": "<ul><li>在 12 万条券商研报与财经新闻上微调 FinBERT，情感分类 F1 达 0.89</li><li>把研报情感因子接入日频选股，与传统价量因子相关性仅 0.12，带来显著分散化收益</li><li>用 LIME 做可解释性分析，输出研究员可直接阅读的归因报告</li></ul>",
+    "tags": [
+     "金融",
+     "AI"
+    ],
+    "skills": [
+     "NLP",
+     "FinBERT",
+     "PyTorch",
+     "可解释性"
+    ],
+    "metrics": [],
+    "order": 1,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "link": "https://example.com/fin-sentiment",
+    "linkLabel": "代码仓库",
+    "endTimestamp": 1638230400000,
+    "isCurrent": false
+   },
+   "projects-0009": {
+    "id": "projects-0009",
+    "type": "project",
+    "sectionId": "projects",
+    "title": "图神经网络反欺诈系统「天网」",
+    "subtitle": "算法负责人",
+    "dateRange": "2021/03 - 2022/01",
+    "description": "<ul><li>基于 GraphSAGE 的团伙欺诈识别，在 2 亿节点、30 亿边的交易图上做分布式训练</li><li>设计二级邻居采样策略，单轮训练耗时从 6 小时降到 50 分钟</li><li>上线后团伙欺诈案件的识别量提升 3.2 倍</li></ul>",
+    "tags": [
+     "互联网"
+    ],
+    "skills": [
+     "图神经网络",
+     "分布式训练",
+     "PyTorch Geometric"
+    ],
+    "metrics": [],
+    "order": 2,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "endTimestamp": 1643587200000,
+    "isCurrent": false
+   },
+   "projects-0010": {
+    "id": "projects-0010",
+    "type": "project",
+    "sectionId": "projects",
+    "title": "大学生数学建模竞赛培训平台",
+    "subtitle": "队长",
+    "dateRange": "2016/03 - 2016/09",
+    "description": "<ul><li>组织 20 人队伍的系统培训，产出 12 套题解与可复用的代码模板</li><li>平台累计服务校内 300+ 名参赛学生</li></ul>",
+    "tags": [
+     "教育"
+    ],
+    "skills": [
+     "Python",
+     "Matlab"
+    ],
+    "metrics": [],
+    "order": 3,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "endTimestamp": 1475193600000,
+    "isCurrent": false
+   },
+   "campus-0011": {
+    "id": "campus-0011",
+    "type": "campus",
+    "sectionId": "campus",
+    "title": "上海交通大学金融学院研究生会",
+    "subtitle": "学术部部长",
+    "dateRange": "2018/09 - 2019/06",
+    "description": "<ul><li>组织 8 场量化投资系列讲座，累计参与 600+ 人次</li><li>牵头搭建学院量化策略竞赛平台，首届吸引 42 支队伍报名</li></ul>",
+    "tags": [],
+    "skills": [],
+    "metrics": [],
+    "order": 0,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "endTimestamp": 1561852800000,
+    "isCurrent": false
+   },
+   "campus-0012": {
+    "id": "campus-0012",
+    "type": "campus",
+    "sectionId": "campus",
+    "title": "南京大学数学建模协会",
+    "subtitle": "副会长",
+    "dateRange": "2015/09 - 2016/06",
+    "description": "<ul><li>组织校内数学建模竞赛，参赛队伍从 60 支增至 130 支</li><li>主讲 6 期建模入门培训，覆盖 200+ 名低年级学生</li></ul>",
+    "tags": [],
+    "skills": [],
+    "metrics": [],
+    "order": 1,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "endTimestamp": 1467244800000,
+    "isCurrent": false
+   },
+   "campus-0013": {
+    "id": "campus-0013",
+    "type": "campus",
+    "sectionId": "campus",
+    "title": "上海交通大学",
+    "subtitle": "《金融风险管理》课程助教",
+    "dateRange": "2019/02 - 2019/06",
+    "description": "<ul><li>批改 120 人次课程作业，组织 5 次习题课与考前答疑</li></ul>",
+    "tags": [],
+    "skills": [],
+    "metrics": [],
+    "order": 2,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "endTimestamp": 1561852800000,
+    "isCurrent": false
+   },
+   "honors-0014": {
+    "id": "honors-0014",
+    "type": "honors",
+    "sectionId": "honors",
+    "title": "国家奖学金（硕士）",
+    "subtitle": "",
+    "dateRange": "2018/10",
+    "description": "",
+    "tags": [],
+    "skills": [],
+    "metrics": [],
+    "order": 0,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "endTimestamp": 1538352000000,
+    "isCurrent": false
+   },
+   "honors-0015": {
+    "id": "honors-0015",
+    "type": "honors",
+    "sectionId": "honors",
+    "title": "全国大学生数学建模竞赛 · 省一等奖",
+    "subtitle": "",
+    "dateRange": "2016/09",
+    "description": "",
+    "tags": [],
+    "skills": [],
+    "metrics": [],
+    "order": 1,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "endTimestamp": 1472688000000,
+    "isCurrent": false
+   },
+   "honors-0016": {
+    "id": "honors-0016",
+    "type": "honors",
+    "sectionId": "honors",
+    "title": "Kaggle 量化金融竞赛 Top 3%",
+    "subtitle": "",
+    "dateRange": "2021/08",
+    "description": "",
+    "tags": [],
+    "skills": [],
+    "metrics": [],
+    "order": 2,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "endTimestamp": 1627776000000,
+    "isCurrent": false
+   },
+   "languages-0017": {
+    "id": "languages-0017",
+    "type": "languages",
+    "sectionId": "languages",
+    "title": "英语",
+    "subtitle": "CET-6 · 可熟练阅读英文文献与财报，能主持英文会议",
+    "dateRange": "",
+    "description": "",
+    "tags": [],
+    "skills": [],
+    "metrics": [],
+    "order": 0,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "isCurrent": false
+   },
+   "languages-0018": {
+    "id": "languages-0018",
+    "type": "languages",
+    "sectionId": "languages",
+    "title": "日语",
+    "subtitle": "JLPT N2 · 可阅读日文技术资料",
+    "dateRange": "",
+    "description": "",
+    "tags": [],
+    "skills": [],
+    "metrics": [],
+    "order": 1,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "isCurrent": false
+   },
+   "languages-0019": {
+    "id": "languages-0019",
+    "type": "languages",
+    "sectionId": "languages",
+    "title": "普通话",
+    "subtitle": "二级甲等",
+    "dateRange": "",
+    "description": "",
+    "tags": [],
+    "skills": [],
+    "metrics": [],
+    "order": 2,
+    "createdAt": "2026-09-17T03:00:00.000Z",
+    "updatedAt": "2026-09-17T03:00:00.000Z",
+    "isCurrent": false
+   }
+  },
+  "sectionOrder": [
+   "basic",
+   "education",
+   "experience",
+   "skills",
+   "projects",
+   "selfEvaluation",
+   "campus",
+   "honors",
+   "languages"
+  ],
+  "skillGroups": [
+   {
+    "id": "skill-0020",
+    "name": "编程语言",
+    "content": "Python（熟练）、C++、SQL、R、Shell",
+    "order": 0
+   },
+   {
+    "id": "skill-0021",
+    "name": "机器学习",
+    "content": "PyTorch、TensorFlow、XGBoost、LightGBM、Transformer、图神经网络",
+    "order": 1
+   },
+   {
+    "id": "skill-0022",
+    "name": "量化研究",
+    "content": "因子挖掘、组合优化、回测框架、Barra 风险模型、DolphinDB",
+    "order": 2
+   },
+   {
+    "id": "skill-0023",
+    "name": "金融知识",
+    "content": "资产定价、衍生品定价、风险管理、财务报表分析",
+    "order": 3
+   },
+   {
+    "id": "skill-0024",
+    "name": "工程与工具",
+    "content": "Git、Docker、Airflow、Kubernetes、ClickHouse",
+    "order": 4
+   },
+   {
+    "id": "skill-0025",
+    "name": "数据可视化",
+    "content": "Plotly、Matplotlib、Tableau",
+    "order": 5
+   }
+  ],
+  "certificateText": "CFA 二级（已通过）\n证券从业资格（一般证券业务）\n基金从业资格\n中国准精算师（通过 4 门）",
+  "selfEvaluationContent": "<p>五年金融量化与算法研发经验，长期在「金融业务 + 机器学习」的交叉地带工作：既做过券商卖方研究的因子挖掘与组合优化，也在头部互联网做过亿级图上的风控建模。擅长把业务问题翻译成可建模的目标，并用可解释的方式把结论交给投资经理。习惯以工程化手段沉淀研究资产 —— 自研的回测框架与因子库目前服务团队 6 名研究员。</p>",
+  "meta": {
+   "createdAt": "2026-09-17T03:00:00.000Z",
+   "updatedAt": "2026-09-17T03:00:00.000Z",
+   "lastBackupAt": null
+  }
+ }
+}

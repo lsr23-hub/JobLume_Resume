@@ -1,0 +1,47 @@
+{
+  "id": "fin-02",
+  "note": "同一档案 × 传统金融数据分析岗。AI 相关经历应当被判为不相关 —— 测「会不会见技术词就推荐」",
+  "dimensions": ["中等匹配", "传统金融", "触发取舍", "软性描述"],
+  "profileFile": "fin-ai.json",
+  "jd": {
+    "company": "恒信证券",
+    "position": "金融数据分析师（零售业务）",
+    "jdRaw": "岗位名称：金融数据分析师（零售业务部）\n工作地点：上海\n\n【岗位职责】\n1. 负责零售客户经营数据的日常统计与报表产出，保障数据口径准确；\n2. 围绕客户分层、产品持有、交易行为等主题做专题分析，输出分析报告；\n3. 与业务部门对接需求，把业务问题转化为可执行的数据口径；\n4. 维护部门数据集市，沉淀常用指标与报表模板。\n\n【任职要求】\n1. 本科及以上学历，金融、统计、数学等相关专业；\n2. 熟练使用 SQL 与 Excel，有 2 年以上金融行业数据分析经验；\n3. 具备较强的数据敏感度，能从数据中发现问题；\n4. 良好的沟通表达能力，能独立撰写分析报告；\n5. 工作细致，有责任心，能承受一定的工作压力。"
+  },
+  "gold": {
+    "requirements": {
+      "must": ["SQL 熟练", "金融行业数据分析经验", "分析报告撰写能力", "业务需求对接"],
+      "nice": ["统计或数学专业背景", "数据口径治理经验"],
+      "responsibility": ["日常报表产出", "专题分析", "业务需求转化", "数据集市维护"]
+    },
+    "entities": {
+      "edu-上海交通大学": { "relevance": 3, "level": "recommended", "mustHave": true, "reason": "金融学硕士，满足专业与学历要求" },
+      "edu-南京大学": { "relevance": 2, "level": "recommended", "reason": "数学本科，统计基础符合" },
+      "exp-华泰证券": { "relevance": 3, "level": "recommended", "mustHave": true, "reason": "券商背景 + 数据驱动的研究工作，与岗位同行业" },
+      "exp-蚂蚁集团": { "relevance": 1, "level": "not_recommended", "reason": "算法建模岗，本岗位做的是报表与专题分析，不是模型" },
+      "exp-九坤投资": { "relevance": 2, "level": "recommended", "reason": "金融数据处理经验可迁移" },
+      "exp-中信建投证券": { "relevance": 3, "level": "recommended", "mustHave": true, "reason": "卖方研究实习，报告撰写与数据维护直接对口" },
+      "exp-励学教育科技": { "relevance": 2, "level": "recommended", "reason": "数据分析实习，看板搭建与问卷分析经验对口" },
+      "proj-多因子选股平台「沧海」": { "relevance": 1, "level": "not_recommended", "reason": "因子研究平台，与本岗位的报表分析不是一回事" },
+      "proj-金融文本情感因子（FinBERT 微调）": { "relevance": 1, "level": "not_recommended", "reason": "NLP 建模项目，岗位未要求建模能力" },
+      "proj-图神经网络反欺诈系统「天网」": { "relevance": 0, "level": "not_recommended", "reason": "图神经网络工程，与零售数据分析无关" },
+      "proj-大学生数学建模竞赛培训平台": { "relevance": 0, "level": "not_recommended", "reason": "培训平台项目，无数据分析内容" },
+      "campus-上海交通大学金融学院研究生会": { "relevance": 1, "level": "not_recommended", "reason": "学生工作，岗位未要求" },
+      "campus-南京大学数学建模协会": { "relevance": 0, "level": "not_recommended", "reason": "本科社团，与岗位无关" },
+      "campus-上海交通大学": { "relevance": 0, "level": "not_recommended", "reason": "助教经历，岗位未要求教学" },
+      "honor-国家奖学金（硕士）": { "relevance": 1, "level": "not_recommended", "reason": "荣誉信息，不体现岗位能力" },
+      "honor-全国大学生数学建模竞赛 · 省一等奖": { "relevance": 1, "level": "not_recommended", "reason": "竞赛奖项，与报表分析岗位关联弱" },
+      "honor-Kaggle 量化金融竞赛 Top 3%": { "relevance": 1, "level": "not_recommended", "reason": "建模竞赛，岗位未要求建模" },
+      "lang-英语": { "relevance": 2, "level": "recommended", "reason": "阅读外文资料与报表口径文档可能用到" },
+      "lang-日语": { "relevance": 0, "level": "not_recommended", "reason": "岗位未要求日语" },
+      "lang-普通话": { "relevance": 0, "level": "not_recommended", "reason": "岗位未对普通话等级提出要求" }
+    },
+    "idealSelection": [
+      "edu-上海交通大学", "edu-南京大学", "exp-华泰证券", "exp-中信建投证券",
+      "exp-九坤投资", "exp-励学教育科技", "lang-英语"
+    ],
+    "targetPages": 1,
+    "missingSkills": [],
+    "unsupportedSkills": []
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "id": "fe-02",
+  "note": "同一档案 × 全栈/BFF 岗。前端经历仍然相关，但服务端能力为零 —— 测会不会把沾边的都判成推荐",
+  "dimensions": ["中等匹配", "隐含要求", "触发取舍", "软性描述"],
+  "profileFile": "frontend.json",
+  "jd": {
+    "company": "云栖数据",
+    "position": "全栈工程师（Node.js / BFF 方向）",
+    "jdRaw": "岗位名称：全栈工程师（Node.js / BFF 方向）\n工作地点：杭州\n\n【岗位职责】\n1. 负责面向多端的 BFF 层设计与开发，聚合后端微服务接口；\n2. 参与服务端性能优化与稳定性建设，保障接口 P99 延迟达标；\n3. 与前端团队协作，设计面向页面场景的接口契约；\n4. 参与部分前端页面开发，能独立完成中小型需求。\n\n【任职要求】\n1. 本科及以上学历，3 年以上服务端开发经验；\n2. 精通 Node.js，熟悉 Express / Koa / Nest 任一框架；\n3. 熟悉 MySQL / Redis，具备数据库设计与查询优化能力；\n4. 熟悉微服务架构与容器化部署（Docker / K8s）；\n5. 有前端开发经验者优先；\n6. 沟通顺畅，能主动推进跨团队协作。"
+  },
+  "gold": {
+    "requirements": {
+      "must": ["Node.js 服务端开发", "服务端框架经验", "MySQL/Redis 与查询优化", "微服务与容器化部署"],
+      "nice": ["前端开发经验", "接口契约设计经验"],
+      "responsibility": ["BFF 层设计开发", "服务端性能与稳定性", "接口契约设计", "前端页面开发"]
+    },
+    "entities": {
+      "edu-清华大学": { "relevance": 3, "level": "recommended", "mustHave": true, "reason": "计算机硕士，满足学历与专业要求" },
+      "edu-武汉大学": { "relevance": 2, "level": "recommended", "reason": "软件工程本科，专业对口" },
+      "exp-字节跳动": { "relevance": 2, "level": "recommended", "reason": "前端架构与性能优化能力可迁移，但无服务端经验" },
+      "exp-美团": { "relevance": 2, "level": "recommended", "reason": "监控埋点与性能优化经验部分可迁移" },
+      "proj-大促活动页搭建平台": { "relevance": 1, "level": "not_recommended", "reason": "搭建平台是前端产品，不是 BFF 服务" },
+      "proj-Aurora Design 组件库": { "relevance": 1, "level": "not_recommended", "reason": "组件库与 CI/CD 工程化，与岗位要求弱相关" },
+      "campus-清华大学计算机系研究生会": { "relevance": 1, "level": "not_recommended", "reason": "学生工作，岗位未要求" },
+      "campus-武汉大学 ACM 集训队": { "relevance": 1, "level": "not_recommended", "reason": "算法基础可能有用，但与服务端工程无直接关系" },
+      "honor-国家奖学金": { "relevance": 1, "level": "not_recommended", "reason": "荣誉信息，不体现岗位能力" },
+      "honor-清华大学优秀毕业生": { "relevance": 1, "level": "not_recommended", "reason": "荣誉信息，与岗位能力无关" },
+      "lang-英语": { "relevance": 1, "level": "not_recommended", "reason": "岗位未对英语提出要求" },
+      "lang-日语": { "relevance": 0, "level": "not_recommended", "reason": "岗位未要求日语" }
+    },
+    "idealSelection": [
+      "edu-清华大学", "edu-武汉大学", "exp-字节跳动", "exp-美团"
+    ],
+    "targetPages": 1,
+    "missingSkills": ["Node.js 服务端开发经验", "微服务与容器化部署经验"],
+    "unsupportedSkills": []
+  }
+}

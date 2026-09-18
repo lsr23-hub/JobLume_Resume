@@ -13,7 +13,8 @@
     "generate:template-snapshots": "tsx scripts/generate-template-snapshots.ts",
     "install:playwright": "playwright install chromium",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "eval": "tsx scripts/eval.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
