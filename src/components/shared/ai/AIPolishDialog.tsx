@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAIConfigStore } from "@/store/useAIConfigStore";
-import { AI_MODEL_CONFIGS } from "@/config/ai";
+import { readErrorMessage } from "@/lib/aiError";
 import { cn } from "@/lib/utils";
 
 interface AIPolishDialogProps {
@@ -52,64 +52,9 @@ export default function AIPolishDialog({
   const [isPolishing, setIsPolishing] = useState(false);
   const [polishedContent, setPolishedContent] = useState("");
   const [customInstructions, setCustomInstructions] = useState("");
-  const {
-    selectedModel,
-    doubaoApiKey,
-    doubaoModelId,
-    deepseekApiKey,
-    deepseekModelId,
-    openaiApiKey,
-    openaiModelId,
-    openaiApiEndpoint,
-    geminiApiKey,
-    geminiModelId,
-    isConfigured
-  } = useAIConfigStore();
+  const { deepseekApiKey, deepseekModelId, isConfigured } = useAIConfigStore();
   const abortControllerRef = useRef<AbortController | null>(null);
   const polishedContentRef = useRef<HTMLDivElement>(null);
-
-  const getPolishErrorMessage = async (response: Response) => {
-    const fallback = `${t("error.polishFailed")} (${response.status})`;
-
-    try {
-      const contentType = response.headers.get("content-type") || "";
-      const rawText = await response.text();
-
-      if (!rawText) {
-        if (response.status === 401) {
-          return "认证失败（401），请检查 API Key、模型和 API Endpoint 配置。";
-        }
-        return fallback;
-      }
-
-      if (contentType.includes("application/json") || rawText.startsWith("{")) {
-        const data = JSON.parse(rawText) as {
-          error?: string | { message?: string };
-          message?: string;
-        };
-
-        if (typeof data.error === "string" && data.error.trim()) {
-          return data.error.trim();
-        }
-        if (typeof data.error === "object" && data.error?.message?.trim()) {
-          return data.error.message.trim();
-        }
-        if (data.message?.trim()) {
-          return data.message.trim();
-        }
-      } else if (rawText.trim()) {
-        return rawText.trim();
-      }
-    } catch {
-
-    }
-
-    if (response.status === 401) {
-      return "认证失败（401），请检查 API Key、模型和 API Endpoint 配置。";
-    }
-
-    return fallback;
-  };
 
   const handlePolish = async () => {
     try {
@@ -123,24 +68,6 @@ export default function AIPolishDialog({
 
       abortControllerRef.current = new AbortController();
 
-      const config = AI_MODEL_CONFIGS[selectedModel];
-      const apiKey =
-        selectedModel === "doubao"
-          ? doubaoApiKey
-          : selectedModel === "openai"
-            ? openaiApiKey
-            : selectedModel === "gemini"
-              ? geminiApiKey
-              : deepseekApiKey;
-      const modelId =
-        selectedModel === "doubao"
-          ? doubaoModelId
-          : selectedModel === "openai"
-            ? openaiModelId
-            : selectedModel === "gemini"
-              ? geminiModelId
-              : deepseekModelId;
-
       const response = await fetch("/api/polish", {
         method: "POST",
         headers: {
@@ -148,18 +75,16 @@ export default function AIPolishDialog({
         },
         body: JSON.stringify({
           content: turndownService.turndown(content),
-          apiKey,
-          apiEndpoint: selectedModel === "openai" ? openaiApiEndpoint : undefined,
-          model: config.requiresModelId ? modelId : config.defaultModel,
-          modelType: selectedModel,
+          apiKey: deepseekApiKey,
+          model: deepseekModelId,
+          modelType: "deepseek",
           customInstructions: customInstructions.trim() || undefined
         }),
         signal: abortControllerRef.current.signal
       });
 
       if (!response.ok) {
-        const errorMessage = await getPolishErrorMessage(response);
-        throw new Error(errorMessage);
+        throw new Error(await readErrorMessage(response, t("error.polishFailed")));
       }
 
       if (!response.body) {
@@ -173,7 +98,8 @@ export default function AIPolishDialog({
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value);
+        // stream: true —— 不声明的话，一个中文字符被分片切断就会解码成 \uFFFD
+        const chunk = decoder.decode(value, { stream: true });
         setPolishedContent((prev) => prev + chunk);
       }
     } catch (error) {

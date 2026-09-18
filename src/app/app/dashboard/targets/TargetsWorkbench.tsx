@@ -55,21 +55,13 @@ export const TargetsWorkbench = () => {
     setDisabledSections(new Set());
   }, [selectedId]);
 
-  const aiReady = useMemo(() => {
-    const config = AI_MODEL_CONFIGS[ai.selectedModel];
-    return Boolean(config?.validate(ai));
-  }, [ai]);
+  const aiReady = Boolean(ai.deepseekApiKey.trim());
 
-  const buildConfig = () => {
-    const state = ai as unknown as Record<string, string>;
-    const model = state[`${ai.selectedModel}ModelId`] || AI_MODEL_CONFIGS[ai.selectedModel]?.defaultModel || "";
-    return {
-      apiKey: state[`${ai.selectedModel}ApiKey`] || "",
-      model,
-      modelType: ai.selectedModel,
-      apiEndpoint: state.openaiApiEndpoint,
-    };
-  };
+  const buildConfig = () => ({
+    apiKey: ai.deepseekApiKey,
+    model: ai.deepseekModelId,
+    modelType: "deepseek" as const,
+  });
 
   const handleCreate = (input: { company: string; position: string; jdRaw: string }) => {
     const id = addTarget(input);

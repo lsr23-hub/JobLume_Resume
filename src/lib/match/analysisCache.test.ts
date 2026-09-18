@@ -148,7 +148,7 @@ describe("checkCache", () => {
 
   it("换模型时不可复用", () => {
     const cache = createAnalysisCache({ ...current, analyzedAt: "" });
-    expect(checkCache(cache, { ...current, modelId: "doubao" })).toMatchObject({
+    expect(checkCache(cache, { ...current, modelId: "deepseek-v4-pro" })).toMatchObject({
       reusable: false,
       reason: "model_changed",
     });

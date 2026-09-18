@@ -22,7 +22,6 @@ export interface RealTransportConfig {
   modelType: AIModelType;
   modelId: string;
   apiKey: string;
-  apiEndpoint?: string;
 }
 
 export const realTransport = (config: RealTransportConfig): Transport => ({
@@ -34,7 +33,6 @@ export const realTransport = (config: RealTransportConfig): Transport => ({
       modelType: config.modelType,
       apiKey: config.apiKey,
       model: config.modelId,
-      apiEndpoint: config.apiEndpoint,
       prompt,
     });
     if (!result.ok) throw new Error(result.error);

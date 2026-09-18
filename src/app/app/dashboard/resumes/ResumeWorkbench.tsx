@@ -50,10 +50,7 @@ export const ResumeWorkbench = () => {
     } = useResumeStore();
     const { profile } = useCareerProfileStore();
     const { targets } = useJobTargetStore();
-    const {
-        geminiApiKey,
-        geminiModelId,
-    } = useAIConfigStore();
+    const { deepseekApiKey, deepseekModelId } = useAIConfigStore();
     const router = useRouter();
     const [hasConfiguredFolder, setHasConfiguredFolder] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -271,8 +268,10 @@ export const ResumeWorkbench = () => {
     };
 
     const importResumeFromPdf = async (file: File) => {
-        if (!geminiApiKey || !geminiModelId) {
-            toast.error(t("dashboard.resumes.importDialog.geminiConfigRequired"));
+        // PDF 导入靠识图，key 是必需项；缺了就直接把人送到配置页，
+        // 而不是发一个必然失败的请求
+        if (!deepseekApiKey) {
+            toast.error(t("dashboard.resumes.importDialog.aiConfigRequired"));
             router.push("/app/dashboard/ai");
             return;
         }
@@ -289,8 +288,9 @@ export const ResumeWorkbench = () => {
             },
             body: JSON.stringify({
                 images: pdfImages,
-                apiKey: geminiApiKey,
-                model: geminiModelId,
+                apiKey: deepseekApiKey,
+                model: deepseekModelId,
+                modelType: "deepseek",
                 locale,
             }),
         });

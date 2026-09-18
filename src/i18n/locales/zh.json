@@ -132,7 +132,7 @@
         "pdfTitle": "导入 PDF",
         "pdfDescription": "使用 Gemini 自动识别生成简历结构",
         "importing": "正在导入，请稍候...",
-        "geminiConfigRequired": "请先在 AI 服务商设置页配置 Gemini API Key 和模型 ID",
+        "aiConfigRequired": "请先在 AI 设置页填入 DeepSeek API Key",
         "pdfSuccess": "PDF 导入成功",
         "pdfError": "PDF 导入失败，请检查 PDF 内容或 Gemini 配置"
       },
@@ -197,35 +197,15 @@
         "select": "选择文件夹"
       },
       "ai": {
-        "title": "AI 配置",
-        "currentModel": "当前使用的模型",
-        "selectModel": "选择模型",
-        "getApiKey": "获取 API Key",
-        "doubao": {
-          "title": "豆包",
-          "description": "在火山引擎获取 API 密钥",
-          "apiKey": "API Key",
-          "modelId": "模型 ID"
-        },
-        "deepseek": {
-          "title": "DeepSeek",
-          "description": "在 DeepSeek 开放平台获取 API 密钥",
-          "apiKey": "API Key"
-        },
-        "openai": {
-          "title": "OpenAI",
-          "description": "在 OpenAI 或兼容 OpenAI 格式的开放平台获取 API 密钥",
-          "apiKey": "API Key",
-          "modelId": "模型 ID",
-          "apiEndpoint": "API 端点，如：https://openai.example.org/v1"
-        },
-        "gemini": {
-          "title": "Gemini",
-          "description": "支持润色、语法检查和 PDF 图片识别导入。推荐模型 ID：gemini-flash-latest",
-          "apiKey": "Gemini API Key",
-          "modelId": "Gemini 模型 ID"
-        }
+      "getApiKey": "获取 API Key",
+      "deepseek": {
+        "title": "DeepSeek",
+        "description": "在 DeepSeek 开放平台获取 API 密钥。匹配、润色、校对与 PDF 简历导入都走这条通道",
+        "apiKey": "API Key",
+        "modelId": "模型",
+        "modelIdHint": "留空则使用 deepseek-chat。该模型同时支持识图，PDF 简历导入也走它"
       }
+    }
     },
     "templates": {
       "title": "模板",

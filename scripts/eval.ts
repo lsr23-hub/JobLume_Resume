@@ -10,7 +10,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { AIModelType } from "../src/config/ai";
+import { DEFAULT_MODEL, type AIModelType } from "../src/config/ai";
 import { loadAllCases, summarizeDataset } from "../src/eval/dataset";
 import { computeStabilityMetrics } from "../src/eval/metrics/stability";
 import { aggregateMetrics, averageCaseMetrics } from "../src/eval/metrics";
@@ -39,10 +39,7 @@ const parseArgs = (argv: string[]): Args => {
 
   const provider = (get("--provider") ?? "deepseek") as AIModelType;
   const defaultModel: Record<string, string> = {
-    deepseek: "deepseek-chat",
-    doubao: "",
-    openai: "",
-    gemini: "gemini-flash-latest",
+    deepseek: DEFAULT_MODEL,
   };
 
   return {

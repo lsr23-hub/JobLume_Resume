@@ -1,6 +1,6 @@
-import { AI_MODEL_CONFIGS, type AIModelType } from "@/config/ai";
+import { AI_MODEL_CONFIGS, resolveModel, type AIModelType } from "@/config/ai";
 import { LLM_PARAMS } from "@/lib/match/buildMatchPrompt";
-import { formatGeminiErrorMessage, getGeminiModelInstance } from "./gemini";
+import { abortMessage, isAbortError, upstreamSignal } from "./upstream";
 
 /**
  * 调用大模型，返回原始文本。
@@ -13,12 +13,12 @@ import { formatGeminiErrorMessage, getGeminiModelInstance } from "./gemini";
 export interface LLMCallInput {
   modelType: AIModelType;
   apiKey: string;
-  /** 需要 modelId 的提供方必填 */
   model?: string;
-  apiEndpoint?: string;
   prompt: string;
   /** 超时毫秒数，默认 60s */
   timeoutMs?: number;
+  /** 客户端断开信号 —— 一起传进来，用户取消时不至于还在烧 token */
+  signal?: AbortSignal;
 }
 
 export interface LLMUsage {
@@ -45,49 +45,23 @@ const parseUpstreamError = (raw: string, fallback: string): string => {
 };
 
 /** 该提供方这次实际会用的模型名 */
-export const resolveModelId = (input: Pick<LLMCallInput, "modelType" | "model">): string => {
-  const config = AI_MODEL_CONFIGS[input.modelType];
-  if (!config) return "";
-  return config.requiresModelId ? input.model || "" : input.model || config.defaultModel || "";
-};
+export const resolveModelId = (input: Pick<LLMCallInput, "model">): string =>
+  resolveModel(input.model);
 
 export const callLLM = async (input: LLMCallInput): Promise<LLMCallResult> => {
-  const { modelType, apiKey, apiEndpoint, prompt, timeoutMs = 60_000 } = input;
+  const { modelType, apiKey, prompt, timeoutMs } = input;
 
   const modelConfig = AI_MODEL_CONFIGS[modelType];
   if (!modelConfig) return { ok: false, error: "未知的模型类型", retryable: false };
+  // 本地先拦一道。否则拿 `Bearer undefined` 打上游，用户收到的是
+  // 「Your api key: ****ined is invalid」—— 完全看不出是没配 key
+  if (!apiKey?.trim()) return { ok: false, error: "未配置 API Key", retryable: false };
   if (!prompt?.trim()) return { ok: false, error: "缺少分析内容", retryable: false };
 
   const modelId = resolveModelId(input);
 
-  if (modelType === "gemini") {
-    try {
-      const instance = getGeminiModelInstance({
-        apiKey,
-        model: modelId,
-        generationConfig: { temperature: LLM_PARAMS.temperature },
-      });
-      const result = await instance.generateContent(prompt);
-      const meta = result.response.usageMetadata;
-      return {
-        ok: true,
-        raw: result.response.text(),
-        modelId,
-        usage: meta
-          ? {
-              promptTokens: meta.promptTokenCount ?? 0,
-              completionTokens: meta.candidatesTokenCount ?? 0,
-              totalTokens: meta.totalTokenCount ?? 0,
-            }
-          : undefined,
-      };
-    } catch (error) {
-      return { ok: false, error: formatGeminiErrorMessage(error), retryable: false };
-    }
-  }
-
   try {
-    const response = await fetch(modelConfig.url(apiEndpoint), {
+    const response = await fetch(modelConfig.url, {
       method: "POST",
       headers: modelConfig.headers(apiKey),
       body: JSON.stringify({
@@ -98,7 +72,7 @@ export const callLLM = async (input: LLMCallInput): Promise<LLMCallResult> => {
         stream: false,
         response_format: { type: "json_object" },
       }),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: upstreamSignal(input.signal, timeoutMs),
     });
 
     if (!response.ok) {
@@ -135,6 +109,9 @@ export const callLLM = async (input: LLMCallInput): Promise<LLMCallResult> => {
         : undefined,
     };
   } catch (error) {
+    if (isAbortError(error)) {
+      return { ok: false, error: abortMessage(input.signal), retryable: true };
+    }
     const message = error instanceof Error ? error.message : "请求失败";
     return { ok: false, error: message, retryable: true };
   }

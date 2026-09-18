@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { toast } from "sonner";
 import Mark from "mark.js";
 import { useAIConfigStore } from "@/store/useAIConfigStore";
-import { AI_MODEL_CONFIGS } from "@/config/ai";
+import { readErrorMessage } from "@/lib/aiError";
 import { cn } from "@/lib/utils";
 
 export interface GrammarError {
@@ -90,36 +90,7 @@ export const useGrammarStore = create<GrammarStore>((set, get) => ({
     set((state) => ({ highlightKey: state.highlightKey + 1 })),
 
   checkGrammar: async (text: string) => {
-    const {
-      selectedModel,
-      doubaoApiKey,
-      doubaoModelId,
-      deepseekApiKey,
-      deepseekModelId,
-      openaiApiKey,
-      openaiModelId,
-      openaiApiEndpoint,
-      geminiApiKey,
-      geminiModelId
-    } = useAIConfigStore.getState();
-
-    const config = AI_MODEL_CONFIGS[selectedModel];
-    const apiKey =
-      selectedModel === "doubao"
-        ? doubaoApiKey
-        : selectedModel === "openai"
-          ? openaiApiKey
-          : selectedModel === "gemini"
-            ? geminiApiKey
-            : deepseekApiKey;
-    const modelId =
-      selectedModel === "doubao"
-        ? doubaoModelId
-        : selectedModel === "openai"
-          ? openaiModelId
-          : selectedModel === "gemini"
-            ? geminiModelId
-            : deepseekModelId;
+    const { deepseekApiKey, deepseekModelId } = useAIConfigStore.getState();
 
     set({ isChecking: true });
 
@@ -131,30 +102,24 @@ export const useGrammarStore = create<GrammarStore>((set, get) => ({
         },
         body: JSON.stringify({
           content: text,
-          apiKey,
-          model: config.requiresModelId ? modelId : config.defaultModel,
-          modelType: selectedModel,
-          apiEndpoint: selectedModel === "openai" ? openaiApiEndpoint : undefined,
+          apiKey: deepseekApiKey,
+          model: deepseekModelId,
+          modelType: "deepseek",
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
+        // 服务端已经把上游的原话放在 error 里了，直接用它。
+        // 以前这里写死「API request failed: 401」，把可诊断的信息丢掉了
+        throw new Error(await readErrorMessage(response, `校对请求失败（HTTP ${response.status}）`));
       }
 
       const data = await response.json();
+      const aiResponse = data?.choices?.[0]?.message?.content;
 
-      if (data.error) {
-        toast.error(data.error.message);
-        throw new Error(data.error.message);
+      if (typeof aiResponse !== "string" || !aiResponse.trim()) {
+        throw new Error("模型没有返回内容");
       }
-
-      if (data.error?.code === "AuthenticationError") {
-        toast.error("ApiKey 或 模型Id 不正确");
-        throw new Error(data.error.message);
-      }
-
-      const aiResponse = data.choices[0]?.message?.content;
 
       try {
         const grammarErrors = JSON.parse(aiResponse);
@@ -179,6 +144,8 @@ export const useGrammarStore = create<GrammarStore>((set, get) => ({
         set({ errors: [] });
       }
     } catch (error) {
+      // 原来这里只清空 errors、不提示 —— 用户点了「检查」什么都不发生
+      toast.error(error instanceof Error ? error.message : "校对失败");
       set({ errors: [] });
     } finally {
       set({ isChecking: false });

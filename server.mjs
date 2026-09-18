@@ -145,9 +145,21 @@ createServer(async (req, res) => {
 
     const method = (req.method || "GET").toUpperCase();
     const hasBody = method !== "GET" && method !== "HEAD";
+
+    // 把「客户端还在不在」接到 Request 的 signal 上。
+    // 不接的话 request.signal 是一个永远不会触发的空信号 —— 路由里
+    // 传给上游 fetch 也就等于没传，用户关掉页面之后服务端照样把那次
+    // 生成跑完，token 照烧。
+    const clientGone = new AbortController();
+    res.on("close", () => {
+      // writableEnded 为真说明是我们正常写完再关的，那不是断开
+      if (!res.writableEnded) clientGone.abort();
+    });
+
     const init = {
       method,
-      headers: toHeaders(req.headers)
+      headers: toHeaders(req.headers),
+      signal: clientGone.signal
     };
 
     if (hasBody) {

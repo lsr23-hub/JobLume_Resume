@@ -18,7 +18,6 @@ interface MatchRequest {
   apiKey: string;
   model: string;
   modelType: AIModelType;
-  apiEndpoint?: string;
   /** 由客户端的 buildMatchPrompt() 生成的完整提示词 */
   prompt: string;
 }
@@ -33,10 +32,16 @@ export const Route = createFileRoute("/api/match")({
         if (limited) return limited;
 
         try {
-          const { apiKey, model, modelType, apiEndpoint, prompt } =
-            (await request.json()) as MatchRequest;
+          const { apiKey, model, modelType, prompt } = (await request.json()) as MatchRequest;
 
-          const result = await callLLM({ modelType, apiKey, model, apiEndpoint, prompt });
+          const result = await callLLM({
+            modelType,
+            apiKey,
+            model,
+            prompt,
+            // 用户关掉页面就别再往下跑了
+            signal: request.signal,
+          });
 
           if (!result.ok) {
             return Response.json(
@@ -51,8 +56,12 @@ export const Route = createFileRoute("/api/match")({
             modelId: result.modelId,
           });
         } catch (error) {
-          const message = error instanceof Error ? error.message : "匹配分析请求失败";
-          return Response.json({ success: false, error: message, retryable: true }, { status: 500 });
+          // 走到这里基本都是请求体不是合法 JSON —— 那是调用方的问题，不是服务端故障
+          const message = error instanceof Error ? error.message : "请求体解析失败";
+          return Response.json(
+            { success: false, error: `请求体解析失败：${message}`, retryable: false },
+            { status: 400 }
+          );
         }
       },
     },

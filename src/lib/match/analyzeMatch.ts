@@ -18,7 +18,6 @@ export interface MatchConfig {
   apiKey: string;
   model: string;
   modelType: AIModelType;
-  apiEndpoint?: string;
 }
 
 export interface AnalyzeInput {

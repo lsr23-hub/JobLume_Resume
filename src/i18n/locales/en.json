@@ -131,7 +131,7 @@
         "pdfTitle": "Import PDF",
         "pdfDescription": "Use Gemini into structured resume data",
         "importing": "Importing, please wait...",
-        "geminiConfigRequired": "Please configure Gemini API Key and Model ID in AI settings first",
+        "aiConfigRequired": "Please configure your DeepSeek API Key in AI settings first",
         "pdfSuccess": "PDF imported successfully",
         "pdfError": "PDF import failed. Please check PDF content or Gemini configuration"
       },
@@ -196,35 +196,15 @@
         "select": "Select Folder"
       },
       "ai": {
-        "title": "AI Configuration",
-        "currentModel": "Current Model",
-        "selectModel": "Select Model",
-        "getApiKey": "Get API Key",
-        "doubao": {
-          "title": "Doubao",
-          "description": "Get API key from Volcengine",
-          "apiKey": "Doubao API Key",
-          "modelId": "Model ID"
-        },
-        "deepseek": {
-          "title": "DeepSeek",
-          "description": "Get API key from DeepSeek Platform",
-          "apiKey": "DeepSeek API Key"
-        },
-        "openai": {
-          "title": "OpenAI",
-          "description": "Obtain the API key at OpenAI or an open platform compatible with the OpenAI format",
-          "apiKey": "OpenAI API Key",
-          "modelId": "Model ID",
-          "apiEndpoint": "API Endpoint, example: https://openai.example.org/v1"
-        },
-        "gemini": {
-          "title": "Gemini",
-          "description": "Supports polish, grammar check, and PDF image resume import. Recommended model: gemini-flash-latest",
-          "apiKey": "Gemini API Key",
-          "modelId": "Gemini Model ID"
-        }
+      "getApiKey": "Get API Key",
+      "deepseek": {
+        "title": "DeepSeek",
+        "description": "Get an API key from the DeepSeek platform. Matching, polishing, proofreading and PDF import all use this channel",
+        "apiKey": "API Key",
+        "modelId": "Model",
+        "modelIdHint": "Leave empty to use deepseek-chat, which also supports image input for PDF import"
       }
+    }
     },
     "templates": {
       "title": "Templates",

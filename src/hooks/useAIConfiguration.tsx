@@ -7,7 +7,7 @@ import { useAIConfigStore } from "@/store/useAIConfigStore";
 export const useAIConfiguration = () => {
   const router = useRouter();
   const t = useTranslations("previewDock.grammarCheck");
-  const { isConfigured, selectedModel } = useAIConfigStore();
+  const { isConfigured } = useAIConfigStore();
 
   const checkConfiguration = () => {
     if (!isConfigured()) {
