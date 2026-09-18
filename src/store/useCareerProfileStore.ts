@@ -14,6 +14,7 @@ import { DEFAULT_SECTION_ORDER, PRESET_BASIC_FIELDS } from "@/config/sections";
 import { DEFAULT_FIELD_ORDER } from "@/config/constants";
 import { parseDateRange } from "@/lib/profile/entityUtils";
 import { generateUUID } from "@/utils/uuid";
+import { reportHydrationFailure } from "@/store/persistGuard";
 
 export const PROFILE_STORAGE_KEY = "career-profile-storage";
 
@@ -330,6 +331,9 @@ export const useCareerProfileStore = create<ProfileStore>()(
       },
     }),
     {
+      // 显式标出 state 的类型：签名里出现类型参数，persist 才能把 store 的类型推对
+      onRehydrateStorage: (_state: ProfileStore) => (_s?: ProfileStore, error?: unknown) =>
+        reportHydrationFailure("career-profile", error),
       name: PROFILE_STORAGE_KEY,
       storage: createJSONStorage(() => safeLocalStorage),
       partialize: (state) => ({ profile: state.profile }),

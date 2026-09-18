@@ -52,12 +52,22 @@ export type AnalyzeOutcome =
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** 调用服务端分析路由。失败时按 retryable 决定是否重试一次。 */
+/**
+ * 调用服务端分析路由，并把返回的文本解析成 JSON。
+ *
+ * **解析放在 attempt 里面**：JSON 解析失败（最典型的是输出撞上长度上限被截断）
+ * 发生在请求成功之后，而重试原来只覆盖传输层错误 —— 这种失败一次都不会重试，
+ * 用户唯一的选择是手动再点一次。放进 attempt 之后它和超时、5xx 享受同一次重试。
+ */
 const requestAnalysis = async (
   prompt: string,
   config: MatchConfig
-): Promise<{ ok: true; raw: string; modelId: string } | { ok: false; error: string }> => {
-  const attempt = async () => {
+): Promise<{ ok: true; payload: unknown; modelId: string } | { ok: false; error: string }> => {
+  type Attempt =
+    | { ok: true; payload: unknown; modelId: string }
+    | { ok: false; error: string; retryable: boolean };
+
+  const attempt = async (): Promise<Attempt> => {
     const response = await fetch("/api/match", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -69,9 +79,19 @@ const requestAnalysis = async (
       | { success: false; error: string; retryable?: boolean }
       | null;
 
-    if (!data) return { ok: false as const, error: `服务端返回异常（HTTP ${response.status}）`, retryable: true };
-    if (!data.success) return { ok: false as const, error: data.error, retryable: data.retryable ?? false };
-    return { ok: true as const, raw: data.raw, modelId: data.modelId };
+    if (!data) return { ok: false, error: `服务端返回异常（HTTP ${response.status}）`, retryable: true };
+    if (!data.success) return { ok: false, error: data.error, retryable: data.retryable ?? false };
+
+    const payload = parseMatchPayload(data.raw);
+    if (payload === null) {
+      return {
+        ok: false,
+        error: "模型返回的内容不是合法 JSON（常见原因是输出被长度上限截断）",
+        retryable: true,
+      };
+    }
+
+    return { ok: true, payload, modelId: data.modelId };
   };
 
   let result = await attempt().catch((e) => ({
@@ -80,7 +100,7 @@ const requestAnalysis = async (
     retryable: true,
   }));
 
-  // 只对可重试的错误重试一次（超时、5xx）；鉴权与限流不重试
+  // 只对可重试的错误重试一次（超时、5xx、坏 JSON）；鉴权与限流不重试
   if (!result.ok && result.retryable) {
     await sleep(1200);
     result = await attempt().catch((e) => ({
@@ -91,7 +111,7 @@ const requestAnalysis = async (
   }
 
   return result.ok
-    ? { ok: true, raw: result.raw, modelId: result.modelId }
+    ? { ok: true, payload: result.payload, modelId: result.modelId }
     : { ok: false, error: result.error };
 };
 
@@ -132,13 +152,10 @@ export const analyzeMatch = async (input: AnalyzeInput): Promise<AnalyzeOutcome>
   const response = await requestAnalysis(prompt, input.config);
   if (!response.ok) return { ok: false, error: response.error, verdict };
 
-  const payload = parseMatchPayload(response.raw);
-  if (payload === null) {
-    return { ok: false, error: "模型返回的内容不是合法 JSON", verdict };
-  }
-
-  const { analysis, corrections } = validateMatchResult(payload, {
+  const { analysis, corrections } = validateMatchResult(response.payload, {
     entities: input.entities,
+    // 校验每条要求的原文依据要用到它
+    jdRaw: input.target.jdRaw,
     modelId: response.modelId,
     promptVersion: PROMPT_VERSION,
     analyzedAt: input.now,

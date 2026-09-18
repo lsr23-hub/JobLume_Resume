@@ -127,6 +127,23 @@ export const createMockTransport = (evalCase: EvalCase, mode: MockMode = "oracle
 
       return {
         raw: JSON.stringify({
+          // oracle 直接给出金标准里的缺失项，用来验证召回指标算得对。
+          // prompt v5 起 coverage 由 requirements 派生，所以这里必须给要求项 ——
+          // 继续写旧的 summary.coverage 会被校验器忽略，missingRecall 直接变 0，
+          // 框架自检就失效了。
+          // sourceQuote 留空：mock 没有 JD 原文可引，留空即「无原文依据」，不会被清。
+          requirements:
+            mode === "oracle"
+              ? gold.missingSkills.map((skill, index) => ({
+                  id: `r${index + 1}`,
+                  text: skill,
+                  keys: [skill],
+                  kind: "must",
+                  status: "missing",
+                  entityIds: [],
+                  sourceQuote: "",
+                }))
+              : [],
           items: ordered.map(({ entity, level, flipped }) => ({
             id: entity.id,
             level,
@@ -139,12 +156,6 @@ export const createMockTransport = (evalCase: EvalCase, mode: MockMode = "oracle
           })),
           summary: {
             recommendedCount: judged.filter((j) => j.level === "recommended").length,
-            coverage: {
-              covered: [],
-              weak: [],
-              // oracle 直接给出金标准里的缺失项，用来验证召回指标算得对
-              missing: mode === "oracle" ? gold.missingSkills : [],
-            },
             advice: "mock",
           },
         }),

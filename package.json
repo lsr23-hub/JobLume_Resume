@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "eval": "tsx scripts/eval.ts",
-    "eval:review": "tsx scripts/eval-review.ts"
+    "eval:review": "tsx scripts/eval-review.ts",
+    "canary": "tsx scripts/match-canary.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

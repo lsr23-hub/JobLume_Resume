@@ -1024,7 +1024,6 @@
     "sections": "板块：",
     "clearAll": "清空",
     "noDefaultHint": "初始状态不预勾选 —— 放进简历的必须是你自己选的",
-    "evidence": "依据",
     "emptyDescriptionHint": "该条目描述为空，AI 判定可能不稳定 —— 建议补充内容后重新分析",
     "coverage": {
       "title": "技能覆盖度",
@@ -1034,7 +1033,22 @@
       "missingNote": "缺失项只作提示，工具不会替你编造经历。"
     },
     "topNStarHint": "模型把这条排在了前列 —— 这是排序信号，不是「必须放进简历」的结论",
-    "selectTopRanked": "全选排名靠前的项"
+    "selectTopRanked": "全选排名靠前的项",
+    "requirements": {
+      "title": "JD 要求",
+      "summary": "共 {total} 条 · 缺失 {missing}",
+      "must": "硬性要求",
+      "nice": "加分项",
+      "duty": "岗位职责",
+      "noQuote": "无原文依据",
+      "quote": "原文",
+      "supportNotChecked": "{title} 支撑这条要求，但本次未勾选。",
+      "addIt": "加入",
+      "emptyTitle": "没能从这份 JD 提取到要求项",
+      "emptyHint": "多半是模型返回的结构不对（也可能是 JD 太短）。可以点「忽略缓存重跑」再试一次。"
+    },
+    "staleContentChanged": "当前结果基于修改前的数据（{count} 条经历已变更）",
+    "staleGeneric": "当前结果基于修改前的数据（JD 或模型已变）"
   },
   "backup": {
     "title": "数据备份",

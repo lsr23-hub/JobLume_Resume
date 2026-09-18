@@ -127,6 +127,13 @@ export const buildReport = (input: ReportInput): string => {
     0
   );
   lines.push(
+    `> JD 理解那一组的两个数**由要求项派生**（prompt v5 起）：模型逐条抽取 JD 要求，` +
+      `每条带 covered / weak / missing 与指向的经历，代码再按 status 把它的 keys 归成` +
+      `三组。所以「缺失」指的是**判成 missing 的要求**，不是模型随手报的缺口清单 ——` +
+      `与 v4 时代的口径不同，两版之间的数字不可直接比较。`
+  );
+  lines.push("");
+  lines.push(
     `> JD 理解那一组的标注量很薄：全数据集 ${missingTotal} 条「档案无支撑」标注、` +
       `${unsupportedTotal} 条「虚报覆盖」标注。一条就能让某个案例的比率动 25 个百分点以上 ——` +
       `这两种数当旗标看，别当测量值。`

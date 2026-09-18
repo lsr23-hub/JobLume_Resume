@@ -7,8 +7,8 @@ import { useJobTargetStore, selectSortedTargets } from "@/store/useJobTargetStor
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { useResumeStore } from "@/store/useResumeStore";
 import { useAIConfigStore } from "@/store/useAIConfigStore";
-import { AI_MODEL_CONFIGS } from "@/config/ai";
 import { analyzeMatch } from "@/lib/match/analyzeMatch";
+import { buildEntityFingerprints, checkCache } from "@/lib/match/analysisCache";
 import type { JobTarget } from "@/types/jobTarget";
 import { generateResume } from "@/lib/profile/generateResume";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,23 @@ export const TargetsWorkbench = () => {
 
   const aiReady = Boolean(ai.deepseekApiKey.trim());
 
+  /**
+   * 现在展示的分析结果是不是基于修改前的数据。
+   *
+   * 这个判定只能在渲染时算 —— 用户改完经历并不触发重新分析，界面上那份结果
+   * 就这么留着了，而缓存判定（`checkCache`）明明能说出「哪几条变了」。
+   * 此前它算出来只用于一句 toast，用户看不到「你现在看的是旧结果」。
+   */
+  const staleAnalysis = useMemo(() => {
+    if (!current?.matchAnalysis || !current.analysisCache) return null;
+    const verdict = checkCache(current.analysisCache, {
+      entityFingerprints: buildEntityFingerprints(entities),
+      jdRaw: current.jdRaw,
+      modelId: current.matchAnalysis.modelId,
+    });
+    return verdict.reusable ? null : verdict;
+  }, [current?.analysisCache, current?.matchAnalysis, current?.jdRaw, entities]);
+
   const buildConfig = () => ({
     apiKey: ai.deepseekApiKey,
     model: ai.deepseekModelId,
@@ -103,8 +120,11 @@ export const TargetsWorkbench = () => {
     } else {
       setAnalysis(current.id, outcome.analysis, outcome.cache);
     }
-    if (outcome.corrections.length > 0) {
-      toast.warning(t("corrections", { count: outcome.corrections.length }));
+    // 只数 entity 维度。要求维度的降级（一条缺证据就记一条）动辄十几条，
+    // 混进这个计数会把 toast 变成噪音 —— 那些问题在要求项面板里就地显示
+    const entityCorrections = outcome.corrections.filter((c) => c.scope === "entity");
+    if (entityCorrections.length > 0) {
+      toast.warning(t("corrections", { count: entityCorrections.length }));
     }
   };
 
@@ -271,6 +291,19 @@ export const TargetsWorkbench = () => {
                         })}
                       </span>
                     </>
+                  )}
+
+                  {staleAnalysis && (
+                    <span className="text-xs text-amber-600 dark:text-amber-400">
+                      {staleAnalysis.reason === "content_changed"
+                        ? t("staleContentChanged", {
+                            count:
+                              (staleAnalysis.changes?.added.length ?? 0) +
+                              (staleAnalysis.changes?.modified.length ?? 0) +
+                              (staleAnalysis.changes?.removed.length ?? 0),
+                          })
+                        : t("staleGeneric")}
+                    </span>
                   )}
 
                   {!aiReady && (

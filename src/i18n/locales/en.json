@@ -1022,7 +1022,6 @@
     "sections": "Sections:",
     "clearAll": "Clear",
     "noDefaultHint": "Nothing is pre-checked — what goes in must be your own choice",
-    "evidence": "Evidence",
     "emptyDescriptionHint": "This entry has no description, so the AI judgment may be unstable. Add details and re-analyze.",
     "coverage": {
       "title": "Skill coverage",
@@ -1032,7 +1031,22 @@
       "missingNote": "Missing items are reported only; the tool will not fabricate experience for you."
     },
     "topNStarHint": "The model ranked this near the top — a ranking signal, not a verdict that it must go on the resume",
-    "selectTopRanked": "Select top-ranked"
+    "selectTopRanked": "Select top-ranked",
+    "requirements": {
+      "title": "JD requirements",
+      "summary": "{total} total · {missing} missing",
+      "must": "Hard requirements",
+      "nice": "Nice to have",
+      "duty": "Responsibilities",
+      "noQuote": "no JD source",
+      "quote": "Source",
+      "supportNotChecked": "{title} supports this requirement but is not selected.",
+      "addIt": "Add",
+      "emptyTitle": "Could not extract any requirements from this JD",
+      "emptyHint": "Most likely the model returned an unexpected shape (or the JD is very short). Try “Ignore cache and re-run”."
+    },
+    "staleContentChanged": "Showing results from before your edits ({count} entries changed)",
+    "staleGeneric": "Showing results from before your edits (JD or model changed)"
   },
   "backup": {
     "title": "Backup",

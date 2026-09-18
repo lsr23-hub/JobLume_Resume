@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ProfileEntity } from "@/types/profile";
-import { parseMatchPayload, validateMatchResult } from "./validateMatchResult";
+import { parseMatchPayload, requirementsOf, validateMatchResult } from "./validateMatchResult";
+import type { MatchAnalysis } from "@/types/jobTarget";
 
 const entity = (id: string, over: Partial<ProfileEntity> = {}): ProfileEntity => ({
   id,
@@ -21,8 +22,10 @@ const entity = (id: string, over: Partial<ProfileEntity> = {}): ProfileEntity =>
 
 const opts = {
   modelId: "deepseek-chat",
-  promptVersion: "v4",
+  promptVersion: "v5",
   analyzedAt: "2026-01-01T00:00:00.000Z",
+  /** 要求项的原文依据要拿它核对 */
+  jdRaw: "岗位要求：\n1. 精通 React；\n2. 5 年以上前端开发经验；\n3. 有组件库建设经验。",
 };
 
 /** 排序语义下，模型只返回 id、理由与技能 —— 不再有 level/evidence */
@@ -189,5 +192,314 @@ describe("parseMatchPayload", () => {
 
   it("无法解析时返回 null", () => {
     expect(parseMatchPayload("完全不是 JSON")).toBeNull();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// prompt v5：结构化要求项
+// ─────────────────────────────────────────────────────────────
+
+const req = (over: Record<string, unknown> = {}) => ({
+  id: "r1",
+  text: "5 年以上前端开发经验",
+  keys: ["前端开发经验"],
+  kind: "must",
+  status: "covered",
+  entityIds: ["a"],
+  sourceQuote: "5 年以上前端开发经验",
+  ...over,
+});
+
+describe("要求项 —— 派生 coverage", () => {
+  it("按 status 分组，取 keys 而不是整句", () => {
+    const { analysis } = run(
+      {
+        requirements: [
+          req({ id: "r1", status: "covered", keys: ["React"] }),
+          {
+            id: "r2",
+            text: "熟悉 Node",
+            keys: ["Node"],
+            kind: "nice",
+            status: "weak",
+            entityIds: ["a"],
+            sourceQuote: "",
+          },
+          {
+            id: "r3",
+            text: "缺失的技能",
+            keys: ["Kubernetes"],
+            kind: "must",
+            status: "missing",
+            entityIds: [],
+            sourceQuote: "",
+          },
+        ],
+      },
+      [e("a")]
+    );
+    expect(analysis.summary.coverage.covered).toEqual(["React"]);
+    expect(analysis.summary.coverage.weak).toEqual(["Node"]);
+    expect(analysis.summary.coverage.missing).toEqual(["Kubernetes"]);
+  });
+
+  it("职责不进入 coverage —— 没做过某段职责不是缺陷", () => {
+    const { analysis } = run(
+      {
+        requirements: [
+          req({
+            id: "r1",
+            text: "负责日常报表产出",
+            kind: "duty",
+            status: "missing",
+            keys: ["负责报表产出"],
+            entityIds: [],
+          }),
+          req({ id: "r2", text: "精通 React", kind: "must", status: "covered", keys: ["React"] }),
+        ],
+      },
+      [e("a")]
+    );
+    expect(analysis.summary.coverage.missing).toEqual([]);
+    expect(analysis.summary.coverage.covered).toEqual(["React"]);
+    // 但职责本身仍然保留在要求列表里，界面上单独成组
+    expect(analysis.requirements?.map((r) => r.kind)).toEqual(["duty", "must"]);
+  });
+
+  it("重复的 key 只出现一次", () => {
+    const { analysis } = run(
+      {
+        requirements: [
+          req({ id: "r1", status: "covered", keys: ["React"] }),
+          req({ id: "r2", status: "covered", keys: ["React"], text: "另一条也提到 React" }),
+        ],
+      },
+      [e("a")]
+    );
+    expect(analysis.summary.coverage.covered).toEqual(["React"]);
+  });
+});
+
+describe("要求项 —— 证据不足一律落到 weak", () => {
+  it("标 covered 却指不出经历 → 降级并记录", () => {
+    const { analysis, corrections } = run(
+      { requirements: [req({ status: "covered", entityIds: [] })] },
+      [e("a")]
+    );
+    expect(analysis.requirements?.[0].status).toBe("weak");
+    expect(corrections).toContainEqual(
+      expect.objectContaining({ scope: "requirement", type: "no_evidence" })
+    );
+  });
+
+  it("指向的经历不存在 → 丢弃该 id，随后因无证据降级", () => {
+    const { analysis, corrections } = run(
+      { requirements: [req({ entityIds: ["ghost"] })] },
+      [e("a")]
+    );
+    expect(analysis.requirements?.[0].entityIds).toEqual([]);
+    expect(analysis.requirements?.[0].status).toBe("weak");
+    expect(corrections).toContainEqual(
+      expect.objectContaining({ scope: "requirement", type: "unknown_entity" })
+    );
+  });
+
+  it("标 missing 却又指出支撑经历 → 自相矛盾，按 weak 处理", () => {
+    // 宁可软着陆：说「你缺这个」说错了，会让用户以为自己不够格、白跑一趟
+    const { analysis, corrections } = run(
+      { requirements: [req({ status: "missing", entityIds: ["a"] })] },
+      [e("a")]
+    );
+    expect(analysis.requirements?.[0].status).toBe("weak");
+    expect(corrections).toContainEqual(
+      expect.objectContaining({ scope: "requirement", type: "no_evidence" })
+    );
+  });
+
+  it("status 取值非法 → 按 weak 处理并记录", () => {
+    const { analysis, corrections } = run(
+      { requirements: [req({ status: "probably" })] },
+      [e("a")]
+    );
+    expect(analysis.requirements?.[0].status).toBe("weak");
+    expect(corrections).toContainEqual(
+      expect.objectContaining({ scope: "requirement", type: "invalid_field" })
+    );
+  });
+});
+
+describe("要求项 —— 原文依据", () => {
+  it("依据在 JD 里找得到就保留", () => {
+    const { analysis, corrections } = run(
+      { requirements: [req({ sourceQuote: "精通 React" })] },
+      [e("a")]
+    );
+    expect(analysis.requirements?.[0].sourceQuote).toBe("精通 React");
+    expect(corrections.filter((c) => c.scope === "requirement")).toEqual([]);
+  });
+
+  it("依据在 JD 里找不到 → 清空但**不丢弃这条要求**", () => {
+    // 隐含要求本来就引不出原文，丢掉它等于丢掉最有价值的那部分
+    const { analysis, corrections } = run(
+      { requirements: [req({ sourceQuote: "熟悉 Rust 与 WebAssembly" })] },
+      [e("a")]
+    );
+    expect(analysis.requirements).toHaveLength(1);
+    expect(analysis.requirements?.[0].sourceQuote).toBe("");
+    expect(corrections).toContainEqual(
+      expect.objectContaining({ scope: "requirement", type: "no_evidence" })
+    );
+  });
+
+  it("引不出原文的要求照样进 coverage —— 只是不能声称有依据", () => {
+    const { analysis } = run(
+      {
+        requirements: [
+          req({ status: "missing", entityIds: [], sourceQuote: "JD 里没有这句" , keys: ["隐含要求"] }),
+        ],
+      },
+      [e("a")]
+    );
+    expect(analysis.summary.coverage.missing).toEqual(["隐含要求"]);
+  });
+
+  it("分隔符差异不算找不到依据", () => {
+    const { analysis } = run({ requirements: [req({ sourceQuote: "精通 | React" })] }, [e("a")]);
+    expect(analysis.requirements?.[0].sourceQuote).toBe("精通 | React");
+  });
+});
+
+describe("要求项 —— 去重与容错", () => {
+  it("内容重复的要求保留第一条", () => {
+    const { analysis, corrections } = run(
+      {
+        requirements: [
+          req({ id: "r1", text: "精通 React" }),
+          req({ id: "r2", text: "精通React" }),
+        ],
+      },
+      [e("a")]
+    );
+    expect(analysis.requirements).toHaveLength(1);
+    expect(corrections).toContainEqual(
+      expect.objectContaining({ scope: "requirement", type: "invalid_field" })
+    );
+  });
+
+  it("没有 text 的要求丢弃", () => {
+    const { analysis } = run({ requirements: [req({ text: "   " })] }, [e("a")]);
+    expect(analysis.requirements).toEqual([]);
+  });
+
+  it("完全没给 requirements 时不炸 —— 旧缓存与容错路径都走这里", () => {
+    const { analysis } = run({ items: [] }, [e("a")]);
+    expect(analysis.requirements).toEqual([]);
+    expect(analysis.summary.coverage).toEqual({ covered: [], weak: [], missing: [] });
+  });
+
+  it("requirements 不是数组时按空处理", () => {
+    const { analysis } = run({ requirements: "不是数组" }, [e("a")]);
+    expect(analysis.requirements).toEqual([]);
+  });
+});
+
+describe("条目引用要求 id", () => {
+  it("引用存在的要求 id 时保留", () => {
+    const { analysis } = run(
+      {
+        requirements: [req({ id: "r1" })],
+        items: [{ id: "a", requirementIds: ["r1"] }],
+      },
+      [e("a")]
+    );
+    expect(analysis.items.a.requirementIds).toEqual(["r1"]);
+  });
+
+  it("引用不存在的要求 id → 丢弃并记录", () => {
+    const { analysis, corrections } = run(
+      { requirements: [req({ id: "r1" })], items: [{ id: "a", requirementIds: ["r9"] }] },
+      [e("a")]
+    );
+    expect(analysis.items.a.requirementIds).toEqual([]);
+    expect(corrections).toContainEqual(
+      expect.objectContaining({ scope: "requirement", type: "unknown_requirement" })
+    );
+  });
+});
+
+describe("reason 截断", () => {
+  it("超过 40 字截断而不是丢弃 —— prompt 说 20 字，校验器不能只靠模型听话", () => {
+    const long = "这".repeat(80);
+    const { analysis } = run({ items: [{ id: "a", reason: long }] }, [e("a")]);
+    expect(analysis.items.a.reason).toHaveLength(40);
+  });
+
+  it("短理由原样保留", () => {
+    const { analysis } = run({ items: [{ id: "a", reason: "对应职责 3" }] }, [e("a")]);
+    expect(analysis.items.a.reason).toBe("对应职责 3");
+  });
+});
+
+describe("Correction 带 scope，两个维度分得开", () => {
+  it("entity 维度与 requirement 维度的记录不会互相混入", () => {
+    const { corrections } = run(
+      {
+        requirements: [req({ status: "covered", entityIds: [] })],
+        items: [{ id: "ghost" }],
+      },
+      [e("a")]
+    );
+    const entityOnes = corrections.filter((c) => c.scope === "entity");
+    const requirementOnes = corrections.filter((c) => c.scope === "requirement");
+    expect(entityOnes.map((c) => c.type)).toContain("unknown_id");
+    expect(requirementOnes.map((c) => c.type)).toContain("no_evidence");
+    // 编译器帮忙：收窄后才能摸 entityId / requirementId
+    for (const c of entityOnes) expect(typeof c.entityId).toBe("string");
+    for (const c of requirementOnes) expect(typeof c.requirementId).toBe("string");
+  });
+});
+
+describe("requirementsOf —— 旧数据的回退路径", () => {
+  const legacyAnalysis = (coverage: { covered: string[]; weak: string[]; missing: string[] }) =>
+    ({
+      items: {},
+      rankedIds: [],
+      topN: 5,
+      summary: { recommendedCount: 0, coverage, advice: "" },
+      modelId: "deepseek-chat",
+      promptVersion: "v4",
+      analyzedAt: "2026-01-01T00:00:00.000Z",
+      // 注意：没有 requirements 字段 —— prompt v5 之前的分析就长这样，
+      // localStorage 里和用户的备份文件里都有这种对象
+    }) as unknown as MatchAnalysis;
+
+  it("旧分析没有 requirements 时由旧的三个数组反推，而不是当成空清单", () => {
+    // 显示「暂无要求」是错的：那份数据其实有内容，只是指不到经历
+    const result = requirementsOf(
+      legacyAnalysis({ covered: ["React"], weak: [], missing: ["Kubernetes"] })
+    );
+    expect(result.map((r) => [r.status, r.text])).toEqual([
+      ["covered", "React"],
+      ["missing", "Kubernetes"],
+    ]);
+    // 旧数据没有经历引用，也没有原文依据 —— 界面据此标「无原文依据」
+    expect(result.every((r) => r.entityIds.length === 0 && r.sourceQuote === "")).toBe(true);
+  });
+
+  it("新数据直接返回，不走回退", () => {
+    const { analysis } = run({ requirements: [req({ id: "r1", text: "精通 React" })] }, [e("a")]);
+    expect(requirementsOf(analysis).map((r) => r.id)).toEqual(["r1"]);
+  });
+
+  it("null 与缺字段都不抛异常", () => {
+    expect(requirementsOf(null)).toEqual([]);
+    expect(requirementsOf(undefined)).toEqual([]);
+    expect(
+      requirementsOf({ summary: {} } as unknown as MatchAnalysis)
+    ).toEqual([]);
+  });
+
+  it("旧数据的三个数组为空时返回空数组（这时候显示「暂无要求」才是对的）", () => {
+    expect(requirementsOf(legacyAnalysis({ covered: [], weak: [], missing: [] }))).toEqual([]);
   });
 });

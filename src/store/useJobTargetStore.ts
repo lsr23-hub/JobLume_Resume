@@ -4,6 +4,7 @@ import type { StateStorage } from "zustand/middleware";
 
 import type { AnalysisCache, JobTarget, MatchAnalysis } from "@/types/jobTarget";
 import { generateUUID } from "@/utils/uuid";
+import { reportHydrationFailure } from "@/store/persistGuard";
 
 export const JOB_TARGET_STORAGE_KEY = "job-target-storage";
 
@@ -115,6 +116,9 @@ export const useJobTargetStore = create<JobTargetStore>()(
       },
     }),
     {
+      // 显式标出 state 的类型：签名里出现类型参数，persist 才能把 store 的类型推对
+      onRehydrateStorage: (_state: JobTargetStore) => (_s?: JobTargetStore, error?: unknown) =>
+        reportHydrationFailure("job-target", error),
       name: JOB_TARGET_STORAGE_KEY,
       storage: createJSONStorage(() => safeLocalStorage),
       partialize: (state) => ({ targets: state.targets }),

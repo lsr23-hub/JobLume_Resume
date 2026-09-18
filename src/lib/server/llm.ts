@@ -31,6 +31,16 @@ export type LLMCallResult =
   | { ok: true; raw: string; modelId: string; usage?: LLMUsage }
   | { ok: false; error: string; retryable: boolean };
 
+/**
+ * 单次回答的长度上限。
+ *
+ * 显式写出来，因为原本这是上游的默认值而**我们撞上过** —— fin-01 那份 20 条
+ * 经历的档案曾把 JSON 截断在 8192。写出来之后天花板是我们知道的东西，
+ * 而不是上游某天改动的结果；配合下面的 `finish_reason` 检查，
+ * 撞顶会变成一次响亮的可重试失败，而不是「解析失败但不知道为什么」。
+ */
+const MAX_COMPLETION_TOKENS = 8192;
+
 const parseUpstreamError = (raw: string, fallback: string): string => {
   if (!raw) return fallback;
   try {
@@ -71,6 +81,7 @@ export const callLLM = async (input: LLMCallInput): Promise<LLMCallResult> => {
         seed: LLM_PARAMS.seed,
         stream: false,
         response_format: { type: "json_object" },
+        max_tokens: MAX_COMPLETION_TOKENS,
       }),
       signal: upstreamSignal(input.signal, timeoutMs),
     });
@@ -86,14 +97,26 @@ export const callLLM = async (input: LLMCallInput): Promise<LLMCallResult> => {
     }
 
     const data = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
+      choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
       usage?: {
         prompt_tokens?: number;
         completion_tokens?: number;
         total_tokens?: number;
       };
     };
-    const content = data.choices?.[0]?.message?.content ?? "";
+    const choice = data.choices?.[0];
+
+    // 撞上长度上限时 content 是半截的。以前的路径不看 finish_reason，
+    // 截断只要碰巧还能解析就会**静静落库** —— 用户拿到的是一份缺了一半的排序
+    if (choice?.finish_reason === "length") {
+      return {
+        ok: false,
+        error: `输出超过 ${MAX_COMPLETION_TOKENS} token 上限被截断`,
+        retryable: true,
+      };
+    }
+
+    const content = choice?.message?.content ?? "";
 
     if (!content.trim()) return { ok: false, error: "模型返回了空内容", retryable: true };
     return {

@@ -31,6 +31,7 @@ import {
   restoreResumeSnapshot,
   clearHistoryGroup,
 } from "./resumeHistory";
+import { reportHydrationFailure } from "@/store/persistGuard";
 
 interface PendingSync {
   timer: ReturnType<typeof setTimeout>;
@@ -985,6 +986,9 @@ export const useResumeStore = create(
       },
     }),
     {
+      // 显式标出 state 的类型：签名里出现类型参数，persist 才能把 store 的类型推对
+      onRehydrateStorage: (_state: ResumeStore) => (_s?: ResumeStore, error?: unknown) =>
+        reportHydrationFailure("resume", error),
       name: "resume-storage",
       storage: createJSONStorage<PersistedResumeStore>(() =>
         createSafeLocalStorage()
@@ -994,7 +998,10 @@ export const useResumeStore = create(
         activeResumeId: state.activeResumeId,
       }),
       merge: (persistedState, currentState) => {
-        const persisted = persistedState as Partial<PersistedResumeStore>;
+        // persistedState 在**首次访问**（storage 里还没有这个键）时是 undefined。
+        // 原来直接读 .resumes 必然抛错，而 zustand 的 .catch 会把它吞掉 ——
+        // 表现是「静默停在初始状态」，谁都不会发现。全新浏览器就是这条路。
+        const persisted = (persistedState ?? {}) as Partial<PersistedResumeStore>;
         const resumes = persisted.resumes ?? currentState.resumes;
         const activeResumeId =
           persisted.activeResumeId ?? currentState.activeResumeId;

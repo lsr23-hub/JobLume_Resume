@@ -1,10 +1,11 @@
 /**
  * LLM 匹配分析的类型。
  *
- * v1 中 AI 只做推荐标注，不参与生成：它标注每条经历「值不值得放进这份简历」，
- * 并标出最推荐的前 N 条。是否放入由用户勾选决定。
+ * prompt v4 起模型**只排序、不判定**：「该在哪划线」取决于用户这份简历放得下几条，
+ * 模型无从知道。`level` / `inTopN` 因此退化为由名次派生的展示标记。
  *
- * 注：`JobTarget`（投递目标）与 `AnalysisCache` 属于 Phase 3，届时在此文件补充。
+ * prompt v5 起 coverage 换成结构化要求项（`requirements`）—— 每条要求带类型、
+ * 覆盖状态、指向的具体经历、以及 JD 原文依据，判定由代码校验而非模型自述。
  */
 
 /**
@@ -23,8 +24,9 @@ export interface MatchItemResult {
 
   /**
    * 逐字引用条目描述中的原文。
-   * `level` 为 `not_recommended` 时必填，且必须能在 description 中找到；
-   * 否则由 validateMatchResult() 自动提升为 `recommended`（无法举证就不该否定）。
+   *
+   * 残留字段：v1~v3 用它给「不推荐」举证，引不出就自动改判为推荐。
+   * v4 起模型不再下否定判断，没有地方会写它，界面上那个「依据」入口是死代码。
    */
   evidence: string;
 
@@ -36,6 +38,14 @@ export interface MatchItemResult {
 
   /** 从该条目中提取的、与 JD 相关的技能 */
   matchedSkills: string[];
+
+  /**
+   * 该条目支撑了哪几条要求（引用 `Requirement.id`）。
+   *
+   * 与 `requirements[].entityIds` 是同一个关系的两个方向 —— 两向对不上就是模型
+   * 自相矛盾，这是**唯一能靠输出本身发现的不一致**。校验时会丢弃不存在的 id。
+   */
+  requirementIds: string[];
 
   /** JD 要求但该条目未体现的技能 */
   missingSkills: string[];
@@ -55,6 +65,47 @@ export interface MatchItemResult {
   autoPromoted?: boolean;
 }
 
+/** 要求的类别。职责类不参与「缺失」判定 —— 没做过 JD 写的岗位职责不是缺陷 */
+export type RequirementKind = "must" | "nice" | "duty";
+
+export type RequirementStatus = "covered" | "weak" | "missing";
+
+export interface Requirement {
+  /** 本次分析内的局部 id（r1、r2…），只用于与 `items[].requirementIds` 互指，不跨运行稳定 */
+  id: string;
+
+  /** 展示给人看的要求描述 */
+  text: string;
+
+  /**
+   * 原子词，用来派生 `summary.coverage`。
+   *
+   * 必须是**技能级**粒度而不是整句：评测的 `isSameSkill` 匹配器是在
+   * 「原子对原子」上标定的，喂整句会撞出更多偶然的三字重叠、让指标静默漂移。
+   */
+  keys: string[];
+
+  kind: RequirementKind;
+
+  status: RequirementStatus;
+
+  /** 支撑这条要求的经历 id；`status` 为 `missing` 时为空数组 */
+  entityIds: string[];
+
+  /**
+   * JD 原文片段。
+   *
+   * **空串的含义是「这条要求没有可核对的原文依据」** —— 两种来源：
+   * 模型自己推断出来的（JD 没明写），或模型给了一段 JD 里找不到的引用
+   * （校验时清空并记 `Correction`）。隐含要求本来就引不出原文，
+   * 所以是清空而不是丢弃这条要求。
+   *
+   * 界面据此标「无原文依据」，不区分是哪一种 —— 对用户来说都是
+   * 「这条你得自己判断」。
+   */
+  sourceQuote: string;
+}
+
 export interface MatchAnalysis {
   /** 逐条目的分析结果，key 为 entityId */
   items: Record<string, MatchItemResult>;
@@ -67,6 +118,14 @@ export interface MatchAnalysis {
 
   /** 本次的 top-N 设定值 */
   topN: number;
+
+  /**
+   * JD 要求项。prompt v5 起由模型逐条抽取，每条带覆盖状态与指向的经历。
+   *
+   * **可选**：localStorage 里与备份文件里的旧分析没有这个字段，读取侧必须先过
+   * `requirementsOf()`（`@/lib/match/validateMatchResult`）拿到归一化后的数组。
+   */
+  requirements?: Requirement[];
 
   /** 整体覆盖度分析 */
   summary: {

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { reportHydrationFailure } from "@/store/persistGuard";
 
 /**
  * AI 配置。
@@ -27,6 +28,9 @@ export const useAIConfigStore = create<AIConfigState>()(
       isConfigured: () => !!get().deepseekApiKey.trim(),
     }),
     {
+      // 显式标出 state 的类型：签名里出现类型参数，persist 才能把 store 的类型推对
+      onRehydrateStorage: (_state: AIConfigState) => (_s?: AIConfigState, error?: unknown) =>
+        reportHydrationFailure("ai-config", error),
       name: "ai-config-storage",
     }
   )

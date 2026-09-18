@@ -1,4 +1,4 @@
-import { ChevronDown, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "@/i18n/compat/client";
 import type { ProfileEntity } from "@/types/profile";
@@ -7,6 +7,7 @@ import { SECTION_DEFS } from "@/config/sections";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { RequirementList } from "./RequirementList";
 
 interface Props {
   analysis: MatchAnalysis | null;
@@ -40,7 +41,6 @@ export const CandidateList = ({
   // 板块名挂在 profile 命名空间下（与 SECTION_DEFS.titleKey 对应）。
   // 用 targets 命名空间取会拿到原始 key，界面上显示成 "sections.basic"。
   const tSection = useTranslations("profile");
-  const [openEvidence, setOpenEvidence] = useState<Set<string>>(new Set());
 
   const byId = new Map(entities.map((e) => [e.id, e]));
   const grouped = ENTITY_SECTIONS.map((section) => ({
@@ -63,7 +63,14 @@ export const CandidateList = ({
 
   return (
     <div className="space-y-5">
-      {analysis && <CoverageReport analysis={analysis} />}
+      {analysis && (
+        <RequirementList
+          analysis={analysis}
+          entities={entities}
+          checked={checked}
+          onToggle={onToggle}
+        />
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-medium">{t("sections")}</span>
@@ -112,15 +119,6 @@ export const CandidateList = ({
               item={analysis?.items[entity.id]}
               checked={checked.has(entity.id)}
               hasAnalysis={Boolean(analysis)}
-              evidenceOpen={openEvidence.has(entity.id)}
-              onToggleEvidence={() =>
-                setOpenEvidence((prev) => {
-                  const next = new Set(prev);
-                  if (next.has(entity.id)) next.delete(entity.id);
-                  else next.add(entity.id);
-                  return next;
-                })
-              }
               onToggle={() => onToggle(entity.id)}
             />
           ))}
@@ -135,16 +133,12 @@ const EntityRow = ({
   item,
   checked,
   hasAnalysis,
-  evidenceOpen,
-  onToggleEvidence,
   onToggle,
 }: {
   entity: ProfileEntity;
   item?: MatchItemResult;
   checked: boolean;
   hasAnalysis: boolean;
-  evidenceOpen: boolean;
-  onToggleEvidence: () => void;
   onToggle: () => void;
 }) => {
   const t = useTranslations("targets");
@@ -152,6 +146,7 @@ const EntityRow = ({
 
   return (
     <div
+      id={`candidate-${entity.id}`}
       className={cn(
         "rounded-lg border transition-colors",
         checked ? "border-primary/40 bg-primary/5" : "border-border/60",
@@ -205,68 +200,7 @@ const EntityRow = ({
           )}
         </span>
 
-        {notRecommended && item?.evidence && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              onToggleEvidence();
-            }}
-            className="mt-0.5 flex shrink-0 items-center gap-1 text-xs text-muted-foreground"
-          >
-            {t("evidence")}
-            <ChevronDown className={cn("h-3 w-3 transition-transform", evidenceOpen && "rotate-180")} />
-          </button>
-        )}
       </label>
-
-      {evidenceOpen && item?.evidence && (
-        <p className="mx-2.5 mb-2.5 border-l-2 border-muted-foreground/30 pl-2 text-xs italic text-muted-foreground">
-          {item.evidence}
-        </p>
-      )}
-    </div>
-  );
-};
-
-const CoverageReport = ({ analysis }: { analysis: MatchAnalysis }) => {
-  const t = useTranslations("targets");
-  const { covered, weak, missing } = analysis.summary.coverage;
-
-  if (covered.length + weak.length + missing.length === 0 && !analysis.summary.advice) return null;
-
-  return (
-    <div className="space-y-2 rounded-xl border border-border/60 bg-card p-4">
-      <p className="text-sm font-semibold">{t("coverage.title")}</p>
-
-      {covered.length > 0 && (
-        <p className="text-xs">
-          <span className="text-emerald-600 dark:text-emerald-400">✓ {t("coverage.covered")}</span>{" "}
-          <span className="text-muted-foreground">{covered.join("、")}</span>
-        </p>
-      )}
-      {weak.length > 0 && (
-        <p className="text-xs">
-          <span className="text-amber-600 dark:text-amber-400">⚠ {t("coverage.weak")}</span>{" "}
-          <span className="text-muted-foreground">{weak.join("、")}</span>
-        </p>
-      )}
-      {missing.length > 0 && (
-        <p className="text-xs">
-          <span className="text-destructive">✗ {t("coverage.missing")}</span>{" "}
-          <span className="text-muted-foreground">{missing.join("、")}</span>
-        </p>
-      )}
-
-      {analysis.summary.advice && (
-        <p className="border-t border-border/50 pt-2 text-xs text-muted-foreground">
-          💡 {analysis.summary.advice}
-        </p>
-      )}
-
-      {missing.length > 0 && (
-        <p className="text-xs text-muted-foreground">{t("coverage.missingNote")}</p>
-      )}
     </div>
   );
 };

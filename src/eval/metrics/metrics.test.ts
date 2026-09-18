@@ -68,10 +68,10 @@ describe("computeJudgmentMetrics", () => {
     const m = computeJudgmentMetrics(
       analysis({
         items: {
-          a: { level: "recommended", reason: "", evidence: "", inTopN: false, matchedSkills: [], missingSkills: [] },
-          b: { level: "not_recommended", reason: "无关", evidence: "", inTopN: false, matchedSkills: [], missingSkills: [] },
-          c: { level: "recommended", reason: "", evidence: "", inTopN: false, matchedSkills: [], missingSkills: [] },
-          d: { level: "not_recommended", reason: "无关", evidence: "", inTopN: false, matchedSkills: [], missingSkills: [] },
+          a: { level: "recommended", reason: "", evidence: "", inTopN: false, matchedSkills: [], requirementIds: [], missingSkills: [] },
+          b: { level: "not_recommended", reason: "无关", evidence: "", inTopN: false, matchedSkills: [], requirementIds: [], missingSkills: [] },
+          c: { level: "recommended", reason: "", evidence: "", inTopN: false, matchedSkills: [], requirementIds: [], missingSkills: [] },
+          d: { level: "not_recommended", reason: "无关", evidence: "", inTopN: false, matchedSkills: [], requirementIds: [], missingSkills: [] },
         },
       }),
       gold,
@@ -96,8 +96,8 @@ describe("computeJudgmentMetrics", () => {
     const m = computeJudgmentMetrics(
       analysis({
         items: {
-          c: { level: "recommended", reason: "", evidence: "", inTopN: false, matchedSkills: [], missingSkills: [], autoPromoted: true },
-          d: { level: "not_recommended", reason: "无关", evidence: "原文", inTopN: false, matchedSkills: [], missingSkills: [] },
+          c: { level: "recommended", reason: "", evidence: "", inTopN: false, matchedSkills: [], requirementIds: [], missingSkills: [], autoPromoted: true },
+          d: { level: "not_recommended", reason: "无关", evidence: "原文", inTopN: false, matchedSkills: [], requirementIds: [], missingSkills: [] },
         },
       }),
       gold,
@@ -116,7 +116,7 @@ describe("computeJudgmentMetrics", () => {
     const m = computeJudgmentMetrics(
       analysis({
         items: {
-          a: { level: "recommended", reason: "使用 DolphinDB 搭建回测", evidence: "", inTopN: false, matchedSkills: [], missingSkills: [] },
+          a: { level: "recommended", reason: "使用 DolphinDB 搭建回测", evidence: "", inTopN: false, matchedSkills: [], requirementIds: [], missingSkills: [] },
         },
       }),
       goldOf({ a: { level: "recommended" }, b: { level: "recommended" } }),
@@ -131,7 +131,7 @@ describe("computeJudgmentMetrics", () => {
     const m = computeJudgmentMetrics(
       analysis({
         items: {
-          a: { level: "recommended", reason: "用 Python 和 DolphinDB", evidence: "", inTopN: false, matchedSkills: [], missingSkills: [] },
+          a: { level: "recommended", reason: "用 Python 和 DolphinDB", evidence: "", inTopN: false, matchedSkills: [], requirementIds: [], missingSkills: [] },
         },
       }),
       goldOf({ a: { level: "recommended" } }),
@@ -233,8 +233,8 @@ describe("computeCoverageMetrics", () => {
 
 describe("稳定性", () => {
   it("judgmentDiff 只比二值结论，不比理由措辞", () => {
-    const a = analysis({ items: { x: { level: "recommended", reason: "甲", evidence: "", inTopN: false, matchedSkills: [], missingSkills: [] } } });
-    const b = analysis({ items: { x: { level: "recommended", reason: "乙", evidence: "", inTopN: false, matchedSkills: [], missingSkills: [] } } });
+    const a = analysis({ items: { x: { level: "recommended", reason: "甲", evidence: "", inTopN: false, matchedSkills: [], requirementIds: [], missingSkills: [] } } });
+    const b = analysis({ items: { x: { level: "recommended", reason: "乙", evidence: "", inTopN: false, matchedSkills: [], requirementIds: [], missingSkills: [] } } });
     expect(judgmentDiff(a, b)).toEqual([]);
   });
 
@@ -253,7 +253,7 @@ describe("幻觉检测要连 JD 一起查", () => {
     const m = computeJudgmentMetrics(
       analysis({
         items: {
-          a: { level: "recommended", reason: "对应 JD 的 P99 延迟要求", evidence: "", inTopN: false, matchedSkills: [], missingSkills: [] },
+          a: { level: "recommended", reason: "对应 JD 的 P99 延迟要求", evidence: "", inTopN: false, matchedSkills: [], requirementIds: [], missingSkills: [] },
         },
       }),
       goldOf({ a: { level: "recommended" } }),
@@ -267,7 +267,7 @@ describe("幻觉检测要连 JD 一起查", () => {
     const m = computeJudgmentMetrics(
       analysis({
         items: {
-          a: { level: "recommended", reason: "熟悉 Kubernetes 编排", evidence: "", inTopN: false, matchedSkills: [], missingSkills: [] },
+          a: { level: "recommended", reason: "熟悉 Kubernetes 编排", evidence: "", inTopN: false, matchedSkills: [], requirementIds: [], missingSkills: [] },
         },
       }),
       goldOf({ a: { level: "recommended" } }),
