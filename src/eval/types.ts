@@ -40,17 +40,23 @@ export interface GoldEntity extends RawGoldEntity {
   level: "recommended" | "not_recommended";
 }
 
-export interface GoldRequirements {
-  /** 硬性要求 */
-  must: string[];
-  /** 加分项 */
-  nice: string[];
-  /** 职责描述 */
-  responsibility: string[];
+/**
+ * 一条人工标注的 JD 要求。
+ *
+ * **从 JD 原文标注，不看模型输出** —— 否则测的就是「模型能不能猜中它自己」。
+ *
+ * 刻意**不标 `status`**：给每条要求判断「档案够不够」需要逐条对照档案做判断题，
+ * 那是另一轮工作量，而且做的时候很容易被模型输出污染。这一批只用它算
+ * **要求项召回**（模型有没有把 JD 的要求读全），状态准确率留到下一批。
+ */
+export interface GoldRequirement {
+  /** 要求内容，一句话 */
+  text: string;
+  kind: "must" | "nice" | "duty";
 }
 
 export interface GoldStandard {
-  requirements: GoldRequirements;
+  requirements: GoldRequirement[];
   /** 逐条人工判定，key 为 entityId */
   entities: Record<string, GoldEntity>;
 
@@ -124,6 +130,7 @@ export interface CaseMetrics {
   dimensions: string[];
   judgment: import("./metrics/judgment").JudgmentMetrics;
   coverage: import("./metrics/coverage").CoverageMetrics;
+  requirements: import("./metrics/requirements").RequirementMetrics;
   ranking: import("./metrics/ranking").RankingMetrics;
   selection: import("./metrics/selection").SelectionMetrics;
 }
@@ -137,6 +144,7 @@ export interface Threshold {
 }
 
 export type MetricKey =
+  | "requirementRecall"
   | "missingRecall"
   | "coverageFalsePositive"
   | "reasonHallucinationRate"

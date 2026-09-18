@@ -92,7 +92,7 @@ export const buildReport = (input: ReportInput): string => {
 
   // ── 指标表 ──
   const groups: Array<{ title: string; keys: MetricKey[] }> = [
-    { title: "JD 理解", keys: ["missingRecall", "coverageFalsePositive"] },
+    { title: "JD 理解", keys: ["requirementRecall", "missingRecall", "coverageFalsePositive"] },
     { title: "判定质量", keys: ["reasonHallucinationRate"] },
     { title: "排序", keys: ["ndcgAt5", "spearman", "top5HitRate"] },
     { title: "筛选与成品", keys: ["mustHaveRecall", "idealJaccard", "selectionQuality"] },
@@ -167,13 +167,13 @@ export const buildReport = (input: ReportInput): string => {
   // ── 分案例 ──
   lines.push(`## 分案例`);
   lines.push("");
-  lines.push(`| 案例 | NDCG@5 | 斯皮尔曼 | 关键经历召回 | 理想重合 | 选择质量 | 缺失项召回 | 覆盖虚报 | 用时 |`);
-  lines.push(`|---|---|---|---|---|---|---|---|---|`);
+  lines.push(`| 案例 | NDCG@5 | 斯皮尔曼 | 关键经历召回 | 理想重合 | 选择质量 | 要求项召回 | 缺失项召回 | 覆盖虚报 | 用时 |`);
+  lines.push(`|---|---|---|---|---|---|---|---|---|---|`);
   for (const { caseId, metrics } of aggregate.perCase) {
     const run = runs[caseId];
     const cov = metrics.coverage;
     lines.push(
-      `| ${caseId} | ${metrics.ranking.ndcgAt5.toFixed(2)} | ${metrics.ranking.spearman.toFixed(2)} | ${metrics.selection.mustHaveRecall === 1 ? "✅" : "❌"} | ${metrics.selection.idealJaccard.toFixed(2)} | ${metrics.selection.selectionQuality.toFixed(2)} | ${cov.missingTotal === 0 ? "—" : pct(cov.missingRecall)} | ${cov.unsupportedTotal === 0 ? "—" : pct(cov.coverageFalsePositive)} | ${run ? `${(run.usage.elapsedMs / 1000).toFixed(1)}s` : "-"} |`
+      `| ${caseId} | ${metrics.ranking.ndcgAt5.toFixed(2)} | ${metrics.ranking.spearman.toFixed(2)} | ${metrics.selection.mustHaveRecall === 1 ? "✅" : "❌"} | ${metrics.selection.idealJaccard.toFixed(2)} | ${metrics.selection.selectionQuality.toFixed(2)} | ${pct(metrics.requirements.requirementRecall)} | ${cov.missingTotal === 0 ? "—" : pct(cov.missingRecall)} | ${cov.unsupportedTotal === 0 ? "—" : pct(cov.coverageFalsePositive)} | ${run ? `${(run.usage.elapsedMs / 1000).toFixed(1)}s` : "-"} |`
     );
   }
   lines.push("");
@@ -187,12 +187,16 @@ export const buildReport = (input: ReportInput): string => {
     );
   };
 
+  const hasRequirementMiss = (caseId: string): boolean =>
+    (aggregate.perCase.find((c) => c.caseId === caseId)?.metrics.requirements.missed.length ?? 0) > 0;
+
   const hasFailures = aggregate.perCase.some(
     (c) =>
       c.metrics.judgment.falseNegatives.length > 0 ||
       c.metrics.selection.missed.length > 0 ||
       c.metrics.judgment.hallucinations.length > 0 ||
-      hasCoverageMiss(c.caseId)
+      hasCoverageMiss(c.caseId) ||
+      hasRequirementMiss(c.caseId)
   );
 
   if (hasFailures) {
@@ -211,13 +215,24 @@ export const buildReport = (input: ReportInput): string => {
         falsePositives.length === 0 &&
         missed.length === 0 &&
         hallucinations.length === 0 &&
-        !coverageMiss
+        !coverageMiss &&
+        metrics.requirements.missed.length === 0
       )
         continue;
 
       lines.push(`### ${caseId}`);
       lines.push("");
       const topN = input.runs[caseId]?.analysis?.topN ?? 5;
+
+      if (metrics.requirements.missed.length > 0) {
+        lines.push(`**要求项漏抽（人工标注的任职要求，模型没抽出来）**`);
+        lines.push("");
+        metrics.requirements.missed.forEach((text) => {
+          const isMust = metrics.requirements.mustMissed.includes(text);
+          lines.push(`- ${isMust ? "**硬性** " : ""}${text}`);
+        });
+        lines.push("");
+      }
 
       if (coverageMiss) {
         const runsOfCase = input.perRun?.[caseId] ?? [];

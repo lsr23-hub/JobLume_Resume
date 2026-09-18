@@ -2,6 +2,7 @@ import { analyzeMatch } from "@/lib/match/analyzeMatch";
 import type { AnalysisCache, MatchAnalysis } from "@/types/jobTarget";
 import type { CareerProfile } from "@/types/profile";
 import { computeCoverageMetrics } from "./metrics/coverage";
+import { computeRequirementMetrics } from "./metrics/requirements";
 import { computeJudgmentMetrics } from "./metrics/judgment";
 import { computeRankingMetrics } from "./metrics/ranking";
 import { computeSelectionMetrics } from "./metrics/selection";
@@ -166,6 +167,7 @@ export const metricsFor = (evalCase: EvalCase, run: CaseRun): CaseMetrics => {
       gold.missingSkills,
       gold.unsupportedSkills ?? []
     ),
+    requirements: computeRequirementMetrics(run.analysis, gold.requirements),
     ranking: computeRankingMetrics(run.analysis, gold.entities, titles),
     selection: computeSelectionMetrics(run.analysis, gold.entities, gold.idealSelection, titles),
   };

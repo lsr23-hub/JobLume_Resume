@@ -14,24 +14,48 @@
     "jdRaw": "岗位名称：数据开发工程师（2026 届校招）\n所属团队：数据平台部\n工作地点：杭州\n\n【岗位职责】\n1. 负责离线与实时数据管道的开发与维护；\n2. 参与数据仓库分层建模，保障数据质量与时效；\n3. 配合数据分析师完成指标口径落地；\n4. 参与数据平台工具的建设与优化。\n\n【任职要求】\n1. 本科及以上学历，计算机、软件工程相关专业；\n2. 熟悉 Java 或 Scala，了解 Spark / Flink 等大数据计算框架；\n3. 熟练使用 SQL，理解数据仓库建模理论（维度建模）；\n4. 了解 Hadoop 生态与常见调度工具；\n5. 有大数据相关项目经验者优先。"
   },
   "gold": {
-    "requirements": {
-      "must": [
-        "计算机/软件工程相关专业",
-        "Java 或 Scala",
-        "Spark/Flink 大数据框架",
-        "SQL 与数据仓库建模"
-      ],
-      "nice": [
-        "Hadoop 生态与调度工具",
-        "大数据项目经验"
-      ],
-      "responsibility": [
-        "数据管道开发",
-        "数仓分层建模",
-        "指标口径落地",
-        "数据平台工具建设"
-      ]
-    },
+    "requirements": [
+      {
+        "text": "计算机/软件工程相关专业",
+        "kind": "must"
+      },
+      {
+        "text": "Java 或 Scala",
+        "kind": "must"
+      },
+      {
+        "text": "Spark/Flink 大数据框架",
+        "kind": "must"
+      },
+      {
+        "text": "SQL 与数据仓库建模",
+        "kind": "must"
+      },
+      {
+        "text": "Hadoop 生态与调度工具",
+        "kind": "nice"
+      },
+      {
+        "text": "大数据项目经验",
+        "kind": "nice"
+      },
+      {
+        "text": "数据管道开发",
+        "kind": "duty"
+      },
+      {
+        "text": "数仓分层建模",
+        "kind": "duty"
+      },
+      {
+        "text": "指标口径落地",
+        "kind": "duty"
+      },
+      {
+        "text": "数据平台工具建设",
+        "kind": "duty"
+      }
+    ],
     "entities": {
       "edu-苏州大学": {
         "relevance": 2,

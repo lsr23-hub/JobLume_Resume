@@ -8,6 +8,15 @@ import type { MetricKey, Threshold } from "./types";
  */
 export const THRESHOLDS: Record<MetricKey, Threshold & { rationale: string }> = {
   // ── JD 理解 ──
+  requirementRecall: {
+    // 阈值在第一次测量**之前**定下：十条任职要求里漏一条已是上限。
+    // 判据是这条指标的用途 —— 用户靠这份清单判断自己缺什么，
+    // 漏掉一条硬性要求会让他以为自己够格去投、白跑一趟。
+    value: 0.9,
+    direction: "higher",
+    label: "要求项召回",
+    rationale: "JD 的任职要求抽漏一条，用户就看不到自己缺什么 —— 十条里漏一条已是上限",
+  },
   missingRecall: {
     value: 0.8,
     direction: "higher",

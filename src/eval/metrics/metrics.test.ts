@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import type { MatchAnalysis } from "@/types/jobTarget";
 import type { ProfileEntity } from "@/types/profile";
 import { computeCoverageMetrics } from "./coverage";
+import { computeRequirementMetrics } from "./requirements";
 import { computeJudgmentMetrics } from "./judgment";
 import { computeRankingMetrics } from "./ranking";
 import { computeSelectionMetrics } from "./selection";
 import { judgmentDiff, kendallTau } from "./stability";
-import type { GoldEntity } from "../types";
+import type { GoldEntity, GoldRequirement } from "../types";
 
 /**
  * 指标函数的单测。
@@ -296,5 +297,98 @@ describe("缺失项匹配：同一件事不同措辞", () => {
       ["实时流计算（Flink/Spark Streaming）"]
     );
     expect(m.missingRecall).toBe(0);
+  });
+});
+
+describe("computeRequirementMetrics —— 要求项召回", () => {
+  const goldReqs: GoldRequirement[] = [
+    { text: "精通 React 与 TypeScript", kind: "must" },
+    { text: "5 年以上前端经验", kind: "must" },
+    { text: "有开源项目贡献", kind: "nice" },
+    { text: "负责组件库建设", kind: "duty" },
+  ];
+
+  const withReqs = (requirements: unknown[]) =>
+    analysis({ summary: { recommendedCount: 0, coverage: { covered: [], weak: [], missing: [] }, advice: "" },
+               requirements } as never);
+
+  it("全部抽出时召回为 1", () => {
+    const m = computeRequirementMetrics(
+      withReqs([
+        { id: "r1", text: "精通 React 与 TypeScript，有大型 SPA 架构经验", keys: ["React"], kind: "must", status: "covered", entityIds: [], sourceQuote: "" },
+        { id: "r2", text: "5 年以上前端开发经验", keys: ["前端经验"], kind: "must", status: "covered", entityIds: [], sourceQuote: "" },
+        { id: "r3", text: "有开源项目贡献经历", keys: ["开源贡献"], kind: "nice", status: "missing", entityIds: [], sourceQuote: "" },
+      ]),
+      goldReqs
+    );
+    expect(m.requirementRecall).toBe(1);
+    expect(m.mustRecall).toBe(1);
+    expect(m.missed).toEqual([]);
+  });
+
+  it("漏掉一条硬性要求会被单独列出来 —— 那是最该看见的失败", () => {
+    const m = computeRequirementMetrics(
+      withReqs([
+        { id: "r1", text: "精通 React 与 TypeScript", keys: [], kind: "must", status: "covered", entityIds: [], sourceQuote: "" },
+      ]),
+      goldReqs
+    );
+    // 任职要求 3 条（must 2 + nice 1），抽中 1 条
+    expect(m.requirementRecall).toBeCloseTo(1 / 3);
+    expect(m.mustMissed).toEqual(["5 年以上前端经验"]);
+    expect(m.mustRecall).toBeCloseTo(0.5);
+  });
+
+  it("职责不计入召回 —— 金标准里那份是概括，粒度比任职要求粗", () => {
+    const m = computeRequirementMetrics(withReqs([]), [
+      { text: "负责组件库建设", kind: "duty" },
+    ]);
+    // 只有职责时无可评项，按满分处理而不是 0
+    expect(m.requirementRecall).toBe(1);
+    expect(m.extracted).toBe(0);
+  });
+
+  it("措辞不同但指向同一条要求时算抽中 —— 复用缺失项召回那套匹配器", () => {
+    const m = computeRequirementMetrics(
+      withReqs([
+        { id: "r1", text: "五年以上前端开发经验", keys: [], kind: "must", status: "covered", entityIds: [], sourceQuote: "" },
+      ]),
+      [{ text: "5 年以上前端经验", kind: "must" }]
+    );
+    expect(m.requirementRecall).toBe(1);
+  });
+
+  it("用 keys 命中也算 —— 模型可能把原子词与正文分开写", () => {
+    const m = computeRequirementMetrics(
+      withReqs([
+        { id: "r1", text: "工程化与基建能力要求", keys: ["组件库建设经验"], kind: "must", status: "covered", entityIds: [], sourceQuote: "" },
+      ]),
+      [{ text: "组件库建设经验", kind: "must" }]
+    );
+    expect(m.requirementRecall).toBe(1);
+  });
+
+  it("没有分析结果时召回为 0，且不抛异常", () => {
+    const m = computeRequirementMetrics(null, goldReqs);
+    expect(m.extracted).toBe(0);
+    expect(m.requirementRecall).toBe(0);
+    expect(m.mustRecall).toBe(0);
+  });
+
+  it("金标准没有可评项时按满分处理（除零不该算作失败）", () => {
+    const m = computeRequirementMetrics(withReqs([]), []);
+    expect(m.requirementRecall).toBe(1);
+    expect(m.mustRecall).toBe(1);
+  });
+
+  it("extracted 报出模型抽了多少条 —— 用来发现「只抽两条就交差」", () => {
+    const m = computeRequirementMetrics(
+      withReqs([
+        { id: "r1", text: "A", keys: [], kind: "must", status: "covered", entityIds: [], sourceQuote: "" },
+        { id: "r2", text: "B", keys: [], kind: "must", status: "covered", entityIds: [], sourceQuote: "" },
+      ]),
+      goldReqs
+    );
+    expect(m.extracted).toBe(2);
   });
 });

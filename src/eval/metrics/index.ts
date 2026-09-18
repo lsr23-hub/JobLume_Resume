@@ -45,6 +45,7 @@ export const averageCaseMetrics = (runs: CaseMetrics[]): CaseMetrics => {
     dimensions: first.dimensions,
     judgment: avgOf((m) => m.judgment),
     coverage: avgOf((m) => m.coverage),
+    requirements: avgOf((m) => m.requirements),
     ranking: avgOf((m) => m.ranking),
     selection: avgOf((m) => m.selection),
   };
@@ -65,6 +66,7 @@ export const aggregateMetrics = (
   const avg = (pick: (c: CaseMetrics) => number) => mean(cases.map(pick));
 
   const values: Partial<Record<MetricKey, number>> = {
+    requirementRecall: avg((c) => c.requirements.requirementRecall),
     missingRecall: avg((c) => c.coverage.missingRecall),
     coverageFalsePositive: avg((c) => c.coverage.coverageFalsePositive),
 

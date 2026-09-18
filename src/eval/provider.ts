@@ -1,6 +1,8 @@
 import type { ProfileEntity } from "@/types/profile";
 import { callLLM, type LLMUsage } from "@/lib/server/llm";
 import type { AIModelType } from "@/config/ai";
+import type { GoldStandard } from "./types";
+import { isSameSkill } from "./metrics/skillMatch";
 import type { EvalCase } from "./types";
 
 /**
@@ -83,6 +85,53 @@ const quoteFrom = (entity: ProfileEntity): string => {
  * - `oracle`：完全照金标准答，用来验证指标管线能算出满分
  * - `noisy`：按 id 稳定地翻掉一部分判定，用来验证指标真的能抓出错
  */
+/**
+ * oracle 模式该吐出的要求项。
+ *
+ * 两件事都要满足，否则框架自检失真：
+ * - **要求项召回**要满分 → 金标准里的任职要求一条不少地出现在 requirements 里
+ * - **缺失项召回**要满分 → 金标准标为缺失的那些必须是 `status: "missing"`
+ *
+ * 金标准的 missingSkills 与 requirements 是两份独立标注（前者是「档案没支撑的」，
+ * 后者是「JD 提出的」），所以按文本对齐，对不上的单独补一条。
+ */
+const oracleRequirements = (gold: GoldStandard) => {
+  const missing = gold.missingSkills ?? [];
+  const usedMissing = new Set<number>();
+
+  const fromGold = gold.requirements.map((requirement, index) => {
+    const hit = missing.findIndex(
+      (skill, i) => !usedMissing.has(i) && isSameSkill(requirement.text, skill)
+    );
+    if (hit >= 0) usedMissing.add(hit);
+    return {
+      id: `r${index + 1}`,
+      text: requirement.text,
+      keys: [requirement.text],
+      kind: requirement.kind,
+      status: hit >= 0 ? "missing" : "covered",
+      entityIds: [],
+      sourceQuote: "",
+    };
+  });
+
+  // 金标准里标了缺失、却在 requirements 里找不到对应条目的 —— 补上
+  const extras = missing
+    .map((skill, index) => ({ skill, index }))
+    .filter(({ index }) => !usedMissing.has(index))
+    .map(({ skill }, offset) => ({
+      id: `r${gold.requirements.length + offset + 1}`,
+      text: skill,
+      keys: [skill],
+      kind: "must" as const,
+      status: "missing",
+      entityIds: [],
+      sourceQuote: "",
+    }));
+
+  return [...fromGold, ...extras];
+};
+
 export const createMockTransport = (evalCase: EvalCase, mode: MockMode = "oracle"): Transport => {
   const entities = Object.values(evalCase.profile?.entities ?? {});
   const gold = evalCase.gold;
@@ -133,17 +182,7 @@ export const createMockTransport = (evalCase: EvalCase, mode: MockMode = "oracle
           // 框架自检就失效了。
           // sourceQuote 留空：mock 没有 JD 原文可引，留空即「无原文依据」，不会被清。
           requirements:
-            mode === "oracle"
-              ? gold.missingSkills.map((skill, index) => ({
-                  id: `r${index + 1}`,
-                  text: skill,
-                  keys: [skill],
-                  kind: "must",
-                  status: "missing",
-                  entityIds: [],
-                  sourceQuote: "",
-                }))
-              : [],
+            mode === "oracle" ? oracleRequirements(gold) : [],
           items: ordered.map(({ entity, level, flipped }) => ({
             id: entity.id,
             level,
