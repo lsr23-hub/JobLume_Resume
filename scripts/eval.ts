@@ -13,7 +13,7 @@ import { join } from "node:path";
 import type { AIModelType } from "../src/config/ai";
 import { loadAllCases, summarizeDataset } from "../src/eval/dataset";
 import { computeStabilityMetrics } from "../src/eval/metrics/stability";
-import { aggregateMetrics } from "../src/eval/metrics";
+import { aggregateMetrics, averageCaseMetrics } from "../src/eval/metrics";
 import { createMockTransport, realTransport, type MockMode, type Transport } from "../src/eval/provider";
 import { buildReport } from "../src/eval/report";
 import { metricsFor, runCase } from "../src/eval/runner";
@@ -121,10 +121,11 @@ const main = async () => {
     if (first.error) {
       console.log(`失败：${first.error}`);
     } else {
-      const m = metricsFor(evalCase, first);
+      // 指标按 N 次运行取均值 —— 单次运行会被模型自身抖动淹没
+      const m = averageCaseMetrics(result.runs.map((r) => metricsFor(evalCase, r)));
       caseMetrics.push(m);
       console.log(
-        `完成（漏判 ${m.judgment.falseNegative}，误判 ${m.judgment.falsePositive}，NDCG@5 ${m.ranking.ndcgAt5.toFixed(2)}，${(first.usage.elapsedMs / 1000).toFixed(1)}s）`
+        `完成（漏判 ${m.judgment.falseNegative.toFixed(1)}，误判 ${m.judgment.falsePositive.toFixed(1)}，NDCG@5 ${m.ranking.ndcgAt5.toFixed(2)}，${(first.usage.elapsedMs / 1000).toFixed(1)}s）`
       );
     }
 

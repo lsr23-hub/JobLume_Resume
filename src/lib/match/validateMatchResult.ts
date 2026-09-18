@@ -32,8 +32,20 @@ export interface ValidateResult {
 const asStringArray = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((v): v is string => typeof v === "string" && v.trim() !== "") : [];
 
-/** 归一化空白，用于证据的子串比对 —— 忽略空白差异，但要求字面一致 */
-const normalizeForMatch = (text: string): string => text.replace(/\s+/g, "");
+/**
+ * 归一化后比对证据 —— 忽略空白与**分隔符**差异，但内容字面必须一致。
+ *
+ * 为什么连分隔符也去掉：模型引用多个字段时会自己补分隔符，
+ * 比如 `英语 | CET-6 · 可熟练阅读英文技术文档`，而条目里这两个字段
+ * 是空格连起来的（`英语 CET-6 · ...`）—— 去空白后是 `英语CET-6·...`，
+ * 那个 `|` 就让整段引用匹配不上，**正确的否定判断被系统自己推翻成推荐**。
+ *
+ * 分隔符不是内容，两边都该去掉。这不影响「防编造」：内容字符仍须逐字一致。
+ */
+const SEPARATOR_PATTERN = /[\s|｜/／·・、,，;；]+/g;
+
+const normalizeForMatch = (text: string): string =>
+  text.replace(SEPARATOR_PATTERN, "");
 
 /**
  * 校验并修正模型返回的分析结果。

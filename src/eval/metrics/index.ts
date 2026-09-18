@@ -20,6 +20,36 @@ export interface AggregateMetrics {
 const mean = (values: number[]): number =>
   values.length === 0 ? 1 : values.reduce((s, x) => s + x, 0) / values.length;
 
+/**
+ * 同一个案例跑多次时，把指标按次平均。
+ *
+ * 模型自身的抖动（实测重跑翻转率 7%~11%）会让单次运行的数字失去意义 ——
+ * 噪声比要看的效果还大。取均值后，差异才归因得到 prompt 而不是这一次的运气。
+ * 失败明细保留首次运行的，便于逐条复查。
+ */
+export const averageCaseMetrics = (runs: CaseMetrics[]): CaseMetrics => {
+  if (runs.length <= 1) return runs[0];
+
+  const first = runs[0];
+  const avgOf = <T extends object>(pick: (m: CaseMetrics) => T): T => {
+    const out = { ...pick(first) } as Record<string, unknown>;
+    for (const key of Object.keys(out)) {
+      if (typeof out[key] !== "number") continue;
+      out[key] = mean(runs.map((r) => (pick(r) as Record<string, number>)[key]));
+    }
+    return out as T;
+  };
+
+  return {
+    caseId: first.caseId,
+    dimensions: first.dimensions,
+    judgment: avgOf((m) => m.judgment),
+    coverage: avgOf((m) => m.coverage),
+    ranking: avgOf((m) => m.ranking),
+    selection: avgOf((m) => m.selection),
+  };
+};
+
 export const aggregateMetrics = (
   cases: CaseMetrics[],
   stability: StabilityMetrics | null

@@ -307,3 +307,59 @@ describe("parseMatchPayload", () => {
     expect(parseMatchPayload("完全不是 JSON")).toBeNull();
   });
 });
+
+describe("证据比对的分隔符容忍", () => {
+  const entity = {
+    id: "e1",
+    type: "languages" as const,
+    sectionId: "languages",
+    title: "英语",
+    subtitle: "CET-6 · 可熟练阅读英文技术文档，能参与英文会议",
+    dateRange: "",
+    description: "",
+    tags: [],
+    skills: [],
+    metrics: [],
+    order: 0,
+    createdAt: "",
+    updatedAt: "",
+  };
+
+  const runWith = (evidence: string) =>
+    validateMatchResult(
+      {
+        items: [
+          {
+            id: "e1",
+            level: "not_recommended",
+            reason: "岗位未要求英语",
+            evidence,
+            matchedSkills: [],
+            missingSkills: [],
+          },
+        ],
+        summary: { recommendedCount: 0, coverage: { covered: [], weak: [], missing: [] }, advice: "" },
+      },
+      { entities: [entity], modelId: "m", promptVersion: "v", analyzedAt: "", topN: 5 }
+    );
+
+  it("模型把标题与副标题用 | 拼起来引用，仍算引到了原文", () => {
+    // 实测踩到：模型引的是「英语 | CET-6 · …」，而原文里两字段是空格连的。
+    // 精确子串匹配会判失败，把正确的否定判断推翻成推荐。
+    const { analysis } = runWith("英语 | CET-6 · 可熟练阅读英文技术文档，能参与英文会议");
+    expect(analysis.items.e1.level).toBe("not_recommended");
+    expect(analysis.items.e1.autoPromoted).toBeUndefined();
+  });
+
+  it("斜杠、顿号等分隔符同样容忍", () => {
+    expect(runWith("英语/CET-6 · 可熟练阅读英文技术文档").analysis.items.e1.level).toBe(
+      "not_recommended"
+    );
+  });
+
+  it("内容对不上仍然推翻 —— 容忍分隔符不等于容忍编造", () => {
+    const { analysis } = runWith("英语 | 日语 N1 · 可同声传译");
+    expect(analysis.items.e1.level).toBe("recommended");
+    expect(analysis.items.e1.autoPromoted).toBe(true);
+  });
+});
