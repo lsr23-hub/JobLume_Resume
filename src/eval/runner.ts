@@ -33,11 +33,17 @@ export interface CaseRunResult {
 
 const EMPTY_ANALYSIS: MatchAnalysis | null = null;
 
+interface Executed {
+  run: CaseRun;
+  /** 本次运行产出的缓存，供 L1 检查原样喂回去 */
+  cache: AnalysisCache | null;
+}
+
 const executeOnce = async (
   evalCase: EvalCase,
   transport: Transport,
   options: { force: boolean; cache: AnalysisCache | null; cached: MatchAnalysis | null; now: string }
-): Promise<CaseRun> => {
+): Promise<Executed> => {
   const entities = Object.values(evalCase.profile?.entities ?? {});
   const bridge = installMatchFetchBridge(transport);
 
@@ -64,27 +70,33 @@ const executeOnce = async (
 
     if (!outcome.ok) {
       return {
-        caseId: evalCase.id,
-        modelType: transport.modelType,
-        modelId: transport.modelId,
-        fromCache: false,
-        raw: call?.raw ?? "",
-        analysis: EMPTY_ANALYSIS,
-        corrections: [],
-        usage,
-        error: outcome.error,
+        run: {
+          caseId: evalCase.id,
+          modelType: transport.modelType,
+          modelId: transport.modelId,
+          fromCache: false,
+          raw: call?.raw ?? "",
+          analysis: EMPTY_ANALYSIS,
+          corrections: [],
+          usage,
+          error: outcome.error,
+        },
+        cache: null,
       };
     }
 
     return {
-      caseId: evalCase.id,
-      modelType: transport.modelType,
-      modelId: transport.modelId,
-      fromCache: outcome.fromCache,
-      raw: call?.raw ?? "",
-      analysis: outcome.analysis,
-      corrections: outcome.corrections,
-      usage,
+      run: {
+        caseId: evalCase.id,
+        modelType: transport.modelType,
+        modelId: transport.modelId,
+        fromCache: outcome.fromCache,
+        raw: call?.raw ?? "",
+        analysis: outcome.analysis,
+        corrections: outcome.corrections,
+        usage,
+      },
+      cache: outcome.cache,
     };
   } finally {
     bridge.restore();
@@ -108,36 +120,32 @@ export const runCase = async (
     cached: null,
     now,
   });
-  runs.push(first);
+  runs.push(first.run);
 
-  // 缓存命中路径：拿首次的 cache + analysis 再走一遍，应当完全不发请求
+  // L1：把首次产出的缓存与结果**原样**喂回去。
+  // 必须用真实缓存 —— 手搓一个桩（比如 promptVersion 填空）会让 checkCache
+  // 判定「prompt 变了」而不复用，于是又发一次真实请求：那样测的是
+  // 「两次独立调用是否一致」（那是 L2），而不是「缓存命中是否零漂移」。
   let cachedRun: CaseRun | null = null;
-  if (checkCache && first.analysis) {
+  if (checkCache && first.cache && first.run.analysis) {
     const cached = await executeOnce(evalCase, transport, {
       force: false,
-      cache: {
-        contentFingerprint: "",
-        entityFingerprints: {},
-        modelId: transport.modelId,
-        promptVersion: "",
-        analyzedAt: now,
-      } as AnalysisCache,
-      cached: first.analysis,
+      cache: first.cache,
+      cached: first.run.analysis,
       now,
     });
-    cachedRun = cached;
+    cachedRun = cached.run;
   }
 
   // 重跑：force 掉缓存
   for (let i = 0; i < reruns; i += 1) {
-    runs.push(
-      await executeOnce(evalCase, transport, {
-        force: true,
-        cache: null,
-        cached: null,
-        now,
-      })
-    );
+    const again = await executeOnce(evalCase, transport, {
+      force: true,
+      cache: null,
+      cached: null,
+      now,
+    });
+    runs.push(again.run);
   }
 
   return { caseId: evalCase.id, runs, cachedRun };

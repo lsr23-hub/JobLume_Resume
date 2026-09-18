@@ -17,6 +17,12 @@ export interface StabilityMetrics {
   /** L1：缓存命中时判定发生变化的条数。必须为 0 */
   l1Drift: number;
   l1Checked: boolean;
+  /**
+   * L1 那次**实际是否命中了缓存**（没发请求）。
+   * 为 false 说明缓存判定失效，此时 l1Drift 测的是模型抖动而不是缓存 ——
+   * 两件事混为一谈会把缓存故障误读成「模型不稳定」。
+   */
+  l1FromCache: boolean;
 
   /** L2：多次重跑之间判定不一致的条目比例 */
   rerunFlipRate: number;
@@ -117,6 +123,7 @@ export const computeStabilityMetrics = ({
   return {
     l1Drift: cachedRun && first ? judgmentDiff(first, cachedRun.analysis).length : 0,
     l1Checked: Boolean(cachedRun),
+    l1FromCache: cachedRun?.fromCache ?? false,
     rerunFlipRate,
     runCount: runs.length,
     rankKendallTau,

@@ -135,7 +135,12 @@ const main = async () => {
     writeFileSync(
       join(outDir, "raw", `${evalCase.id}.json`),
       JSON.stringify(
-        { case: { id: evalCase.id, jd: evalCase.jd }, runs: result.runs },
+        {
+          case: { id: evalCase.id, jd: evalCase.jd },
+          runs: result.runs,
+          // L1 那次单独放 —— 它的 calls 应当是 0，这是「缓存真的生效」的证据
+          cachedRun: result.cachedRun,
+        },
         null,
         1
       )
@@ -151,6 +156,8 @@ const main = async () => {
 
   stability.l1Drift = perCaseStability.reduce((s, x) => s + x.l1Drift, 0);
   stability.l1Checked = perCaseStability.some((x) => x.l1Checked);
+  // 所有案例都该命中缓存；有一个没命中就说明缓存判定失效，报告要能看出来
+  stability.l1FromCache = perCaseStability.every((x) => x.l1FromCache);
   stability.rerunFlipRate = avg((x) => x.rerunFlipRate);
   stability.rankKendallTau = avg((x) => x.rankKendallTau);
   stability.perturbationChecked = perCaseStability.some((x) => x.perturbationChecked);

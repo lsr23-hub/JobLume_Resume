@@ -97,6 +97,16 @@ export const buildReport = (input: ReportInput): string => {
     lines.push("");
   }
 
+  // 缓存没命中时 l1Drift 测的是模型抖动而非缓存 —— 必须说清楚，
+  // 否则会把缓存故障误读成「模型不稳定」
+  if (aggregate.stability?.l1Checked && !aggregate.stability.l1FromCache) {
+    lines.push(
+      `> ⚠️ L1 那一次**没有命中缓存**（仍然发出了真实请求）。此时「缓存漂移为 0」` +
+        `说明的是模型两次结果一致，而不是缓存生效 —— 缓存本身可能已经坏了。`
+    );
+    lines.push("");
+  }
+
   const skipped = groups
     .flatMap((g) => g.keys)
     .filter((k) => aggregate.values[k] === undefined && !verdicts.some((v) => v.key === k));
@@ -130,9 +140,15 @@ export const buildReport = (input: ReportInput): string => {
     lines.push(`## 失败案例`);
     lines.push("");
     for (const { caseId, metrics } of aggregate.perCase) {
-      const { falseNegatives, hallucinations } = metrics.judgment;
+      const { falseNegatives, falsePositives, hallucinations } = metrics.judgment;
       const { missed } = metrics.selection;
-      if (falseNegatives.length === 0 && missed.length === 0 && hallucinations.length === 0) continue;
+      if (
+        falseNegatives.length === 0 &&
+        falsePositives.length === 0 &&
+        missed.length === 0 &&
+        hallucinations.length === 0
+      )
+        continue;
 
       lines.push(`### ${caseId}`);
       lines.push("");
@@ -142,6 +158,15 @@ export const buildReport = (input: ReportInput): string => {
         lines.push("");
         falseNegatives.forEach((f) => {
           lines.push(`- ${f.title} —— 人工：${f.goldReason ?? "—"}｜AI：${f.aiReason || "（无理由）"}`);
+        });
+        lines.push("");
+      }
+
+      if (falsePositives.length > 0) {
+        lines.push(`**误判（人工判不相关，AI 推了）**`);
+        lines.push("");
+        falsePositives.forEach((f) => {
+          lines.push(`- ${f.title} —— AI：${f.aiReason || "（无理由）"}`);
         });
         lines.push("");
       }
