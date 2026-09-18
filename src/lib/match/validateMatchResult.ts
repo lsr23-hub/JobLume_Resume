@@ -454,32 +454,6 @@ export const validateMatchResult = (
   };
 };
 
-/** 从模型返回的文本中提取 JSON —— 容忍 ```json 代码块与前后废话 */
-export const parseMatchPayload = (text: string): unknown => {
-  const trimmed = text.trim();
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    /* 继续尝试其他形式 */
-  }
-
-  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenced?.[1]) {
-    try {
-      return JSON.parse(fenced[1].trim());
-    } catch {
-      /* 继续 */
-    }
-  }
-
-  const block = trimmed.match(/\{[\s\S]*\}/);
-  if (block?.[0]) {
-    try {
-      return JSON.parse(block[0]);
-    } catch {
-      /* 放弃 */
-    }
-  }
-
-  return null;
-};
+// 通用的 JSON 提取搬到了 lib，这里再导出，调用方不用改
+import { parseModelJson } from "@/lib/parseModelJson";
+export const parseMatchPayload = parseModelJson;

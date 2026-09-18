@@ -14,6 +14,7 @@ import { DEFAULT_SECTION_ORDER, PRESET_BASIC_FIELDS } from "@/config/sections";
 import { DEFAULT_FIELD_ORDER } from "@/config/constants";
 import { parseDateRange } from "@/lib/profile/entityUtils";
 import { generateUUID } from "@/utils/uuid";
+import { needsCategorizing } from "@/lib/profile/categories";
 import { reportHydrationFailure } from "@/store/persistGuard";
 
 export const PROFILE_STORAGE_KEY = "career-profile-storage";
@@ -72,6 +73,20 @@ interface ProfileStore {
   addSkillGroup: (input: Omit<SkillGroup, "id" | "order">) => string;
   updateSkillGroup: (id: string, patch: Partial<SkillGroup>) => void;
   removeSkillGroup: (id: string) => void;
+
+  /**
+   * 批量写入自动归类的类别。
+   *
+   * 三条规则，都是为了「尊重人的输入、只补齐机器需要的东西」：
+   * - **空位**：填上
+   * - **已经是词表里的类别**：不动 —— 那是用户明确的、规范的选择，机器不该推翻
+   * - **非空但不在词表里**（用户随手写的「计算机」「数据」）：**归一化**
+   *
+   * 第三条是实测补上的：档案里早就有手工标签时，只填空位等于这个功能对
+   * 老用户完全不起作用，而衰减会按各人随手写的字符串分组 —— 写「计算机」的
+   * 和写「互联网」的其实是同一类，却互相不衰减。
+   */
+  applyCategories: (categories: Record<string, string>) => void;
 
   updateBasic: (patch: Partial<BasicInfo>) => void;
   setCertificateText: (certificateText: string) => void;
@@ -221,6 +236,24 @@ export const useCareerProfileStore = create<ProfileStore>()(
           }),
         });
         return id;
+      },
+
+      applyCategories: (categories) => {
+        const profile = get().ensureProfile();
+        const entities = { ...profile.entities };
+        let changed = 0;
+
+        for (const [id, category] of Object.entries(categories)) {
+          const entity = entities[id];
+          if (!entity) continue;
+          // 已经是规范类别 → 用户的选择优先，不动
+          if (!needsCategorizing(entity.tags[0])) continue;
+          entities[id] = { ...entity, tags: [category, ...entity.tags.slice(1)] };
+          changed += 1;
+        }
+
+        if (changed === 0) return;
+        set({ profile: touch({ ...profile, entities }) });
       },
 
       updateEntity: (id, patch) => {

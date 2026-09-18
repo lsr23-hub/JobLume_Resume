@@ -10,6 +10,7 @@ import { SelfEvaluationPanel } from "./SelfEvaluationPanel";
 import { SaveBar } from "./SaveBar";
 import { ImportProfileDialog } from "./ImportProfileDialog";
 import { ExportProfileButton } from "./ExportProfileButton";
+import { AutoCategorizeButton } from "./AutoCategorizeButton";
 
 /** 走「条目列表」形态的板块；其余由专属面板负责 */
 const ENTITY_SECTIONS = new Set([
@@ -60,6 +61,7 @@ export const ProfileWorkbench = () => {
           <p className="mt-0.5 text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <AutoCategorizeButton />
           <ImportProfileDialog />
           <ExportProfileButton />
         </div>

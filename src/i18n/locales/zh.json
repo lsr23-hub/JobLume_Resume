@@ -990,7 +990,15 @@
       "button": "导出数据",
       "success": "职业数据库已另存为文件"
     },
-    "certificatesLabel": "证书奖项"
+    "certificatesLabel": "证书奖项",
+    "autoTag": {
+      "button": "自动归类",
+      "done": "已为 {count} 条经历归类",
+      "none": "没有识别出可用的类别",
+      "rejected": "有 {count} 条的类别不在词表里，已跳过",
+      "needKey": "请先在 AI 设置页填入 DeepSeek API Key",
+      "allTagged": "所有经历都已经有类别了"
+    }
   },
   "targets": {
     "title": "投递目标",

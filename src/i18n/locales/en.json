@@ -988,7 +988,15 @@
       "button": "Export",
       "success": "Career database saved to a file"
     },
-    "certificatesLabel": "Certificates"
+    "certificatesLabel": "Certificates",
+    "autoTag": {
+      "button": "Auto-categorise",
+      "done": "Categorised {count} entries",
+      "none": "No usable category was recognised",
+      "rejected": "{count} entries had a category outside the vocabulary and were skipped",
+      "needKey": "Please add your DeepSeek API key in AI settings first",
+      "allTagged": "Every entry already has a category"
+    }
   },
   "targets": {
     "title": "Job Targets",
