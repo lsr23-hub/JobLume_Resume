@@ -503,3 +503,62 @@ describe("requirementsOf —— 旧数据的回退路径", () => {
     expect(requirementsOf(legacyAnalysis({ covered: [], weak: [], missing: [] }))).toEqual([]);
   });
 });
+
+// ─────────────────────────────────────────────────────────────
+// 对抗性：模型能不能把「不存在的东西」说成存在
+//
+// 已有的规则各自钉在对应的小节里（编造技能 → skill_not_found、
+// 编造原文依据 → 清空 sourceQuote、声称 covered 却指不出经历 → 降级、
+// 编造条目 / 要求 id → 丢弃）。这里只放**现有规则拦不住**的那一类。
+// ─────────────────────────────────────────────────────────────
+
+describe("对抗性 —— 指向「真实但无关」的经历", () => {
+  it("当前拦不住：校验只查经历存不存在，不查它与这条要求有没有关系", () => {
+    // 场景：模型声称「精通 Rust」由 a 支撑，而 a 是一段纯前端经历。
+    // entityIds 指向的 id 真实存在 → 通过全部校验 → 界面上以
+    // 「你具备精通 Rust（由前端工程师支撑）」的姿态出现。
+    //
+    // 为什么没修：判断「这条经历跟这条要求有没有关系」只能靠字符串匹配，
+    // 而要求是整句、经历里未必出现同样的词（要求写「5 年以上前端经验」，
+    // 经历写「高级前端工程师」）—— 误杀正常判定比漏掉这一类的代价更大。
+    // 真要收紧得引入语义判断，那是另一个量级的改动。
+    //
+    // 这条测试是**故意钉住这个缺口**：将来谁加了相关性校验，
+    // 它会失败并提醒把这里与 docs/07 的说明一起改掉。
+    const { analysis, corrections } = run(
+      {
+        requirements: [
+          req({
+            id: "r1",
+            text: "精通 Rust",
+            keys: ["Rust"],
+            status: "covered",
+            entityIds: ["a"],
+            sourceQuote: "",
+          }),
+        ],
+      },
+      [entity("a", { title: "前端工程师", description: "<p>写 React 与 TypeScript</p>" })]
+    );
+
+    expect(analysis.requirements?.[0].status).toBe("covered");
+    expect(
+      corrections.filter((c) => c.scope === "requirement" && c.type === "no_evidence")
+    ).toEqual([]);
+  });
+
+  it("对照组：指不出经历时会被降级 —— 说明这道闸门是有效的，只是不够细", () => {
+    const { analysis, corrections } = run(
+      {
+        requirements: [
+          req({ id: "r1", text: "精通 Rust", keys: ["Rust"], status: "covered", entityIds: [], sourceQuote: "" }),
+        ],
+      },
+      [entity("a")]
+    );
+    expect(analysis.requirements?.[0].status).toBe("weak");
+    expect(
+      corrections.some((c) => c.scope === "requirement" && c.type === "no_evidence")
+    ).toBe(true);
+  });
+});
