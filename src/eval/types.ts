@@ -139,9 +139,6 @@ export interface Threshold {
 export type MetricKey =
   | "missingRecall"
   | "coverageFalsePositive"
-  | "falseNegativeRate"
-  | "falsePositiveRate"
-  | "evidenceSelfConsistency"
   | "reasonHallucinationRate"
   | "ndcgAt5"
   | "spearman"
@@ -150,6 +147,5 @@ export type MetricKey =
   | "idealJaccard"
   | "selectionQuality"
   | "l1Drift"
-  | "rerunFlipRate"
   | "rankKendallTau"
   | "perturbationFlipRate";

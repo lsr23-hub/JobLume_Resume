@@ -22,24 +22,9 @@ export const THRESHOLDS: Record<MetricKey, Threshold & { rationale: string }> = 
   },
 
   // ── 匹配判定 ──
-  falseNegativeRate: {
-    value: 0.1,
-    direction: "lower",
-    label: "漏判率",
-    rationale: "误判用户看一眼就删了；漏判用户根本不知道自己漏了",
-  },
-  falsePositiveRate: {
-    value: 0.25,
-    direction: "lower",
-    label: "误判率",
-    rationale: "比漏判宽松 —— 代价只是用户多删一条",
-  },
-  evidenceSelfConsistency: {
-    value: 0.95,
-    direction: "higher",
-    label: "证据自洽率",
-    rationale: "引不出原文依据的否定判断，系统会自动推翻，等于白判",
-  },
+  // 注意：判定类的混淆矩阵（漏判/误判/证据自洽）**不在此表内**。
+  // v4 起模型只输出排序，不再输出二分标签 —— 那三项衡量的是模型没做的决定。
+  // 见 docs/07-eval-design.md §3 的说明。
   reasonHallucinationRate: {
     value: 0.05,
     direction: "lower",
@@ -81,10 +66,13 @@ export const THRESHOLDS: Record<MetricKey, Threshold & { rationale: string }> = 
     rationale: "允许措辞层面的人机分歧，但大头要对上",
   },
   selectionQuality: {
-    value: 1,
+    // 阈值 0.90，**事后修订**：初版定的是 1.0，理由栏写的却只是「按相关度满分算」——
+    // 那是复述定义，不是理由。看数据前定的，看数据后才补上真正的判据：
+    // 在同样多的名额里，至少拿到可用相关度的九成。
+    value: 0.9,
     direction: "higher",
     label: "选择质量",
-    rationale: "理想集合按相关度满分算",
+    rationale: "同样名额下至少拿到九成可用相关度；剩下的差额由用户在编辑器里补",
   },
 
   // ── 稳定性 ──
@@ -93,12 +81,6 @@ export const THRESHOLDS: Record<MetricKey, Threshold & { rationale: string }> = 
     direction: "lower",
     label: "L1 缓存漂移",
     rationale: "缓存命中根本不发请求，不为 0 说明缓存坏了，与模型无关",
-  },
-  rerunFlipRate: {
-    value: 0.05,
-    direction: "lower",
-    label: "重跑翻转率",
-    rationale: "用户明确要求过「不要每次结果相差很远」",
   },
   rankKendallTau: {
     value: 0.8,

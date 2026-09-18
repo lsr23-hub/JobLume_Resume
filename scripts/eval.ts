@@ -99,6 +99,7 @@ const main = async () => {
   console.log(`评测开始：${cases.length} 个案例，传输层 ${label}，重跑 ${args.runs} 次`);
 
   const caseMetrics: CaseMetrics[] = [];
+  const failures: Array<{ caseId: string; error: string }> = [];
   const firstRuns: Record<string, CaseRun> = {};
   const stabilityInputs: Parameters<typeof computeStabilityMetrics>[0] = {
     runs: [],
@@ -119,13 +120,16 @@ const main = async () => {
     firstRuns[evalCase.id] = first;
 
     if (first.error) {
+      failures.push({ caseId: evalCase.id, error: first.error });
       console.log(`失败：${first.error}`);
     } else {
       // 指标按 N 次运行取均值 —— 单次运行会被模型自身抖动淹没
       const m = averageCaseMetrics(result.runs.map((r) => metricsFor(evalCase, r)));
       caseMetrics.push(m);
+      // 不打印「漏判/误判」：v4 起模型只排序，那个二分标签由代码按名次推出来，
+      // 拿它算混淆矩阵衡量的是代码的截断线，不是模型
       console.log(
-        `完成（漏判 ${m.judgment.falseNegative.toFixed(1)}，误判 ${m.judgment.falsePositive.toFixed(1)}，NDCG@5 ${m.ranking.ndcgAt5.toFixed(2)}，${(first.usage.elapsedMs / 1000).toFixed(1)}s）`
+        `完成（NDCG@5 ${m.ranking.ndcgAt5.toFixed(2)}，理想重合 ${m.selection.idealJaccard.toFixed(2)}，关键经历 ${m.selection.mustHaveRecall === 1 ? "全中" : "有漏"}，${(first.usage.elapsedMs / 1000).toFixed(1)}s）`
       );
     }
 
@@ -169,6 +173,8 @@ const main = async () => {
   const report = buildReport({
     modelLabel: label,
     startedAt,
+    failures,
+    totalCases: cases.length,
     dataset,
     aggregate,
     runs: firstRuns,

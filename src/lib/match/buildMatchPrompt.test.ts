@@ -4,7 +4,6 @@ import {
   buildMatchPrompt,
   orderEntitiesForPrompt,
   stripHtml,
-  TOP_N,
 } from "./buildMatchPrompt";
 
 const entity = (
@@ -158,8 +157,14 @@ describe("buildMatchPrompt — 内容", () => {
     expect(prompt).not.toContain("字".repeat(301));
   });
 
-  it("包含 top-N 数量", () => {
-    expect(buildMatchPrompt({ ...baseInput, entities })).toContain(`${TOP_N} 条`);
+  it("要求全量排序，且不再向模型索取二分判定", () => {
+    // v4 起把「在哪划线」从模型手里拿走 —— 那条线取决于用户这份简历
+    // 放得下几条，而这个信息不在 prompt 里。模型只排序，截断交给代码。
+    const prompt = buildMatchPrompt({ ...baseInput, entities });
+    expect(prompt).toContain("排序");
+    expect(prompt).toContain("每条候选经历都必须出现");
+    expect(prompt).not.toContain("recommended");
+    expect(prompt).not.toContain("evidence");
   });
 
   it("没有条目时不抛异常", () => {

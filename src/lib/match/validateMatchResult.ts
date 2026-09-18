@@ -20,7 +20,7 @@ interface RawPayload {
 
 export interface Correction {
   entityId: string;
-  type: "invalid_level" | "evidence_not_found" | "skill_not_found" | "duplicate" | "unknown_id";
+  type: "skill_not_found" | "duplicate" | "unknown_id" | "omitted";
   detail: string;
 }
 
@@ -89,17 +89,8 @@ export const validateMatchResult = (
       continue;
     }
 
-    const rawLevel = rawItem.level;
-    let level: MatchLevel = rawLevel === "not_recommended" ? "not_recommended" : "recommended";
-    if (rawLevel !== "not_recommended" && rawLevel !== "recommended") {
-      corrections.push({
-        entityId: id,
-        type: "invalid_level",
-        detail: `level=${JSON.stringify(rawLevel)} 非法，按推荐处理`,
-      });
-    }
+    const reason = typeof rawItem.reason === "string" ? rawItem.reason.trim() : "";
 
-    const evidence = typeof rawItem.evidence === "string" ? rawItem.evidence.trim() : "";
     // 搜索范围必须覆盖**模型实际看得到的全部用户输入** ——
     // prompt 里序列化了标题、副标题、时间、描述、技能、成果，
     // 模型引用副标题是合法的，只在描述里找会误判为「无法举证」。
@@ -114,26 +105,6 @@ export const validateMatchResult = (
       ].join(" ")
     );
 
-    let autoPromoted = false;
-    let reason = typeof rawItem.reason === "string" ? rawItem.reason.trim() : "";
-
-    // 证据自洽：判为不推荐却举不出原文 → 提升为推荐
-    if (level === "not_recommended") {
-      const cited = normalizeForMatch(evidence);
-      if (!cited || !entityText.includes(cited)) {
-        corrections.push({
-          entityId: id,
-          type: "evidence_not_found",
-          detail: "否定依据无法在原文中核对，已提升为推荐",
-        });
-        level = "recommended";
-        autoPromoted = true;
-        // 理由与依据描述的是那个已被推翻的否定判断，留着会与新等级矛盾
-        reason = "";
-      }
-    }
-
-    // 与证据校验用同一份文本：模型看到什么，就允许它从什么里提取技能
     const matchedSkills = asStringArray(rawItem.matchedSkills).filter((skill) => {
       const hit = entityText.includes(normalizeForMatch(skill));
       if (!hit) {
@@ -147,13 +118,13 @@ export const validateMatchResult = (
     });
 
     items[id] = {
-      level,
+      // level 与 inTopN 都要等排完序才知道，先占位
+      level: "not_recommended",
       reason,
-      evidence: autoPromoted ? "" : evidence,
-      inTopN: false, // 稍后统一计算
+      evidence: "",
+      inTopN: false,
       matchedSkills,
       missingSkills: asStringArray(rawItem.missingSkills),
-      ...(autoPromoted ? { autoPromoted: true } : {}),
       ...(typeof rawItem.suggestedFocus === "string" && rawItem.suggestedFocus.trim()
         ? { suggestedFocus: rawItem.suggestedFocus.trim() }
         : {}),
@@ -161,11 +132,18 @@ export const validateMatchResult = (
     rankedIds.push(id);
   }
 
-  // ── 遗漏的条目补为「推荐但未分析」——不静默丢弃用户的经历 ──
+  // ── 模型漏掉的条目补在最后 ──
+  // 排序任务里「没提到」= 优先级最低，而不是「不推荐」——
+  // 补在末尾，用户仍看得到，不会静默丢掉一段经历
   for (const entity of options.entities) {
     if (entity.id in items) continue;
+    corrections.push({
+      entityId: entity.id,
+      type: "omitted",
+      detail: "模型没有给它排序，已置于末尾",
+    });
     items[entity.id] = {
-      level: "recommended",
+      level: "not_recommended",
       reason: "",
       evidence: "",
       inTopN: false,
@@ -175,17 +153,18 @@ export const validateMatchResult = (
     rankedIds.push(entity.id);
   }
 
-  // ── top-N：rankedIds 中前 N 个「推荐」条目 ──
+  // ── 由排名推出 level 与 top-N ──
+  //
+  // 模型不再输出「推荐/不推荐」这个二分标签 —— 该在哪划线取决于用户这份简历
+  // 放得下几条，而那个信息不在 prompt 里。划线交给代码，名额由用户定。
+  // 这里的 level 只用于界面上的轻重区分（前 N 条给★），不参与评测计分。
   const topN = options.topN ?? TOP_N;
-  let marked = 0;
-  for (const id of rankedIds) {
-    if (marked >= topN) break;
+  rankedIds.forEach((id, index) => {
     const item = items[id];
-    if (item?.level === "recommended") {
-      item.inTopN = true;
-      marked += 1;
-    }
-  }
+    if (!item) return;
+    item.inTopN = index < topN;
+    item.level = index < topN ? "recommended" : "not_recommended";
+  });
 
   const summary = (payload.summary ?? {}) as Record<string, unknown>;
   const coverage = (summary.coverage ?? {}) as Record<string, unknown>;

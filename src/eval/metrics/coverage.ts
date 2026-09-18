@@ -32,15 +32,52 @@ const normalize = (s: string): string =>
     .replace(/[\s·、,，;；/|（）()【】\[\]]/g, "")
     .trim();
 
+/** 最长公共子串的长度。技能名都很短，朴素 DP 足够 */
+const longestCommonRun = (a: string, b: string): number => {
+  let best = 0;
+  const prev = new Array<number>(b.length + 1).fill(0);
+  for (let i = 1; i <= a.length; i += 1) {
+    let diagonal = 0;
+    for (let j = 1; j <= b.length; j += 1) {
+      const tmp = prev[j];
+      prev[j] = a[i - 1] === b[j - 1] ? diagonal + 1 : 0;
+      diagonal = tmp;
+      if (prev[j] > best) best = prev[j];
+    }
+  }
+  return best;
+};
+
+/** 去掉分隔符后剩下的拉丁/数字词 */
+const latinTokens = (text: string): string[] =>
+  text.match(/[a-z][a-z0-9+#.]*/g) ?? [];
+
 /**
- * 中文技能名常有包含关系（「机器学习」⊂「机器学习框架」），
- * 用双向包含代替精确相等，避免因措辞不同判成没找到。
+ * 两个技能描述是否指同一件事。
+ *
+ * 人工标注写的是复合长句（「复杂数据可视化经验（Canvas/WebGL/图表库）」），
+ * 模型给的是原子术语（「图表库实战」）—— 逐字比对认不出是同一个缺口，
+ * 实测把召回压到 32.6%，而模型其实答对了。
+ *
+ * 三层，从严到宽：
+ * 1. 归一化后相等或一方包含另一方
+ * 2. 最长公共子串 ≥ 3 字
+ * 3. 共享一个长度 ≥ 2 的拉丁词（Java、A/B、K8s）
+ *
+ * 门槛卡在「不能把 JD 的干扰项也算对」上：fin-04 实测模型把
+ * 「中共党员 / 驾照 / 篮球特长」当成档案缺失的技能，这些与
+ * 「实时流计算」没有任何 3 字公共子串，必须判为不匹配。
  */
 const isMatch = (a: string, b: string): boolean => {
   const na = normalize(a);
   const nb = normalize(b);
   if (!na || !nb) return false;
-  return na === nb || na.includes(nb) || nb.includes(na);
+  if (na === nb || na.includes(nb) || nb.includes(na)) return true;
+  if (longestCommonRun(na, nb) >= 3) return true;
+
+  const la = latinTokens(na);
+  const lb = new Set(latinTokens(nb));
+  return la.some((t) => t.length >= 2 && lb.has(t));
 };
 
 export const computeCoverageMetrics = (

@@ -55,18 +55,11 @@ export const aggregateMetrics = (
   stability: StabilityMetrics | null
 ): AggregateMetrics => {
   // ── 判定类：合并混淆矩阵后重算 ──
-  const tp = cases.reduce((s, c) => s + c.judgment.truePositive, 0);
-  const fn = cases.reduce((s, c) => s + c.judgment.falseNegative, 0);
-  const fp = cases.reduce((s, c) => s + c.judgment.falsePositive, 0);
-  const tn = cases.reduce((s, c) => s + c.judgment.trueNegative, 0);
-
   const hallucinationCount = cases.reduce((s, c) => s + c.judgment.hallucinations.length, 0);
   const reasonCount = cases.reduce(
     (s, c) => s + c.judgment.truePositive + c.judgment.falseNegative + c.judgment.falsePositive + c.judgment.trueNegative,
     0
   );
-  const autoPromoted = cases.reduce((s, c) => s + c.judgment.autoPromotedCount, 0);
-  const notRecommended = cases.reduce((s, c) => s + c.judgment.notRecommendedCount, 0);
 
   // ── 其余：按案例平均 ──
   const avg = (pick: (c: CaseMetrics) => number) => mean(cases.map(pick));
@@ -75,9 +68,12 @@ export const aggregateMetrics = (
     missingRecall: avg((c) => c.coverage.missingRecall),
     coverageFalsePositive: avg((c) => c.coverage.coverageFalsePositive),
 
-    falseNegativeRate: fn + tp === 0 ? 0 : fn / (fn + tp),
-    falsePositiveRate: fp + tn === 0 ? 0 : fp / (fp + tn),
-    evidenceSelfConsistency: notRecommended === 0 ? 1 : 1 - autoPromoted / notRecommended,
+    // 下面三项**不再采集**：v4 起模型只输出排序，不再输出「推荐/不推荐」
+    // 这个二分标签（划线取决于用户这份简历放得下几条，模型无从知道）。
+    // 判定类的混淆矩阵因此失去测量对象 —— 它衡量的是模型没做的那个决定。
+    // 同一件事由排序与筛选两组的指标承担：NDCG@5 / 理想集合重合度 / 选择质量。
+    // 对照实现：computeJudgmentMetrics 仍返回这些数，需要时可自行取用。
+
     reasonHallucinationRate: reasonCount === 0 ? 0 : hallucinationCount / reasonCount,
 
     ndcgAt5: avg((c) => c.ranking.ndcgAt5),
@@ -90,8 +86,9 @@ export const aggregateMetrics = (
   };
 
   if (stability?.l1Checked) values.l1Drift = stability.l1Drift;
+  // 只报排序一致性：v4 起「重跑翻转率」比的是由排名推出的 level，
+  // 粒度反而比肯德尔 τ 粗，留着是同一件事的两个说法
   if (stability && stability.runCount > 1) {
-    values.rerunFlipRate = stability.rerunFlipRate;
     values.rankKendallTau = stability.rankKendallTau;
   }
   if (stability?.perturbationChecked) values.perturbationFlipRate = stability.perturbationFlipRate;

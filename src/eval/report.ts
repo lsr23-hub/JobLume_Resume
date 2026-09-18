@@ -13,6 +13,9 @@ import type { CaseMetrics, CaseRun, MetricKey } from "./types";
 export interface ReportInput {
   modelLabel: string;
   startedAt: string;
+  /** 执行失败的案例 —— 必须显示，否则它们会静默从指标里消失，结果虚高 */
+  failures: Array<{ caseId: string; error: string }>;
+  totalCases: number;
   dataset: { caseCount: number; profileCount: number; entityCount: number; dimensions: string[] };
   aggregate: AggregateMetrics;
   /** 每案例的首次运行，用于失败分析 */
@@ -48,7 +51,19 @@ export const buildReport = (input: ReportInput): string => {
     `- **数据集**：${input.dataset.caseCount} 个案例 / ${input.dataset.profileCount} 份档案 / ${input.dataset.entityCount} 条人工判定`
   );
   lines.push(`- **覆盖维度**：${input.dataset.dimensions.join("、")}`);
+  lines.push(
+    `- **案例执行**：${input.totalCases - input.failures.length} / ${input.totalCases} 成功` +
+      (input.failures.length > 0 ? ` —— **未成功的案例不计入下面的指标**` : "")
+  );
   lines.push("");
+
+  // ── 失败的案例先说，否则读者会以为指标覆盖了全部案例 ──
+  if (input.failures.length > 0) {
+    lines.push(`## 执行失败`);
+    lines.push("");
+    input.failures.forEach((f) => lines.push(`- **${f.caseId}**：${f.error}`));
+    lines.push("");
+  }
 
   // ── 结论先行 ──
   lines.push(`## 结论`);
@@ -70,21 +85,20 @@ export const buildReport = (input: ReportInput): string => {
   // ── 指标表 ──
   const groups: Array<{ title: string; keys: MetricKey[] }> = [
     { title: "JD 理解", keys: ["missingRecall", "coverageFalsePositive"] },
-    {
-      title: "匹配判定",
-      keys: [
-        "falseNegativeRate",
-        "falsePositiveRate",
-        "evidenceSelfConsistency",
-        "reasonHallucinationRate",
-      ],
-    },
+    { title: "判定质量", keys: ["reasonHallucinationRate"] },
     { title: "排序", keys: ["ndcgAt5", "spearman", "top5HitRate"] },
     { title: "筛选与成品", keys: ["mustHaveRecall", "idealJaccard", "selectionQuality"] },
-    { title: "稳定性", keys: ["l1Drift", "rerunFlipRate", "rankKendallTau", "perturbationFlipRate"] },
+    { title: "稳定性", keys: ["l1Drift", "rankKendallTau", "perturbationFlipRate"] },
   ];
 
   lines.push(`## 指标`);
+  lines.push("");
+  lines.push(
+    "> 判定类的混淆矩阵（漏判率 / 误判率 / 证据自洽率）**不在本表内**。" +
+      "模型自 prompt v4 起只输出优先级排序，不再输出「推荐 / 不推荐」这个二分标签 ——" +
+      "该在哪划线取决于用户这份简历放得下几条，模型无从知道。" +
+      "同一件事由下面的排序与筛选指标承担。"
+  );
   lines.push("");
   for (const group of groups) {
     const rows = verdicts.filter((v) => group.keys.includes(v.key));
@@ -118,12 +132,12 @@ export const buildReport = (input: ReportInput): string => {
   // ── 分案例 ──
   lines.push(`## 分案例`);
   lines.push("");
-  lines.push(`| 案例 | 判定漏判 | 误判 | NDCG@5 | 关键经历召回 | 理想重合 | 用时 |`);
+  lines.push(`| 案例 | NDCG@5 | 斯皮尔曼 | 关键经历召回 | 理想重合 | 选择质量 | 用时 |`);
   lines.push(`|---|---|---|---|---|---|---|`);
   for (const { caseId, metrics } of aggregate.perCase) {
     const run = runs[caseId];
     lines.push(
-      `| ${caseId} | ${metrics.judgment.falseNegative} | ${metrics.judgment.falsePositive} | ${metrics.ranking.ndcgAt5.toFixed(2)} | ${metrics.selection.mustHaveRecall === 1 ? "✅" : "❌"} | ${metrics.selection.idealJaccard.toFixed(2)} | ${run ? `${(run.usage.elapsedMs / 1000).toFixed(1)}s` : "-"} |`
+      `| ${caseId} | ${metrics.ranking.ndcgAt5.toFixed(2)} | ${metrics.ranking.spearman.toFixed(2)} | ${metrics.selection.mustHaveRecall === 1 ? "✅" : "❌"} | ${metrics.selection.idealJaccard.toFixed(2)} | ${metrics.selection.selectionQuality.toFixed(2)} | ${run ? `${(run.usage.elapsedMs / 1000).toFixed(1)}s` : "-"} |`
     );
   }
   lines.push("");

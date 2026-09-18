@@ -277,3 +277,24 @@ describe("幻觉检测要连 JD 一起查", () => {
     expect(m.hallucinations.map((h) => h.token)).toEqual(["Kubernetes"]);
   });
 });
+
+describe("缺失项匹配：同一件事不同措辞", () => {
+  it("复合长句与原子术语算匹配", () => {
+    // 人工标注爱写长句，模型给原子术语 —— 逐字比对会把正确回答判成漏掉
+    const m = computeCoverageMetrics(
+      analysis({ summary: { recommendedCount: 0, coverage: { covered: [], weak: [], missing: ["图表库实战", "开源贡献"] }, advice: "" } }),
+      ["复杂数据可视化经验（Canvas/WebGL/图表库）"]
+    );
+    expect(m.missingRecall).toBe(1);
+  });
+
+  it("JD 的干扰项不能算作找到了缺口", () => {
+    // fin-04 实测：模型把「党员/驾照/篮球」当成档案缺失的技能。
+    // 匹配放宽不等于放这么宽
+    const m = computeCoverageMetrics(
+      analysis({ summary: { recommendedCount: 0, coverage: { covered: [], weak: [], missing: ["中共党员", "驾照"] }, advice: "" } }),
+      ["实时流计算（Flink/Spark Streaming）"]
+    );
+    expect(m.missingRecall).toBe(0);
+  });
+});
