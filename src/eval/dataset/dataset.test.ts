@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lintCases, listCaseFiles, loadAllCases } from "./index";
+import { deriveIdealSelection, lintCases, listCaseFiles, loadAllCases } from "./index";
 
 /**
  * 数据集自身的体检。
@@ -20,8 +20,15 @@ describe("评测数据集", () => {
       for (const g of Object.values(c.gold.entities)) {
         expect(g.level).toBe(g.relevance >= 2 ? "recommended" : "not_recommended");
       }
+      // 关键经历一定在理想集合里 —— 否则 mustHaveRecall 永远达不成
+      for (const [id, g] of Object.entries(c.gold.entities)) {
+        if (g.mustHave) expect(c.gold.idealSelection).toContain(id);
+      }
+      // 非关键经历进理想集合的，相关度必须达标
       for (const id of c.gold.idealSelection) {
-        expect(c.gold.entities[id].relevance).toBeGreaterThanOrEqual(2);
+        if (!c.gold.entities[id].mustHave) {
+          expect(c.gold.entities[id].relevance).toBeGreaterThanOrEqual(2);
+        }
       }
     }
   });
@@ -50,5 +57,30 @@ describe("评测数据集", () => {
     ["强匹配", "弱匹配", "触发取舍", "不触发取舍", "干扰项", "跨领域"].forEach((d) => {
       expect(dims, `缺少维度：${d}`).toContain(d);
     });
+  });
+});
+
+describe("deriveIdealSelection", () => {
+  const e = (relevance: number, mustHave = false) => ({ relevance, mustHave });
+
+  it("没有关键经历时，按相关度降序截断到预算", () => {
+    const ents = { a: e(3), b: e(1), c: e(2) };
+    expect(deriveIdealSelection(ents, 2)).toEqual(["a", "c"]);
+  });
+
+  it("关键经历优先占位，哪怕它相关度最低", () => {
+    // 语言能力这类条目相关度不高，但按简历惯例总要列 —— 标了就必须进
+    const ents = { high: e(3), low: e(1, true), mid: e(2) };
+    expect(deriveIdealSelection(ents, 2)).toEqual(["low", "high"]);
+  });
+
+  it("预算比关键经历还少时，先满足关键经历", () => {
+    const ents = { a: e(3, true), b: e(3, true), c: e(3) };
+    expect(deriveIdealSelection(ents, 1)).toEqual(["a"]);
+  });
+
+  it("同分按 id 稳定排序，保证可复现", () => {
+    const ents = { z: e(2), a: e(2), m: e(2) };
+    expect(deriveIdealSelection(ents, 3)).toEqual(["a", "m", "z"]);
   });
 });

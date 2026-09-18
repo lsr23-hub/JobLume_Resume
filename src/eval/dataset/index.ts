@@ -37,6 +37,29 @@ interface ProfileFile {
 
 export class DatasetError extends Error {}
 
+/**
+ * 由相关度与预算推出理想集合。
+ *
+ * **关键经历优先占位**，剩下的名额按相关度降序补足。
+ * 顺序反过来（先按相关度截断、再看关键经历）会造出自相矛盾的金标准：
+ * 「标了必须进、却被预算线挡住」的条目根本不在理想集合里，
+ * 而 mustHaveRecall 要求 100% —— 那份金标准永远达不成。
+ *
+ * 同分时按 id 稳定排序，保证可复现。
+ */
+export const deriveIdealSelection = (
+  entities: Record<string, { relevance: number; mustHave?: boolean }>,
+  budget: number
+): string[] => {
+  const ids = Object.keys(entities);
+  const pinned = ids.filter((id) => entities[id].mustHave);
+  const rest = ids
+    .filter((id) => !entities[id].mustHave)
+    .sort((a, b) => entities[b].relevance - entities[a].relevance || a.localeCompare(b));
+
+  return [...pinned.sort((a, b) => a.localeCompare(b)), ...rest].slice(0, budget);
+};
+
 /** id → ref 的反查，只用于排序时取稳定的名字 */
 const refsOf = (refs: Record<string, string>, id: string): string | undefined =>
   Object.keys(refs).find((r) => refs[r] === id);
@@ -74,14 +97,9 @@ const resolveRefs = (
     };
   }
 
-  // 理想集合由相关度派生：降序取前 budget 条，同分按 id 稳定排序
-  const idealSelection = Object.keys(entities)
-    .sort(
-      (a, b) =>
-        entities[b].relevance - entities[a].relevance ||
-        (refsOf(refs, a) ?? a).localeCompare(refsOf(refs, b) ?? b)
-    )
-    .slice(0, gold.budget);
+  const idealSelection = deriveIdealSelection(entities, gold.budget);
+  const pinned = Object.keys(entities).filter((id) => entities[id].mustHave);
+  const rest = Object.keys(entities).filter((id) => !entities[id].mustHave);
 
   // 没标注的可见条目会让指标偏乐观 —— 模型判错也不会计入，必须在加载时拦住
   const visible = Object.values(profile.entities).filter((e) => !e.hidden);
@@ -93,13 +111,22 @@ const resolveRefs = (
     throw new DatasetError(`[${caseId}] 这些条目还没标注：${names}`);
   }
 
-  const belowThreshold = idealSelection.filter(
-    (id) => entities[id].relevance < RECOMMEND_THRESHOLD
-  );
-  if (belowThreshold.length > 0) {
+  if (pinned.length > gold.budget) {
     throw new DatasetError(
-      `[${caseId}] 预算 ${gold.budget} 条超过了相关度 ≥ ${RECOMMEND_THRESHOLD} 的条目数，` +
-        `理想集合会混进不相关的条目。要么调低预算，要么把相关度标对。`
+      `[${caseId}] 标了 ${pinned.length} 条「必须进简历」，但一页只放得下 ${gold.budget} 条。` +
+        `要么调高预算，要么把其中几条的「关键经历」取消。`
+    );
+  }
+
+  // 关键经历已经占了位，剩下的名额必须由相关度 ≥ 阈值的条目填满，
+  // 否则理想集合里会混进不相关的条目
+  const slotsLeft = gold.budget - pinned.length;
+  const eligible = rest.filter((id) => entities[id].relevance >= RECOMMEND_THRESHOLD);
+  if (eligible.length < slotsLeft) {
+    throw new DatasetError(
+      `[${caseId}] 预算 ${gold.budget} 条，扣掉 ${pinned.length} 条关键经历还剩 ${slotsLeft} 个名额，` +
+        `但相关度 ≥ ${RECOMMEND_THRESHOLD} 的条目只有 ${eligible.length} 条。` +
+        `要么调低预算，要么把相关度标对。`
     );
   }
 

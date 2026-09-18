@@ -4,6 +4,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
   :root {
+    --bar-h: 104px;
     --ground: #f4f3ef;
     --surface: #fbfaf7;
     --surface-2: #eceae4;
@@ -138,7 +139,7 @@
   }
 
   /* ── 左：JD ── */
-  .jd { position: sticky; top: 108px; display: flex; flex-direction: column; gap: 16px; }
+  .jd { position: sticky; top: var(--bar-h); display: flex; flex-direction: column; gap: 16px; }
   @media (max-width: 900px) { .jd { position: static; } }
 
   /* 窄屏上 JD 折成一条 —— 首屏必须留给要复核的条目，而不是岗位描述 */
@@ -191,14 +192,29 @@
   .req-list.gap li { background: transparent; border: 1px dashed var(--line-strong); color: var(--ink-3); }
 
   /* ── 右：列表 ── */
+  /* 吸顶：列表很长时，预算控件和「几条进简历」得一直看得见 */
   .list-head {
+    position: sticky; top: var(--bar-h); z-index: 20;
+    background: var(--ground);
     display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
-    padding-bottom: 10px; border-bottom: 1px solid var(--line-strong);
+    padding: 4px 0 10px; border-bottom: 1px solid var(--line-strong);
     margin-bottom: 4px;
   }
   .list-head h2 { font-size: 13px; font-weight: 600; margin: 0; letter-spacing: -.01em; }
   .list-stat { font-size: 12px; color: var(--ink-3); }
   .list-stat b { color: var(--accent); font-weight: 600; }
+  .budget {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--ink-3); margin-left: auto;
+  }
+  .budget input {
+    width: 44px; font: inherit; font-size: 12.5px; text-align: center;
+    font-family: "IBM Plex Mono", monospace;
+    border: 1px solid var(--line-strong); border-radius: 6px;
+    background: var(--surface); color: var(--ink); padding: 3px 4px;
+  }
+  .budget input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .budget-note { font-size: 11.5px; color: var(--warn); }
   .list { display: flex; flex-direction: column; }
 
   .card {
@@ -326,6 +342,7 @@
     <div class="list-head">
       <h2 id="list-title"></h2>
       <span class="list-stat" id="list-stat"></span>
+      <span class="budget" id="budget-row"></span>
     </div>
     <div class="list" id="list"></div>
   </section>
@@ -376,13 +393,47 @@ let edits = readEdits();
 let current = DATA.cases[0].id;
 
 const baseOf = (caseId) => DATA.cases.find((c) => c.id === caseId);
+
+const budgetOf = (caseId) => {
+  const o = edits[caseId]?.__budget;
+  return typeof o === "number" ? o : baseOf(caseId).budget;
+};
+
+/*
+ * 理想集合的派生规则，必须与 src/eval/dataset/index.ts 的 deriveIdealSelection 一致：
+ * 关键经历优先占位，剩下的名额按相关度降序补足。两处若走偏，页面显示的和评测算的
+ * 就不是一回事了 —— 改一处时记得改另一处。
+ */
+const deriveIdeal = (entities, budget) => {
+  // 用 id 不用标题 —— 「上海交通大学」在教育经历和校园经历里各有一条，
+  // 按标题建集合会塌掉一条，条数和成员都算错
+  const pinned = entities.filter((e) => e.mustHave).sort((a, b) => a.id.localeCompare(b.id));
+  const rest = entities
+    .filter((e) => !e.mustHave)
+    .sort((a, b) => b.relevance - a.relevance || a.id.localeCompare(b.id));
+  return new Set([...pinned, ...rest].slice(0, budget).map((e) => e.id));
+};
 const eff = (caseId, e) => {
   const o = edits[caseId]?.[e.id];
   return o ? { ...e, ...o } : e;
 };
 const changedCount = () =>
-  Object.values(edits).reduce((s, m) => s + Object.keys(m).length, 0);
+  Object.values(edits).reduce(
+    (s, m) => s + Object.keys(m).filter((k) => k !== "__budget").length + (m.__budget !== undefined ? 1 : 0),
+    0
+  );
 const caseDirty = (caseId) => Object.keys(edits[caseId] || {}).length > 0;
+
+function setBudget(caseId, value) {
+  const n = Math.max(1, Math.min(50, Math.round(value)));
+  const map = { ...(edits[caseId] || {}) };
+  if (n === baseOf(caseId).budget) delete map.__budget;
+  else map.__budget = n;
+  if (Object.keys(map).length === 0) delete edits[caseId];
+  else edits[caseId] = map;
+  writeEdits(edits);
+  render();
+}
 
 function setVal(caseId, entId, key, value) {
   const base = baseOf(caseId).entities.find((e) => e.id === entId);
@@ -448,28 +499,43 @@ function renderJD(c) {
 
 function renderList(c) {
   const list = document.getElementById("list");
-  const items = c.entities
-    .map((e) => eff(c.id, e))
-    .sort((a, b) => b.relevance - a.relevance || a.title.localeCompare(b.title));
+  const items = c.entities.map((e) => eff(c.id, e));
+  const budget = budgetOf(c.id);
+  const ideal = deriveIdeal(items, budget);
 
-  const inResume = items.filter((i) => i.relevance >= TH).length;
+  // 进简历的排前面，于是预算线正好落在切口上 —— 线以上即简历内容
+  const sorted = [...items].sort((a, b) => {
+    const ia = ideal.has(a.id), ib = ideal.has(b.id);
+    if (ia !== ib) return ia ? -1 : 1;
+    return b.relevance - a.relevance || a.id.localeCompare(b.id);
+  });
+
+  const pinned = items.filter((i) => i.mustHave).length;
+  const tooMany = pinned > budget;
   document.getElementById("list-title").textContent = `${c.id} · ${c.entities.length} 条经历`;
   document.getElementById("list-stat").innerHTML =
-    `其中 <b>${inResume}</b> 条进简历（一页预算 ${c.budget} 条，目标 ${c.targetPages} 页）`;
+    `其中 <b>${ideal.size}</b> 条进简历`;
+  document.getElementById("budget-row").innerHTML = `
+    <span>一页放得下</span>
+    <input id="budget-input" type="number" min="1" max="50" value="${budget}" aria-label="一页能放几条">
+    <span>条${pinned ? ` · 其中 ${pinned} 条标了必须进` : ""} · 相关度达标的 ${items.filter((i) => i.relevance >= TH).length} 条</span>
+    ${tooMany ? `<span class="budget-note">关键经历比预算还多，请调高预算</span>` : ""}`;
+  const input = document.getElementById("budget-input");
+  input.onchange = () => setBudget(c.id, Number(input.value));
 
   list.innerHTML = "";
-  items.forEach((e, i) => {
-    if (i === c.budget) {
+  sorted.forEach((e, i) => {
+    if (i === ideal.size && ideal.size > 0) {
       const r = document.createElement("div");
       r.className = "rule";
-      r.innerHTML = `<span>预算线 · 以上 ${c.budget} 条进简历</span>`;
+      r.innerHTML = `<span>预算线 · 以上 ${ideal.size} 条进简历</span>`;
       list.appendChild(r);
     }
-    list.appendChild(card(c.id, e));
+    list.appendChild(card(c.id, e, ideal.has(e.id)));
   });
 }
 
-function card(caseId, e) {
+function card(caseId, e, inResume) {
   const el = document.createElement("article");
   el.className = "card";
   el.style.setProperty("--ramp", `var(--r${e.relevance})`);
@@ -478,8 +544,9 @@ function card(caseId, e) {
   el.dataset.changed = String(isChanged);
   el.dataset.rel = String(e.relevance);
 
-  const derived = e.relevance >= TH
-    ? (e.mustHave ? "进简历 · 关键经历" : "进简历")
+  // 「进简历」由理想集合决定，不是相关度 —— 关键经历即使相关度低也照样进
+  const derived = inResume
+    ? (e.mustHave ? "进简历 · 必须进" : "进简历")
     : "不进简历";
 
   el.innerHTML = `
@@ -497,7 +564,7 @@ function card(caseId, e) {
         <div class="scale" role="group" aria-label="相关度">
           ${LEVELS.map((l) => `<button data-v="${l.v}" aria-pressed="${e.relevance === l.v}">${l.v} ${l.label}</button>`).join("")}
         </div>
-        <button class="star" aria-pressed="${Boolean(e.mustHave)}">★ 关键经历</button>
+        <button class="star" aria-pressed="${Boolean(e.mustHave)}" title="无论相关度排第几，都必须放进简历">★ 必须进</button>
         <span class="derived">${derived}${isChanged ? " · 已改" : ""}</span>
       </div>
     </div>`;
@@ -554,5 +621,13 @@ document.getElementById("reset").onclick = () => {
   render();
 };
 
+/* 顶栏高度随换行变化（窄屏尤其），量一次写进变量 —— 吸顶元素靠它对齐 */
+function syncBarHeight() {
+  const h = document.querySelector(".bar").getBoundingClientRect().height;
+  document.documentElement.style.setProperty("--bar-h", `${Math.round(h)}px`);
+}
+window.addEventListener("resize", syncBarHeight);
+
 render();
+syncBarHeight();
 </script>

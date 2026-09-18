@@ -24,7 +24,13 @@ export const RECOMMEND_THRESHOLD = 2;
 /** 案例文件里写的标注：只有相关度和「关键经历」，其余都是派生的 */
 export interface RawGoldEntity {
   relevance: Relevance;
-  /** 关键经历：没进简历就是失败 */
+  /**
+   * 必须进简历。**与相关度是两回事**：
+   * 相关度是排序信号，这个是「无论排第几都要放进去」——
+   * 比如语言能力这类按简历惯例总会列的条目，相关度不高但该在。
+   *
+   * 理想集合里它优先占位，所以漏掉它评测直接判不合格。
+   */
   mustHave?: boolean;
   reason?: string;
 }
