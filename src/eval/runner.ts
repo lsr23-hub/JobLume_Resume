@@ -160,7 +160,7 @@ export const metricsFor = (evalCase: EvalCase, run: CaseRun): CaseMetrics => {
   return {
     caseId: evalCase.id,
     dimensions: evalCase.dimensions,
-    judgment: computeJudgmentMetrics(run.analysis, gold.entities, entities),
+    judgment: computeJudgmentMetrics(run.analysis, gold.entities, entities, evalCase.jd.jdRaw),
     coverage: computeCoverageMetrics(
       run.analysis,
       gold.missingSkills,

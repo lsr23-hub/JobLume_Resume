@@ -243,3 +243,37 @@ describe("稳定性", () => {
     expect(kendallTau(["a", "b", "c"], ["c", "b", "a"])).toBe(-1);
   });
 });
+
+describe("幻觉检测要连 JD 一起查", () => {
+  const entities = [entity("a", { title: "字节跳动", description: "<p>做前端性能优化</p>" })];
+
+  it("理由里引用 JD 的术语不算编造", () => {
+    // 新 prompt 要求「reason 点出对应 JD 的哪一条要求」，于是理由里会合法地
+    // 出现 JD 的术语。只查条目原文的话这些全成幻觉 —— 实测 8 条误报里 5 条如此
+    const m = computeJudgmentMetrics(
+      analysis({
+        items: {
+          a: { level: "recommended", reason: "对应 JD 的 P99 延迟要求", evidence: "", inTopN: false, matchedSkills: [], missingSkills: [] },
+        },
+      }),
+      goldOf({ a: { level: "recommended" } }),
+      entities,
+      "岗位职责：保障接口 P99 延迟达标"
+    );
+    expect(m.hallucinations).toEqual([]);
+  });
+
+  it("两边都没有的术语仍判为编造", () => {
+    const m = computeJudgmentMetrics(
+      analysis({
+        items: {
+          a: { level: "recommended", reason: "熟悉 Kubernetes 编排", evidence: "", inTopN: false, matchedSkills: [], missingSkills: [] },
+        },
+      }),
+      goldOf({ a: { level: "recommended" } }),
+      entities,
+      "岗位职责：保障接口 P99 延迟达标"
+    );
+    expect(m.hallucinations.map((h) => h.token)).toEqual(["Kubernetes"]);
+  });
+});

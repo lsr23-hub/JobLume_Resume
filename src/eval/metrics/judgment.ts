@@ -47,7 +47,7 @@ export interface JudgmentMetrics {
   autoPromotedCount: number;
   notRecommendedCount: number;
 
-  /** reason 里出现的、经历原文中找不到的技术名词或百分比 */
+  /** reason 里出现的、经历与 JD 原文中都找不到的技术名词或百分比 */
   reasonHallucinationRate: number;
   hallucinations: Hallucination[];
 }
@@ -86,9 +86,17 @@ const FACT_TOKEN = /[A-Za-z][A-Za-z0-9+#._-]{2,}|\d+(?:\.\d+)?%/g;
 
 const findHallucinations = (
   entity: ProfileEntity,
-  reason: string
+  reason: string,
+  /**
+   * JD 原文。
+   *
+   * 必须一起查 —— 新 prompt 要求「reason 点出它对应 JD 的哪一条要求」，
+   * 于是理由里会合法地出现 JD 的术语（P99、Canvas、SPA）。
+   * 只查条目原文的话，这些全会被判成幻觉：实测 8 条误报里 5 条是这么来的。
+   */
+  jdText: string
 ): Hallucination[] => {
-  const text = plainText(entity);
+  const text = `${plainText(entity)} ${jdText.toLowerCase()}`;
   const hits: Hallucination[] = [];
   const seen = new Set<string>();
 
@@ -105,7 +113,9 @@ const findHallucinations = (
 export const computeJudgmentMetrics = (
   analysis: MatchAnalysis | null,
   gold: Record<string, GoldEntity>,
-  entities: ProfileEntity[]
+  entities: ProfileEntity[],
+  /** JD 原文，用于判断理由里的术语是引用 JD 还是编造 */
+  jdText = ""
 ): JudgmentMetrics => {
   const byId = new Map(entities.map((e) => [e.id, e]));
 
@@ -151,7 +161,7 @@ export const computeJudgmentMetrics = (
       });
     } else tn += 1;
 
-    if (aiReason) hallucinations.push(...findHallucinations(entity, aiReason));
+    if (aiReason) hallucinations.push(...findHallucinations(entity, aiReason, jdText));
   }
 
   const precision = ratio(tp, tp + fp);
