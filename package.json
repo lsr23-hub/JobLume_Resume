@@ -16,10 +16,11 @@
     "test:watch": "vitest",
     "eval": "tsx scripts/eval.ts",
     "eval:review": "tsx scripts/eval-review.ts",
-    "canary": "tsx scripts/match-canary.ts"
+    "canary": "tsx scripts/match-canary.ts",
+    "e2e:core": "node scripts/e2e/core-flow.mjs",
+    "e2e:picker": "node scripts/e2e/editor-picker.mjs"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "@heroui/checkbox": "^2.3.30",
     "@heroui/date-input": "^2.3.30",
     "@heroui/react": "^2.8.8",

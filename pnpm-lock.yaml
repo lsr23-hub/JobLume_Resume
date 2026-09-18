@@ -13,9 +13,6 @@ importers:
 
   .:
     dependencies:
-      '@google/generative-ai':
-        specifier: ^0.24.1
-        version: 0.24.1
       '@heroui/checkbox':
         specifier: ^2.3.30
         version: 2.3.30(@heroui/system@2.4.26(@heroui/theme@2.4.26(tailwindcss@3.4.17(ts-node@10.9.1(@types/node@20.17.17)(typescript@5.7.3))))(framer-motion@11.18.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@heroui/theme@2.4.26(tailwindcss@3.4.17(ts-node@10.9.1(@types/node@20.17.17)(typescript@5.7.3))))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -869,10 +866,6 @@ packages:
 
   '@formatjs/intl-localematcher@0.5.10':
     resolution: {integrity: sha512-af3qATX+m4Rnd9+wHcjJ4w2ijq+rAVP3CCinJQvFv1kgSu1W6jypUmvleJxcewdxmutM8dmIRZFxO/IQBZmP2Q==}
-
-  '@google/generative-ai@0.24.1':
-    resolution: {integrity: sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q==}
-    engines: {node: '>=18.0.0'}
 
   '@heroui/accordion@2.2.27':
     resolution: {integrity: sha512-ay/pIMUo8+ZUQKPvBZ5qjqvW6luqBuxObACCk1zZZCDtCUIRW6agVzN5oQD+gmoDadDMGeAE8mRr1pfG93K39A==}
@@ -7138,8 +7131,6 @@ snapshots:
   '@formatjs/intl-localematcher@0.5.10':
     dependencies:
       tslib: 2.8.1
-
-  '@google/generative-ai@0.24.1': {}
 
   '@heroui/accordion@2.2.27(@heroui/system@2.4.26(@heroui/theme@2.4.26(tailwindcss@3.4.17(ts-node@10.9.1(@types/node@20.17.17)(typescript@5.7.3))))(framer-motion@11.18.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@heroui/theme@2.4.26(tailwindcss@3.4.17(ts-node@10.9.1(@types/node@20.17.17)(typescript@5.7.3))))(framer-motion@11.18.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
