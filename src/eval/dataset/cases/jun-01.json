@@ -35,53 +35,39 @@
     "entities": {
       "edu-苏州大学": {
         "relevance": 3,
-        "level": "recommended",
         "mustHave": true,
         "reason": "统计学本科，专业与毕业年份都符合"
       },
       "exp-苏州银行": {
         "relevance": 3,
-        "level": "recommended",
         "mustHave": true,
         "reason": "银行数据分析实习，SQL 取数与报表产出直接对口"
       },
       "exp-苏州中学生涯": {
         "relevance": 1,
-        "level": "not_recommended",
         "reason": "成绩数据整理，属勤工助学，信息量低"
       },
       "proj-用户流失预测": {
         "relevance": 3,
-        "level": "recommended",
         "reason": "完整的建模项目，体现统计与 Python 能力"
       },
       "campus-学生会": {
         "relevance": 1,
-        "level": "not_recommended",
         "reason": "学生工作，与数据岗无直接关系"
       },
       "honor-奖学金": {
         "relevance": 2,
-        "level": "recommended",
         "reason": "校级奖学金，校招场景下是明确的学习能力佐证"
       },
       "lang-英语": {
         "relevance": 2,
-        "level": "recommended",
         "reason": "CET-6，数据岗常需阅读英文文档与工具资料"
       }
     },
-    "idealSelection": [
-      "edu-苏州大学",
-      "exp-苏州银行",
-      "proj-用户流失预测",
-      "lang-英语",
-      "honor-奖学金"
-    ],
-    "targetPages": 1,
+    "budget": 5,
     "missingSkills": [
       "A/B 实验经验"
     ],
-    "unsupportedSkills": []
+    "targetPages": 1
   }
 }

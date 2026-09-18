@@ -1,7 +1,12 @@
 {
   "id": "fin-03",
   "note": "同一档案 × 纯算法工程岗。金融经历反向变成噪声 —— 测跨领域时的判断翻转",
-  "dimensions": ["跨领域", "弱匹配", "触发取舍", "隐含要求"],
+  "dimensions": [
+    "跨领域",
+    "弱匹配",
+    "触发取舍",
+    "隐含要求"
+  ],
   "profileFile": "fin-ai.json",
   "jd": {
     "company": "潮汐科技",
@@ -10,38 +15,114 @@
   },
   "gold": {
     "requirements": {
-      "must": ["硕士及以上学历", "算法工程经验", "推荐/搜索/广告实战", "深度学习框架与分布式训练", "大规模特征工程"],
-      "nice": ["顶会论文或开源项目", "高并发线上服务经验"],
-      "responsibility": ["召回与排序模型迭代", "特征平台建设", "模型线上服务", "前沿方法落地"]
+      "must": [
+        "硕士及以上学历",
+        "算法工程经验",
+        "推荐/搜索/广告实战",
+        "深度学习框架与分布式训练",
+        "大规模特征工程"
+      ],
+      "nice": [
+        "顶会论文或开源项目",
+        "高并发线上服务经验"
+      ],
+      "responsibility": [
+        "召回与排序模型迭代",
+        "特征平台建设",
+        "模型线上服务",
+        "前沿方法落地"
+      ]
     },
     "entities": {
-      "edu-上海交通大学": { "relevance": 2, "level": "recommended", "reason": "硕士学历满足，专业相关但非计算机" },
-      "edu-南京大学": { "relevance": 3, "level": "recommended", "mustHave": true, "reason": "数学与应用数学本科，数理基础符合要求" },
-      "exp-华泰证券": { "relevance": 2, "level": "recommended", "reason": "因子挖掘属于特征工程，可迁移；但缺少推荐业务经验" },
-      "exp-蚂蚁集团": { "relevance": 3, "level": "recommended", "mustHave": true, "reason": "2 亿节点图上的分布式训练与线上服务，直接对应职责 2/3" },
-      "exp-九坤投资": { "relevance": 1, "level": "not_recommended", "reason": "量化研究实习，与推荐系统无关" },
-      "exp-中信建投证券": { "relevance": 0, "level": "not_recommended", "reason": "卖方研究，与算法工程无关" },
-      "exp-励学教育科技": { "relevance": 0, "level": "not_recommended", "reason": "数据分析实习，非算法工程" },
-      "proj-多因子选股平台「沧海」": { "relevance": 2, "level": "recommended", "reason": "特征/因子平台建设，与职责 2 有共通之处" },
-      "proj-金融文本情感因子（FinBERT 微调）": { "relevance": 3, "level": "recommended", "reason": "深度学习模型微调与上线，算法能力可迁移" },
-      "proj-图神经网络反欺诈系统「天网」": { "relevance": 3, "level": "recommended", "mustHave": true, "reason": "30 亿边图上的分布式训练与采样优化，正对职责 2/4" },
-      "proj-大学生数学建模竞赛培训平台": { "relevance": 0, "level": "not_recommended", "reason": "培训平台，无算法工程内容" },
-      "campus-上海交通大学金融学院研究生会": { "relevance": 1, "level": "not_recommended", "reason": "学生工作，岗位未要求" },
-      "campus-南京大学数学建模协会": { "relevance": 0, "level": "not_recommended", "reason": "社团经历，与岗位无关" },
-      "campus-上海交通大学": { "relevance": 0, "level": "not_recommended", "reason": "助教经历，岗位未要求" },
-      "honor-国家奖学金（硕士）": { "relevance": 1, "level": "not_recommended", "reason": "荣誉信息，不体现算法工程能力" },
-      "honor-全国大学生数学建模竞赛 · 省一等奖": { "relevance": 1, "level": "not_recommended", "reason": "数模竞赛，与推荐系统关联弱" },
-      "honor-Kaggle 量化金融竞赛 Top 3%": { "relevance": 1, "level": "not_recommended", "reason": "竞赛成绩可佐证建模能力，但非推荐方向" },
-      "lang-英语": { "relevance": 2, "level": "recommended", "reason": "跟进推荐领域前沿需要阅读英文论文" },
-      "lang-日语": { "relevance": 0, "level": "not_recommended", "reason": "岗位未要求日语" },
-      "lang-普通话": { "relevance": 0, "level": "not_recommended", "reason": "岗位未对普通话等级提出要求" }
+      "edu-上海交通大学": {
+        "relevance": 2,
+        "reason": "硕士学历满足，专业相关但非计算机"
+      },
+      "edu-南京大学": {
+        "relevance": 3,
+        "mustHave": true,
+        "reason": "数学与应用数学本科，数理基础符合要求"
+      },
+      "exp-华泰证券": {
+        "relevance": 2,
+        "reason": "因子挖掘属于特征工程，可迁移；但缺少推荐业务经验"
+      },
+      "exp-蚂蚁集团": {
+        "relevance": 3,
+        "mustHave": true,
+        "reason": "2 亿节点图上的分布式训练与线上服务，直接对应职责 2/3"
+      },
+      "exp-九坤投资": {
+        "relevance": 1,
+        "reason": "量化研究实习，与推荐系统无关"
+      },
+      "exp-中信建投证券": {
+        "relevance": 0,
+        "reason": "卖方研究，与算法工程无关"
+      },
+      "exp-励学教育科技": {
+        "relevance": 0,
+        "reason": "数据分析实习，非算法工程"
+      },
+      "proj-多因子选股平台「沧海」": {
+        "relevance": 2,
+        "reason": "特征/因子平台建设，与职责 2 有共通之处"
+      },
+      "proj-金融文本情感因子（FinBERT 微调）": {
+        "relevance": 3,
+        "reason": "深度学习模型微调与上线，算法能力可迁移"
+      },
+      "proj-图神经网络反欺诈系统「天网」": {
+        "relevance": 3,
+        "mustHave": true,
+        "reason": "30 亿边图上的分布式训练与采样优化，正对职责 2/4"
+      },
+      "proj-大学生数学建模竞赛培训平台": {
+        "relevance": 0,
+        "reason": "培训平台，无算法工程内容"
+      },
+      "campus-上海交通大学金融学院研究生会": {
+        "relevance": 1,
+        "reason": "学生工作，岗位未要求"
+      },
+      "campus-南京大学数学建模协会": {
+        "relevance": 0,
+        "reason": "社团经历，与岗位无关"
+      },
+      "campus-上海交通大学": {
+        "relevance": 0,
+        "reason": "助教经历，岗位未要求"
+      },
+      "honor-国家奖学金（硕士）": {
+        "relevance": 1,
+        "reason": "荣誉信息，不体现算法工程能力"
+      },
+      "honor-全国大学生数学建模竞赛 · 省一等奖": {
+        "relevance": 1,
+        "reason": "数模竞赛，与推荐系统关联弱"
+      },
+      "honor-Kaggle 量化金融竞赛 Top 3%": {
+        "relevance": 1,
+        "reason": "竞赛成绩可佐证建模能力，但非推荐方向"
+      },
+      "lang-英语": {
+        "relevance": 2,
+        "reason": "跟进推荐领域前沿需要阅读英文论文"
+      },
+      "lang-日语": {
+        "relevance": 0,
+        "reason": "岗位未要求日语"
+      },
+      "lang-普通话": {
+        "relevance": 0,
+        "reason": "岗位未对普通话等级提出要求"
+      }
     },
-    "idealSelection": [
-      "edu-南京大学", "edu-上海交通大学", "exp-蚂蚁集团", "proj-图神经网络反欺诈系统「天网」",
-      "proj-金融文本情感因子（FinBERT 微调）", "exp-华泰证券", "proj-多因子选股平台「沧海」", "lang-英语"
+    "budget": 8,
+    "missingSkills": [
+      "推荐/搜索/广告业务经验",
+      "高并发线上服务经验"
     ],
-    "targetPages": 1,
-    "missingSkills": ["推荐/搜索/广告业务经验", "高并发线上服务经验"],
-    "unsupportedSkills": []
+    "targetPages": 1
   }
 }

@@ -12,14 +12,26 @@ import type { Correction } from "@/lib/match/validateMatchResult";
 /** 相关度分级 0-3，用于排序指标。0 = 无关，3 = 决定性 */
 export type Relevance = 0 | 1 | 2 | 3;
 
-export interface GoldEntity {
-  /** 人工相关度分级 */
+/**
+ * 推荐线：相关度达到这一档即判「推荐」，同时也就进了理想集合。
+ *
+ * 原本 `level` 与 `idealSelection` 是各写一份的，于是出现了
+ * 「集合内有相关度 1、集合外有相关度 2」这种自相矛盾的标注 ——
+ * 现在两者都由相关度派生，一个意见，不会打架。
+ */
+export const RECOMMEND_THRESHOLD = 2;
+
+/** 案例文件里写的标注：只有相关度和「关键经历」，其余都是派生的 */
+export interface RawGoldEntity {
   relevance: Relevance;
-  /** 人工二值判定，用于分类指标 */
-  level: "recommended" | "not_recommended";
   /** 关键经历：没进简历就是失败 */
   mustHave?: boolean;
   reason?: string;
+}
+
+export interface GoldEntity extends RawGoldEntity {
+  /** 派生自 relevance，不是另写一份 */
+  level: "recommended" | "not_recommended";
 }
 
 export interface GoldRequirements {
@@ -36,7 +48,12 @@ export interface GoldStandard {
   /** 逐条人工判定，key 为 entityId */
   entities: Record<string, GoldEntity>;
 
-  /** 一页篇幅下，人工认为该放进简历的条目 */
+  /**
+   * 一页篇幅能放几条 —— 版面容量，不是「该放几条」。
+   * 理想集合由此截断而来。
+   */
+  budget: number;
+  /** 派生：相关度降序取前 budget 条 */
   idealSelection: string[];
   targetPages: number;
 

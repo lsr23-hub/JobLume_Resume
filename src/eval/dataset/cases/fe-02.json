@@ -1,7 +1,12 @@
 {
   "id": "fe-02",
   "note": "同一档案 × 全栈/BFF 岗。前端经历仍然相关，但服务端能力为零 —— 测会不会把沾边的都判成推荐",
-  "dimensions": ["中等匹配", "隐含要求", "触发取舍", "软性描述"],
+  "dimensions": [
+    "中等匹配",
+    "隐含要求",
+    "触发取舍",
+    "软性描述"
+  ],
   "profileFile": "frontend.json",
   "jd": {
     "company": "云栖数据",
@@ -10,29 +15,79 @@
   },
   "gold": {
     "requirements": {
-      "must": ["Node.js 服务端开发", "服务端框架经验", "MySQL/Redis 与查询优化", "微服务与容器化部署"],
-      "nice": ["前端开发经验", "接口契约设计经验"],
-      "responsibility": ["BFF 层设计开发", "服务端性能与稳定性", "接口契约设计", "前端页面开发"]
+      "must": [
+        "Node.js 服务端开发",
+        "服务端框架经验",
+        "MySQL/Redis 与查询优化",
+        "微服务与容器化部署"
+      ],
+      "nice": [
+        "前端开发经验",
+        "接口契约设计经验"
+      ],
+      "responsibility": [
+        "BFF 层设计开发",
+        "服务端性能与稳定性",
+        "接口契约设计",
+        "前端页面开发"
+      ]
     },
     "entities": {
-      "edu-清华大学": { "relevance": 3, "level": "recommended", "mustHave": true, "reason": "计算机硕士，满足学历与专业要求" },
-      "edu-武汉大学": { "relevance": 2, "level": "recommended", "reason": "软件工程本科，专业对口" },
-      "exp-字节跳动": { "relevance": 2, "level": "recommended", "reason": "前端架构与性能优化能力可迁移，但无服务端经验" },
-      "exp-美团": { "relevance": 2, "level": "recommended", "reason": "监控埋点与性能优化经验部分可迁移" },
-      "proj-大促活动页搭建平台": { "relevance": 1, "level": "not_recommended", "reason": "搭建平台是前端产品，不是 BFF 服务" },
-      "proj-Aurora Design 组件库": { "relevance": 1, "level": "not_recommended", "reason": "组件库与 CI/CD 工程化，与岗位要求弱相关" },
-      "campus-清华大学计算机系研究生会": { "relevance": 1, "level": "not_recommended", "reason": "学生工作，岗位未要求" },
-      "campus-武汉大学 ACM 集训队": { "relevance": 1, "level": "not_recommended", "reason": "算法基础可能有用，但与服务端工程无直接关系" },
-      "honor-国家奖学金": { "relevance": 1, "level": "not_recommended", "reason": "荣誉信息，不体现岗位能力" },
-      "honor-清华大学优秀毕业生": { "relevance": 1, "level": "not_recommended", "reason": "荣誉信息，与岗位能力无关" },
-      "lang-英语": { "relevance": 1, "level": "not_recommended", "reason": "岗位未对英语提出要求" },
-      "lang-日语": { "relevance": 0, "level": "not_recommended", "reason": "岗位未要求日语" }
+      "edu-清华大学": {
+        "relevance": 3,
+        "mustHave": true,
+        "reason": "计算机硕士，满足学历与专业要求"
+      },
+      "edu-武汉大学": {
+        "relevance": 2,
+        "reason": "软件工程本科，专业对口"
+      },
+      "exp-字节跳动": {
+        "relevance": 2,
+        "reason": "前端架构与性能优化能力可迁移，但无服务端经验"
+      },
+      "exp-美团": {
+        "relevance": 2,
+        "reason": "监控埋点与性能优化经验部分可迁移"
+      },
+      "proj-大促活动页搭建平台": {
+        "relevance": 1,
+        "reason": "搭建平台是前端产品，不是 BFF 服务"
+      },
+      "proj-Aurora Design 组件库": {
+        "relevance": 1,
+        "reason": "组件库与 CI/CD 工程化，与岗位要求弱相关"
+      },
+      "campus-清华大学计算机系研究生会": {
+        "relevance": 1,
+        "reason": "学生工作，岗位未要求"
+      },
+      "campus-武汉大学 ACM 集训队": {
+        "relevance": 1,
+        "reason": "算法基础可能有用，但与服务端工程无直接关系"
+      },
+      "honor-国家奖学金": {
+        "relevance": 1,
+        "reason": "荣誉信息，不体现岗位能力"
+      },
+      "honor-清华大学优秀毕业生": {
+        "relevance": 1,
+        "reason": "荣誉信息，与岗位能力无关"
+      },
+      "lang-英语": {
+        "relevance": 1,
+        "reason": "岗位未对英语提出要求"
+      },
+      "lang-日语": {
+        "relevance": 0,
+        "reason": "岗位未要求日语"
+      }
     },
-    "idealSelection": [
-      "edu-清华大学", "edu-武汉大学", "exp-字节跳动", "exp-美团"
+    "budget": 4,
+    "missingSkills": [
+      "Node.js 服务端开发经验",
+      "微服务与容器化部署经验"
     ],
-    "targetPages": 1,
-    "missingSkills": ["Node.js 服务端开发经验", "微服务与容器化部署经验"],
-    "unsupportedSkills": []
+    "targetPages": 1
   }
 }

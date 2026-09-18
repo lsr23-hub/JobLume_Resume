@@ -41,126 +41,95 @@
     "entities": {
       "edu-上海交通大学": {
         "relevance": 3,
-        "level": "recommended",
         "mustHave": true,
         "reason": "金融学硕士，直接满足学历与专业要求"
       },
       "edu-南京大学": {
         "relevance": 2,
-        "level": "recommended",
         "reason": "数学本科，数理统计基础"
       },
       "exp-华泰证券": {
         "relevance": 3,
-        "level": "recommended",
         "mustHave": true,
         "reason": "因子挖掘+组合优化+实盘指增，与职责 1/2/4 逐条对应"
       },
       "exp-蚂蚁集团": {
         "relevance": 3,
-        "level": "recommended",
         "reason": "图神经网络与大规模图计算，命中加分项 2"
       },
       "exp-九坤投资": {
         "relevance": 3,
-        "level": "recommended",
         "reason": "量化研究实习，因子研究与机器学习合成"
       },
       "exp-中信建投证券": {
         "relevance": 2,
-        "level": "recommended",
         "reason": "卖方金工研究，衍生品定价基础"
       },
       "exp-励学教育科技": {
         "relevance": 0,
-        "level": "not_recommended",
         "reason": "教育公司数据分析，与本岗位无关"
       },
       "proj-多因子选股平台「沧海」": {
         "relevance": 3,
-        "level": "recommended",
         "mustHave": true,
         "reason": "因子研究平台建设，正对职责 3"
       },
       "proj-金融文本情感因子（FinBERT 微调）": {
         "relevance": 3,
-        "level": "recommended",
         "reason": "NLP 在金融文本上的应用，命中加分项 1"
       },
       "proj-图神经网络反欺诈系统「天网」": {
         "relevance": 3,
-        "level": "recommended",
         "reason": "2 亿节点图上的工程落地，命中加分项 2"
       },
       "proj-大学生数学建模竞赛培训平台": {
         "relevance": 0,
-        "level": "not_recommended",
         "reason": "培训平台项目，技术栈与量化研究无关"
       },
       "campus-上海交通大学金融学院研究生会": {
         "relevance": 1,
-        "level": "not_recommended",
         "reason": "学生工作，岗位未涉及组织协调类职责"
       },
       "campus-南京大学数学建模协会": {
         "relevance": 0,
-        "level": "not_recommended",
         "reason": "本科社团经历，与岗位要求无关"
       },
       "campus-上海交通大学": {
         "relevance": 0,
-        "level": "not_recommended",
         "reason": "助教经历，岗位未要求教学能力"
       },
       "honor-国家奖学金（硕士）": {
         "relevance": 1,
-        "level": "not_recommended",
         "reason": "荣誉类信息，不体现岗位所需能力"
       },
       "honor-全国大学生数学建模竞赛 · 省一等奖": {
         "relevance": 0,
-        "level": "not_recommended",
         "reason": "本科竞赛奖项，距今较久"
       },
       "honor-Kaggle 量化金融竞赛 Top 3%": {
         "relevance": 2,
-        "level": "recommended",
         "reason": "量化金融竞赛成绩，可佐证建模与因子研究能力"
       },
       "lang-英语": {
         "relevance": 1,
-        "level": "not_recommended",
         "reason": "岗位未对英语水平提出明确要求"
       },
       "lang-日语": {
         "relevance": 0,
-        "level": "not_recommended",
         "reason": "岗位未要求日语能力"
       },
       "lang-普通话": {
         "relevance": 0,
-        "level": "not_recommended",
         "reason": "岗位未对普通话等级提出要求"
       }
     },
-    "idealSelection": [
-      "edu-上海交通大学",
-      "edu-南京大学",
-      "exp-华泰证券",
-      "exp-蚂蚁集团",
-      "exp-九坤投资",
-      "proj-多因子选股平台「沧海」",
-      "proj-金融文本情感因子（FinBERT 微调）",
-      "proj-图神经网络反欺诈系统「天网」",
-      "exp-中信建投证券",
-      "honor-Kaggle 量化金融竞赛 Top 3%"
-    ],
-    "targetPages": 1,
+    "budget": 10,
     "missingSkills": [
       "顶会论文或开源项目贡献"
     ],
     "unsupportedSkills": [
       "FRM"
-    ]
+    ],
+    "targetPages": 1
   }
 }

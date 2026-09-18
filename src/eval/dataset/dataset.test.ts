@@ -15,11 +15,20 @@ describe("评测数据集", () => {
     expect(cases.length).toBeGreaterThanOrEqual(8);
   });
 
-  it("理想集合与相关度分级自洽", () => {
+  it("level 与 idealSelection 由相关度派生，不会再自相矛盾", () => {
+    for (const c of cases) {
+      for (const g of Object.values(c.gold.entities)) {
+        expect(g.level).toBe(g.relevance >= 2 ? "recommended" : "not_recommended");
+      }
+      for (const id of c.gold.idealSelection) {
+        expect(c.gold.entities[id].relevance).toBeGreaterThanOrEqual(2);
+      }
+    }
+  });
+
+  it("预算线划在干净的地方，没有并列跨线", () => {
     const issues = lintCases(cases);
-    expect(
-      issues.map((i) => `${i.caseId}: ${i.message}`).join("\n")
-    ).toBe("");
+    expect(issues.map((i) => `${i.caseId}: ${i.message}`).join("\n")).toBe("");
   });
 
   it("每个案例都有区分度：既有推荐也有不推荐", () => {

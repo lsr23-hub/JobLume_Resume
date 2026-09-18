@@ -14,7 +14,8 @@
     "install:playwright": "playwright install chromium",
     "test": "vitest run",
     "test:watch": "vitest",
-    "eval": "tsx scripts/eval.ts"
+    "eval": "tsx scripts/eval.ts",
+    "eval:review": "tsx scripts/eval-review.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

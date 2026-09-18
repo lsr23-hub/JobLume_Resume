@@ -1,7 +1,13 @@
 {
   "id": "fin-04",
   "note": "风控建模岗，JD 里塞满公司介绍、软性描述与干扰项（党员/驾照/篮球）—— 测会不会被噪声带偏",
-  "dimensions": ["干扰项", "软性描述", "隐含要求", "长JD", "触发取舍"],
+  "dimensions": [
+    "干扰项",
+    "软性描述",
+    "隐含要求",
+    "长JD",
+    "触发取舍"
+  ],
   "profileFile": "fin-ai.json",
   "jd": {
     "company": "融安消费金融",
@@ -10,38 +16,117 @@
   },
   "gold": {
     "requirements": {
-      "must": ["硕士及以上学历", "风控建模或机器学习经验", "Python 与 SQL", "反欺诈或信贷场景"],
-      "nice": ["深度学习在风控的应用", "模型线上监控经验"],
-      "responsibility": ["反欺诈与信用风险模型", "实时风控特征平台", "模型结论转风控规则", "模型效果监控"]
+      "must": [
+        "硕士及以上学历",
+        "风控建模或机器学习经验",
+        "Python 与 SQL",
+        "反欺诈或信贷场景"
+      ],
+      "nice": [
+        "深度学习在风控的应用",
+        "模型线上监控经验"
+      ],
+      "responsibility": [
+        "反欺诈与信用风险模型",
+        "实时风控特征平台",
+        "模型结论转风控规则",
+        "模型效果监控"
+      ]
     },
     "entities": {
-      "edu-上海交通大学": { "relevance": 3, "level": "recommended", "mustHave": true, "reason": "金融学硕士，满足学历与专业要求" },
-      "edu-南京大学": { "relevance": 2, "level": "recommended", "reason": "数学本科，数理统计基础" },
-      "exp-华泰证券": { "relevance": 2, "level": "recommended", "reason": "建模与回测经验可迁移，但非信贷风控场景" },
-      "exp-蚂蚁集团": { "relevance": 3, "level": "recommended", "mustHave": true, "reason": "支付反欺诈的图模型与特征平台，与职责 1/2 逐条对应" },
-      "exp-九坤投资": { "relevance": 1, "level": "not_recommended", "reason": "证券量化研究，与信贷风控场景不同" },
-      "exp-中信建投证券": { "relevance": 1, "level": "not_recommended", "reason": "卖方研究，非风控建模" },
-      "exp-励学教育科技": { "relevance": 0, "level": "not_recommended", "reason": "教育公司数据分析，与风控无关" },
-      "proj-多因子选股平台「沧海」": { "relevance": 2, "level": "recommended", "reason": "特征/因子平台建设经验，与职责 2 相通" },
-      "proj-金融文本情感因子（FinBERT 微调）": { "relevance": 1, "level": "not_recommended", "reason": "文本建模项目，信贷风控未涉及" },
-      "proj-图神经网络反欺诈系统「天网」": { "relevance": 3, "level": "recommended", "mustHave": true, "reason": "团伙欺诈识别与线上部署，正对职责 1/4" },
-      "proj-大学生数学建模竞赛培训平台": { "relevance": 0, "level": "not_recommended", "reason": "培训平台，与风控无关" },
-      "campus-上海交通大学金融学院研究生会": { "relevance": 1, "level": "not_recommended", "reason": "学生工作，岗位未要求" },
-      "campus-南京大学数学建模协会": { "relevance": 0, "level": "not_recommended", "reason": "本科社团，与岗位无关" },
-      "campus-上海交通大学": { "relevance": 0, "level": "not_recommended", "reason": "助教经历，岗位未要求" },
-      "honor-国家奖学金（硕士）": { "relevance": 1, "level": "not_recommended", "reason": "荣誉信息，不体现风控建模能力" },
-      "honor-全国大学生数学建模竞赛 · 省一等奖": { "relevance": 1, "level": "not_recommended", "reason": "竞赛奖项，与岗位关联弱" },
-      "honor-Kaggle 量化金融竞赛 Top 3%": { "relevance": 1, "level": "not_recommended", "reason": "量化竞赛，非风控方向" },
-      "lang-英语": { "relevance": 1, "level": "not_recommended", "reason": "岗位未对英语提出要求" },
-      "lang-日语": { "relevance": 0, "level": "not_recommended", "reason": "岗位未要求日语" },
-      "lang-普通话": { "relevance": 0, "level": "not_recommended", "reason": "岗位未对普通话等级提出要求" }
+      "edu-上海交通大学": {
+        "relevance": 3,
+        "mustHave": true,
+        "reason": "金融学硕士，满足学历与专业要求"
+      },
+      "edu-南京大学": {
+        "relevance": 2,
+        "reason": "数学本科，数理统计基础"
+      },
+      "exp-华泰证券": {
+        "relevance": 2,
+        "reason": "建模与回测经验可迁移，但非信贷风控场景"
+      },
+      "exp-蚂蚁集团": {
+        "relevance": 3,
+        "mustHave": true,
+        "reason": "支付反欺诈的图模型与特征平台，与职责 1/2 逐条对应"
+      },
+      "exp-九坤投资": {
+        "relevance": 1,
+        "reason": "证券量化研究，与信贷风控场景不同"
+      },
+      "exp-中信建投证券": {
+        "relevance": 1,
+        "reason": "卖方研究，非风控建模"
+      },
+      "exp-励学教育科技": {
+        "relevance": 0,
+        "reason": "教育公司数据分析，与风控无关"
+      },
+      "proj-多因子选股平台「沧海」": {
+        "relevance": 2,
+        "reason": "特征/因子平台建设经验，与职责 2 相通"
+      },
+      "proj-金融文本情感因子（FinBERT 微调）": {
+        "relevance": 1,
+        "reason": "文本建模项目，信贷风控未涉及"
+      },
+      "proj-图神经网络反欺诈系统「天网」": {
+        "relevance": 3,
+        "mustHave": true,
+        "reason": "团伙欺诈识别与线上部署，正对职责 1/4"
+      },
+      "proj-大学生数学建模竞赛培训平台": {
+        "relevance": 0,
+        "reason": "培训平台，与风控无关"
+      },
+      "campus-上海交通大学金融学院研究生会": {
+        "relevance": 1,
+        "reason": "学生工作，岗位未要求"
+      },
+      "campus-南京大学数学建模协会": {
+        "relevance": 0,
+        "reason": "本科社团，与岗位无关"
+      },
+      "campus-上海交通大学": {
+        "relevance": 0,
+        "reason": "助教经历，岗位未要求"
+      },
+      "honor-国家奖学金（硕士）": {
+        "relevance": 1,
+        "reason": "荣誉信息，不体现风控建模能力"
+      },
+      "honor-全国大学生数学建模竞赛 · 省一等奖": {
+        "relevance": 1,
+        "reason": "竞赛奖项，与岗位关联弱"
+      },
+      "honor-Kaggle 量化金融竞赛 Top 3%": {
+        "relevance": 1,
+        "reason": "量化竞赛，非风控方向"
+      },
+      "lang-英语": {
+        "relevance": 1,
+        "reason": "岗位未对英语提出要求"
+      },
+      "lang-日语": {
+        "relevance": 0,
+        "reason": "岗位未要求日语"
+      },
+      "lang-普通话": {
+        "relevance": 0,
+        "reason": "岗位未对普通话等级提出要求"
+      }
     },
-    "idealSelection": [
-      "edu-上海交通大学", "edu-南京大学", "exp-蚂蚁集团",
-      "proj-图神经网络反欺诈系统「天网」", "exp-华泰证券", "proj-多因子选股平台「沧海」"
+    "budget": 6,
+    "missingSkills": [
+      "实时流计算（Flink/Spark Streaming）",
+      "信贷业务经验"
     ],
-    "targetPages": 1,
-    "missingSkills": ["实时流计算（Flink/Spark Streaming）", "信贷业务经验"],
-    "unsupportedSkills": ["驾照", "党员"]
+    "unsupportedSkills": [
+      "驾照",
+      "党员"
+    ],
+    "targetPages": 1
   }
 }

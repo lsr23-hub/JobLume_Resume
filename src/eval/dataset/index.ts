@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import type { CareerProfile } from "@/types/profile";
-import type { EvalCase, GoldStandard } from "../types";
+import { RECOMMEND_THRESHOLD, type EvalCase, type GoldStandard, type RawGoldEntity } from "../types";
 
 /**
  * 数据集加载与校验。
@@ -23,8 +23,10 @@ interface RawCase {
   dimensions: string[];
   profileFile: string;
   jd: EvalCase["jd"];
-  gold: Omit<GoldStandard, "entities"> & {
-    entities: Record<string, GoldStandard["entities"][string]>;
+  gold: Omit<GoldStandard, "entities" | "idealSelection" | "budget"> & {
+    entities: Record<string, RawGoldEntity>;
+    /** 一页能放几条 */
+    budget: number;
   };
 }
 
@@ -34,6 +36,10 @@ interface ProfileFile {
 }
 
 export class DatasetError extends Error {}
+
+/** id → ref 的反查，只用于排序时取稳定的名字 */
+const refsOf = (refs: Record<string, string>, id: string): string | undefined =>
+  Object.keys(refs).find((r) => refs[r] === id);
 
 const readJson = <T>(path: string): T => JSON.parse(readFileSync(path, "utf8")) as T;
 
@@ -62,14 +68,20 @@ const resolveRefs = (
     if (entities[id]) {
       throw new DatasetError(`[${caseId}] 两个 ref 指向同一条目：${ref}`);
     }
-    entities[id] = judgment;
+    entities[id] = {
+      ...judgment,
+      level: judgment.relevance >= RECOMMEND_THRESHOLD ? "recommended" : "not_recommended",
+    };
   }
 
-  const idealSelection = gold.idealSelection.map((ref) => {
-    const id = refs[ref];
-    if (!id) throw new DatasetError(`[${caseId}] idealSelection 引用了不存在的 ref：${ref}`);
-    return id;
-  });
+  // 理想集合由相关度派生：降序取前 budget 条，同分按 id 稳定排序
+  const idealSelection = Object.keys(entities)
+    .sort(
+      (a, b) =>
+        entities[b].relevance - entities[a].relevance ||
+        (refsOf(refs, a) ?? a).localeCompare(refsOf(refs, b) ?? b)
+    )
+    .slice(0, gold.budget);
 
   // 没标注的可见条目会让指标偏乐观 —— 模型判错也不会计入，必须在加载时拦住
   const visible = Object.values(profile.entities).filter((e) => !e.hidden);
@@ -79,6 +91,16 @@ const resolveRefs = (
       .map((e) => Object.keys(refs).find((r) => refs[r] === e.id) ?? e.id)
       .join("、");
     throw new DatasetError(`[${caseId}] 这些条目还没标注：${names}`);
+  }
+
+  const belowThreshold = idealSelection.filter(
+    (id) => entities[id].relevance < RECOMMEND_THRESHOLD
+  );
+  if (belowThreshold.length > 0) {
+    throw new DatasetError(
+      `[${caseId}] 预算 ${gold.budget} 条超过了相关度 ≥ ${RECOMMEND_THRESHOLD} 的条目数，` +
+        `理想集合会混进不相关的条目。要么调低预算，要么把相关度标对。`
+    );
   }
 
   return { ...gold, entities, idealSelection };
@@ -120,12 +142,12 @@ export const loadAllCases = (filter?: string[]): EvalCase[] => {
 /**
  * 数据集自洽性检查。
  *
- * 判定的唯一排序信号是**相关度分级**。所以「理想集合」必须能由相关度还原出来：
- * 放进理想集合的条目，相关度不能低于没放进去的 —— 否则 AI 再怎么排都还原不了，
- * 指标会平白扣分，看起来像模型的错，其实是标注的问题。
+ * `level` 与 `idealSelection` 已由相关度派生，不会再互相矛盾
+ * （那是上一版的问题：集合内有相关度 1、集合外有相关度 2）。
+ * 剩下的风险只有一个：**理想集合的边界上有并列**。
  *
- * 分界线必须干净：入选的最低分要高于落选的最高分。同分跨边界时，
- * AI 在并列项里挑哪个都合理，指标却会扣分 —— 那是标注的问题。
+ * 并列跨在预算线上时，AI 在并列项里挑哪个都合理，指标却会扣它的分 ——
+ * 那是标注不够利落，不是模型的问题。
  */
 export interface LintIssue {
   caseId: string;
@@ -136,26 +158,20 @@ export const lintCases = (cases: EvalCase[]): LintIssue[] => {
   const issues: LintIssue[] = [];
 
   for (const c of cases) {
-    const inIdeal = new Set(c.gold.idealSelection);
-    const selected: Array<{ id: string; relevance: number }> = [];
-    const excluded: Array<{ id: string; relevance: number }> = [];
+    const ranked = Object.entries(c.gold.entities).sort(
+      (a, b) => b[1].relevance - a[1].relevance
+    );
 
-    for (const [id, g] of Object.entries(c.gold.entities)) {
-      (inIdeal.has(id) ? selected : excluded).push({ id, relevance: g.relevance });
-    }
+    const lastIn = ranked[c.gold.budget - 1];
+    const firstOut = ranked[c.gold.budget];
 
-    // 分界线必须干净：入选的最低分要**高于**落选的最高分。
-    // 同分跨边界时，AI 在并列项里挑哪个都合理，指标却会扣它的分 ——
-    // 那是标注的问题，不是模型的问题。
-    const minSelected = Math.min(...selected.map((s) => s.relevance));
-    const offenders = excluded.filter((e) => e.relevance >= minSelected);
-
-    if (offenders.length > 0) {
+    if (lastIn && firstOut && lastIn[1].relevance === firstOut[1].relevance) {
       issues.push({
         caseId: c.id,
         message:
-          `理想集合最低相关度是 ${minSelected}，但集合外仍有同样相关或更高的：` +
-          offenders.map((o) => `${o.id}(${o.relevance})`).join("、"),
+          `预算线（第 ${c.gold.budget} 条）上有并列：` +
+          `${lastIn[0]} 与 ${firstOut[0]} 都是相关度 ${lastIn[1].relevance}，` +
+          `AI 挑哪个都合理，指标却会扣分。调相关度或调预算，把线划在干净的地方。`,
       });
     }
   }
