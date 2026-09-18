@@ -725,7 +725,12 @@
     },
     "content": {
       "original": "Original Content",
-      "polished": "Polished Content"
+      "polished": "Polished Content",
+      "preview": "Polished",
+      "diff": "Changes",
+      "diffHint": "Word-by-word against the original: highlighted = not in the original, struck through = removed or rewritten. This view shows the raw Markdown.",
+      "diffSummary": "{added} additions (~{chars} chars) · {removed} removals/rewrites",
+      "diffNoChange": "Identical to the original — nothing added or removed"
     },
     "customInstructions": "Custom instructions",
     "customInstructionsPlaceholder": "e.g. Use more technical terms, highlight metrics, keep tone formal… (optional)",

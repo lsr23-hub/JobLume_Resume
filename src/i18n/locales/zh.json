@@ -770,7 +770,12 @@
     },
     "content": {
       "original": "原始内容",
-      "polished": "润色后的内容"
+      "polished": "润色后的内容",
+      "preview": "润色后",
+      "diff": "改动",
+      "diffHint": "与原文逐字对比：高亮＝原文没有的内容，删除线＝被删改的内容。此视图显示原始 Markdown 文本。",
+      "diffSummary": "新增 {added} 处（约 {chars} 字）· 删改 {removed} 处",
+      "diffNoChange": "与原文一致，没有新增或删改"
     },
     "customInstructions": "自定义要求",
     "customInstructionsPlaceholder": "例如：请用更技术化的表述、突出量化成果、语气偏正式…（选填，留空则按默认规则润色）",

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "@/i18n/compat/client";
@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAIConfigStore } from "@/store/useAIConfigStore";
 import { readErrorMessage } from "@/lib/aiError";
+import { diffSegments, summarizeDiff } from "@/lib/textDiff";
 import { cn } from "@/lib/utils";
 
 interface AIPolishDialogProps {
@@ -52,8 +53,21 @@ export default function AIPolishDialog({
   const [isPolishing, setIsPolishing] = useState(false);
   const [polishedContent, setPolishedContent] = useState("");
   const [customInstructions, setCustomInstructions] = useState("");
+  /**
+   * 右栏看什么。
+   *
+   * 润色是改写类操作，风险不在「改得不好」而在「顺手补了原文没有的东西」——
+   * 并排两栏得逐字比对才看得出来，所以额外交一个改动视图，把新增与删改标出来。
+   */
+  const [rightView, setRightView] = useState<"preview" | "diff">("preview");
   const { deepseekApiKey, deepseekModelId, isConfigured } = useAIConfigStore();
   const abortControllerRef = useRef<AbortController | null>(null);
+  const originalMarkdown = useMemo(() => turndownService.turndown(content), [content]);
+  const diff = useMemo(
+    () => diffSegments(originalMarkdown, polishedContent),
+    [originalMarkdown, polishedContent]
+  );
+  const diffSummary = useMemo(() => summarizeDiff(diff), [diff]);
   const polishedContentRef = useRef<HTMLDivElement>(null);
 
   const handlePolish = async () => {
@@ -285,6 +299,25 @@ export default function AIPolishDialog({
               >
                 {t("content.polished")}
               </span>
+              {polishedContent && !isPolishing && (
+                <div className="ml-auto flex items-center gap-1">
+                  {(["preview", "diff"] as const).map((view) => (
+                    <button
+                      key={view}
+                      type="button"
+                      onClick={() => setRightView(view)}
+                      className={cn(
+                        "rounded-md px-2 py-0.5 text-xs transition-colors",
+                        rightView === view
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {t(`content.${view}`)}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div
               ref={polishedContentRef}
@@ -295,16 +328,52 @@ export default function AIPolishDialog({
                 "p-6 h-[400px] overflow-auto shadow-sm scroll-smooth"
               )}
             >
-              <Streamdown
-                animated
-                isAnimating={isPolishing}
-                className={cn(
-                  "prose dark:prose-invert max-w-none",
-                  "text-neutral-800 dark:text-neutral-200"
-                )}
-              >
-                {polishedContent}
-              </Streamdown>
+              {rightView === "preview" ? (
+                <Streamdown
+                  animated
+                  isAnimating={isPolishing}
+                  className={cn(
+                    "prose dark:prose-invert max-w-none",
+                    "text-neutral-800 dark:text-neutral-200"
+                  )}
+                >
+                  {polishedContent}
+                </Streamdown>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    {diffSummary.added === 0 && diffSummary.removed === 0
+                      ? t("content.diffNoChange")
+                      : t("content.diffSummary", {
+                          added: diffSummary.added,
+                          chars: diffSummary.addedChars,
+                          removed: diffSummary.removed
+                        })}
+                  </p>
+                  <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-neutral-800 dark:text-neutral-200">
+                    {diff.map((segment, index) =>
+                      segment.op === "same" ? (
+                        <span key={index}>{segment.text}</span>
+                      ) : segment.op === "add" ? (
+                        <mark
+                          key={index}
+                          className="rounded bg-amber-200/70 px-0.5 text-amber-950 dark:bg-amber-400/25 dark:text-amber-100"
+                        >
+                          {segment.text}
+                        </mark>
+                      ) : (
+                        <del
+                          key={index}
+                          className="text-muted-foreground/70 decoration-destructive/60"
+                        >
+                          {segment.text}
+                        </del>
+                      )
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{t("content.diffHint")}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
