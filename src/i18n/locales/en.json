@@ -196,15 +196,15 @@
         "select": "Select Folder"
       },
       "ai": {
-      "getApiKey": "Get API Key",
-      "deepseek": {
-        "title": "DeepSeek",
-        "description": "Get an API key from the DeepSeek platform. Matching, polishing, proofreading and PDF import all use this channel",
-        "apiKey": "API Key",
-        "modelId": "Model",
-        "modelIdHint": "Leave empty to use deepseek-chat, which also supports image input for PDF import"
+        "getApiKey": "Get API Key",
+        "deepseek": {
+          "title": "DeepSeek",
+          "description": "Get an API key from the DeepSeek platform. Matching, polishing, proofreading and PDF import all use this channel",
+          "apiKey": "API Key",
+          "modelId": "Model",
+          "modelIdHint": "Leave empty to use deepseek-chat, which also supports image input for PDF import"
+        }
       }
-    }
     },
     "templates": {
       "title": "Templates",
@@ -1015,11 +1015,9 @@
     "generateSuccess": "Resume generated, opening workbench",
     "selectedCount": "{count} selected",
     "sections": "Sections:",
-    "selectAllRecommended": "Select all recommended",
     "clearAll": "Clear",
     "noDefaultHint": "Nothing is pre-checked — what goes in must be your own choice",
     "evidence": "Evidence",
-    "autoPromoted": "AI marked this as not recommended but cited no verifiable evidence; treated as recommended",
     "emptyDescriptionHint": "This entry has no description, so the AI judgment may be unstable. Add details and re-analyze.",
     "coverage": {
       "title": "Skill coverage",
@@ -1027,7 +1025,9 @@
       "weak": "Thin coverage",
       "missing": "Missing",
       "missingNote": "Missing items are reported only; the tool will not fabricate experience for you."
-    }
+    },
+    "topNStarHint": "The model ranked this near the top — a ranking signal, not a verdict that it must go on the resume",
+    "selectTopRanked": "Select top-ranked"
   },
   "backup": {
     "title": "Backup",

@@ -91,7 +91,7 @@ export const CandidateList = ({
       {analysis && (
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={selectAllRecommended}>
-            {t("selectAllRecommended")}
+            {t("selectTopRanked")}
           </Button>
           <Button variant="ghost" size="sm" onClick={clearAll}>
             {t("clearAll")}
@@ -169,7 +169,15 @@ const EntityRow = ({
           <span className="flex items-center gap-1.5">
             <span className="truncate text-sm font-medium">{entity.title}</span>
             {item?.inTopN && (
-              <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" />
+              // 星标本身什么也不说，容易被读成「AI 认为该放」。v4 之后它
+              // 只表示名次 —— 挂上 title 与 aria-label 把含义说清楚
+              <span
+                title={t("topNStarHint")}
+                aria-label={t("topNStarHint")}
+                className="shrink-0"
+              >
+                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden />
+              </span>
             )}
           </span>
           <span className="block truncate text-xs text-muted-foreground">
@@ -178,11 +186,6 @@ const EntityRow = ({
           {hasAnalysis && !entity.description.trim() && (
             <span className="mt-1 block text-xs text-muted-foreground">
               {t("emptyDescriptionHint")}
-            </span>
-          )}
-          {item?.autoPromoted && (
-            <span className="mt-1 block text-xs text-amber-600 dark:text-amber-400">
-              {t("autoPromoted")}
             </span>
           )}
           {hasAnalysis && item?.reason && (

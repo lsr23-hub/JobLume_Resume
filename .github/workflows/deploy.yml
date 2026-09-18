@@ -1,10 +1,16 @@
 name: Deploy to Cloudflare
 
+# 只在手动触发时跑。
+#
+# 原来还挂着 push: branches: [main] —— 也就是往仓库推任何一次提交都会
+# 尝试部署到 Cloudflare。对这个 fork 来说部署目标还没定下来，而且
+# 仓库里未必配了 CLOUDFLARE_API_TOKEN / ACCOUNT_ID，自动跑的结果大概率是
+# 每次推送都留一个失败记录。确认要迁到 Cloudflare 之后，把下面注释掉的两行放开。
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main
 
 jobs:
   deploy:

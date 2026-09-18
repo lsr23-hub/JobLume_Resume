@@ -95,6 +95,17 @@ function appendSetCookie(res, value) {
 const startedAt = Date.now();
 
 /**
+ * 限流的取址模式。
+ *
+ * 没设 `TRUST_PROXY` 时，`clientIpOf` 一律返回 "unknown" —— 也就是**全站共用一个
+ * 额度**。这是刻意的（直连部署下转发头由客户端伪造，信它等于没限流），
+ * 但它的失败方式很隐蔽：所有用户互相挤额度，看起来像"服务坏了"。
+ * 所以启动时把当前模式打出来，并放进 /healthz —— 出事时第一眼能看到。
+ */
+const trustProxy = process.env.TRUST_PROXY === "1";
+const rateLimitMode = trustProxy ? "per-ip" : "shared";
+
+/**
  * 健康检查。
  *
  * 放在静态文件与路由之前，所以它不经过应用渲染，也不受 /api 的限流影响 ——
@@ -115,7 +126,10 @@ function handleHealthz(req, res) {
 
   const body = JSON.stringify({
     status: "ok",
-    uptimeSec: Math.round((Date.now() - startedAt) / 1000)
+    uptimeSec: Math.round((Date.now() - startedAt) / 1000),
+    // "shared" 表示所有请求共用一个限流额度 —— 部署在反向代理后面时
+    // 应该设 TRUST_PROXY=1，否则用户会互相挤掉额度
+    rateLimitMode
   });
 
   res.statusCode = 200;
@@ -195,4 +209,10 @@ createServer(async (req, res) => {
   }
 }).listen(port, host, () => {
   console.log(`Server running at http://${host}:${port}`);
+  console.log(
+    rateLimitMode === "per-ip"
+      ? "Rate limit: per client IP (TRUST_PROXY=1)"
+      : "Rate limit: SHARED — all clients share one quota. " +
+        "Set TRUST_PROXY=1 if a reverse proxy sits in front."
+  );
 });

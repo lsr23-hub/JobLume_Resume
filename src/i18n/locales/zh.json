@@ -197,15 +197,15 @@
         "select": "选择文件夹"
       },
       "ai": {
-      "getApiKey": "获取 API Key",
-      "deepseek": {
-        "title": "DeepSeek",
-        "description": "在 DeepSeek 开放平台获取 API 密钥。匹配、润色、校对与 PDF 简历导入都走这条通道",
-        "apiKey": "API Key",
-        "modelId": "模型",
-        "modelIdHint": "留空则使用 deepseek-chat。该模型同时支持识图，PDF 简历导入也走它"
+        "getApiKey": "获取 API Key",
+        "deepseek": {
+          "title": "DeepSeek",
+          "description": "在 DeepSeek 开放平台获取 API 密钥。匹配、润色、校对与 PDF 简历导入都走这条通道",
+          "apiKey": "API Key",
+          "modelId": "模型",
+          "modelIdHint": "留空则使用 deepseek-chat。该模型同时支持识图，PDF 简历导入也走它"
+        }
       }
-    }
     },
     "templates": {
       "title": "模板",
@@ -1017,11 +1017,9 @@
     "generateSuccess": "已生成简历，正在打开工作台",
     "selectedCount": "已选 {count} 条",
     "sections": "板块：",
-    "selectAllRecommended": "全选推荐项",
     "clearAll": "清空",
     "noDefaultHint": "初始状态不预勾选 —— 放进简历的必须是你自己选的",
     "evidence": "依据",
-    "autoPromoted": "AI 判为「不推荐」但未能提供可核对的依据，已按「推荐」处理",
     "emptyDescriptionHint": "该条目描述为空，AI 判定可能不稳定 —— 建议补充内容后重新分析",
     "coverage": {
       "title": "技能覆盖度",
@@ -1029,7 +1027,9 @@
       "weak": "覆盖薄弱",
       "missing": "缺失",
       "missingNote": "缺失项只作提示，工具不会替你编造经历。"
-    }
+    },
+    "topNStarHint": "模型把这条排在了前列 —— 这是排序信号，不是「必须放进简历」的结论",
+    "selectTopRanked": "全选排名靠前的项"
   },
   "backup": {
     "title": "数据备份",
