@@ -323,6 +323,15 @@
   }
   .sheet textarea:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
   .empty { padding: 40px 0; text-align: center; color: var(--ink-3); font-size: 13px; }
+
+  .alert {
+    display: none;
+    max-width: 1280px; margin: 12px auto 0;
+    padding: 10px 14px; border-radius: 9px;
+    background: var(--accent-soft); border: 1px solid var(--accent);
+    color: var(--ink); font-size: 12.5px;
+  }
+  .alert[data-show="true"] { display: block; }
 </style>
 
 <header class="bar">
@@ -335,6 +344,8 @@
     <div class="tabs" id="tabs" role="tablist"></div>
   </div>
 </header>
+
+<div class="alert" id="alert"></div>
 
 <main>
   <aside class="jd" id="jd"></aside>
@@ -382,10 +393,25 @@ const LEVELS = [
 const KEY = "eval-review-edits";
 
 /* localStorage 可能不可用（无痕、被清理），读写都兜住 —— 页面照常工作，只是不记忆 */
+/*
+ * 改动存在浏览器本地。Safari 等浏览器对 file:// 页面的本地存储常常禁用，
+ * 一旦存不住，用户复核到一半刷新就全没了 —— 所以先探一次，存不住就明说。
+ */
+const storageOk = (() => {
+  try {
+    localStorage.setItem(KEY + "-probe", "1");
+    const ok = localStorage.getItem(KEY + "-probe") === "1";
+    localStorage.removeItem(KEY + "-probe");
+    return ok;
+  } catch { return false; }
+})();
+
 const readEdits = () => {
+  if (!storageOk) return {};
   try { return JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch { return {}; }
 };
 const writeEdits = (v) => {
+  if (!storageOk) return;
   try { localStorage.setItem(KEY, JSON.stringify(v)); } catch { /* 忽略 */ }
 };
 
@@ -628,6 +654,16 @@ function syncBarHeight() {
 }
 window.addEventListener("resize", syncBarHeight);
 
+function renderAlert() {
+  const el = document.getElementById("alert");
+  if (storageOk) { el.dataset.show = "false"; return; }
+  el.dataset.show = "true";
+  el.innerHTML =
+    "这个浏览器不允许本地页面保存数据，<b>改动不会被记住</b>，刷新或关闭就丢。" +
+    "请一次性复核完并点「导出改动」；或改用 Chrome / Edge 打开这个文件。";
+}
+
 render();
+renderAlert();
 syncBarHeight();
 </script>
