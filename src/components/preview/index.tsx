@@ -249,45 +249,6 @@ const PreviewPanel = React.forwardRef<HTMLDivElement, PreviewPanelProps>(
               }}
               className="relative"
             >
-              <style jsx global>{`
-              .grammar-error {
-                cursor: help;
-                border-bottom: 2px dashed;
-                transition: background-color 0.2s ease;
-              }
-
-              .grammar-error.spelling {
-                border-color: #ef4444;
-              }
-
-              .grammar-error.grammar {
-                border-color: #f59e0b;
-              }
-
-              .grammar-error:hover {
-                background-color: rgba(239, 68, 68, 0.1);
-              }
-
-              /* 使用属性选择器匹配所有active-*类 */
-              .grammar-error[class*="active-"] {
-                animation: highlight 2s ease-in-out;
-              }
-
-              @keyframes highlight {
-                0% {
-                  background-color: transparent;
-                }
-                20% {
-                  background-color: rgba(239, 68, 68, 0.2);
-                }
-                80% {
-                  background-color: rgba(239, 68, 68, 0.2);
-                }
-                100% {
-                  background-color: transparent;
-                }
-              }
-            `}</style>
               <ResumeTemplateComponent data={activeResume} template={template} />
               {pageBreakLinesVisible && contentHeight > 0 && (
                 <>

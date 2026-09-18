@@ -14,17 +14,18 @@ export function Dock({ children, className, ...props }: DockProps) {
   // Find the index of TemplateSheet for splitting
   const templateSheetIndex = childrenArray.findIndex((child) => {
     if (React.isValidElement(child)) {
-      const tooltip = child.props.children;
+      const tooltip = (child.props as { children?: unknown }).children;
       if (React.isValidElement(tooltip)) {
-        const trigger = tooltip.props.children.find(
+        const trigger = (tooltip.props as { children: any[] }).children.find(
           (child: any) => child?.type?.name === "TooltipTrigger"
         );
         if (trigger) {
-          const content = trigger.props.children;
+          const content = (trigger.props as { children?: unknown }).children;
           if (React.isValidElement(content)) {
-            const icon = content.props.children;
+            const icon = (content.props as { children?: unknown }).children;
             return (
-              React.isValidElement(icon) && icon.type?.name === "TemplateSheet"
+              React.isValidElement(icon) &&
+              (icon.type as { name?: string })?.name === "TemplateSheet"
             );
           }
         }

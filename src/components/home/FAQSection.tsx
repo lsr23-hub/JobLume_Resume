@@ -11,7 +11,8 @@ import AnimatedFeature from "./client/AnimatedFeature";
 
 export default function FAQSection() {
   const t = useTranslations("home.faq");
-  const faqItems = t.raw("items");
+  // t.raw 的类型是 unknown（它可以是任意 JSON）—— 这里声明期望的形状
+  const faqItems = t.raw("items") as Array<{ question: string; answer: string }>;
 
   return (
     <section className="py-24 md:py-40 bg-background relative overflow-hidden">
@@ -27,8 +28,7 @@ export default function FAQSection() {
 
         <AnimatedFeature delay={0.2}>
           <Accordion type="single" collapsible className="w-full space-y-4">
-            {faqItems.map(
-              (item: { question: string; answer: string }, index: number) => (
+            {faqItems.map((item, index) => (
                 <AccordionItem 
                   key={index} 
                   value={`item-${index}`}

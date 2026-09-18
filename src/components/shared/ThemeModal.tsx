@@ -25,6 +25,8 @@ const ThemeModal = ({
   title,
 }: ThemedAlertDialogProps) => {
   const t = useTranslations("themeModal.delete");
+  // t.raw 的类型是 unknown（它可以是任意 JSON）—— 这里要用它做字符串切分
+  const description = String(t.raw("description"));
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
@@ -33,9 +35,9 @@ const ThemeModal = ({
           <AlertDialogTitle>{t("title")}</AlertDialogTitle>
           <AlertDialogDescription>
             <span>
-              {t.raw("description").split("{title}")[0]}
+              {description.split("{title}")[0]}
               <span className="px-1 font-semibold text-foreground">{title}</span>
-              {t.raw("description").split("{title}")[1]}
+              {description.split("{title}")[1]}
             </span>
           </AlertDialogDescription>
         </AlertDialogHeader>

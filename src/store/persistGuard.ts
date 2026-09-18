@@ -19,6 +19,11 @@ import { toast } from "sonner";
 export const reportHydrationFailure = (label: string, error: unknown): void => {
   if (!error) return;
 
+  // 服务端渲染时本来就没有 localStorage，那次「读取失败」是**预期行为**
+  // （持久化只在浏览器里生效）。不排除掉的话，每次 SSR 都会喊一次狼来了 ——
+  // 一个每次都误报的兜底比没有更糟，真出事时没人会看它。
+  if (typeof window === "undefined" || typeof localStorage === "undefined") return;
+
   const detail = error instanceof Error ? error.message : String(error);
   console.error(
     `[${label}] 本地数据读取失败：${detail}\n` +

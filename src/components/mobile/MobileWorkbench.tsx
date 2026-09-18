@@ -131,6 +131,8 @@ export function MobileWorkbench() {
                 previewPanelCollapsed={false}
                 toggleSidePanel={() => {}}
                 toggleEditPanel={() => {}}
+                // 移动端把预览单独占一屏，没有「折叠预览」这个动作
+                togglePreviewPanel={() => {}}
               />
             </motion.div>
           )}
