@@ -43,7 +43,7 @@
         "reason": "软件工程本科，专业对口"
       },
       "exp-字节跳动": {
-        "relevance": 2,
+        "relevance": 3,
         "reason": "前端架构与性能优化能力可迁移，但无服务端经验"
       },
       "exp-美团": {
@@ -51,7 +51,7 @@
         "reason": "监控埋点与性能优化经验部分可迁移"
       },
       "proj-大促活动页搭建平台": {
-        "relevance": 1,
+        "relevance": 2,
         "reason": "搭建平台是前端产品，不是 BFF 服务"
       },
       "proj-Aurora Design 组件库": {
@@ -75,15 +75,16 @@
         "reason": "荣誉信息，与岗位能力无关"
       },
       "lang-英语": {
-        "relevance": 1,
-        "reason": "岗位未对英语提出要求"
+        "relevance": 2,
+        "reason": "岗位未对英语提出要求",
+        "mustHave": true
       },
       "lang-日语": {
         "relevance": 0,
         "reason": "岗位未要求日语"
       }
     },
-    "budget": 4,
+    "budget": 6,
     "missingSkills": [
       "Node.js 服务端开发经验",
       "微服务与容器化部署经验"

@@ -81,7 +81,7 @@
         "reason": "荣誉信息，与岗位能力无关"
       },
       "lang-英语": {
-        "relevance": 1,
+        "relevance": 2,
         "reason": "岗位未对英语提出要求"
       },
       "lang-日语": {
@@ -89,7 +89,7 @@
         "reason": "岗位未要求日语"
       }
     },
-    "budget": 6,
+    "budget": 7,
     "missingSkills": [
       "复杂数据可视化经验（Canvas/WebGL/图表库）"
     ],
