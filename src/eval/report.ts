@@ -20,6 +20,14 @@ export interface ReportInput {
   aggregate: AggregateMetrics;
   /** 每案例的首次运行，用于失败分析 */
   runs: Record<string, CaseRun>;
+  /**
+   * 每案例的**全部**运行的指标。
+   *
+   * 覆盖度那一项必须看全部运行：模型每次报的缺口不完全一样，
+   * 只拿首次运行讲「漏了哪条」，会把一个三次里漏两次的缺口说成没漏。
+   * 缺省时退化为只看首次运行。
+   */
+  perRun?: Record<string, CaseMetrics[]>;
 }
 
 const pct = (value: number): string => `${(value * 100).toFixed(1)}%`;
@@ -111,6 +119,26 @@ export const buildReport = (input: ReportInput): string => {
     lines.push("");
   }
 
+  // 覆盖度这两项的标注量必须和比率一起看 —— 全数据集只有十来条标注，
+  // 一条就能让分案例的比率动几十个百分点，单看比率是过度解读
+  const missingTotal = aggregate.perCase.reduce((s, c) => s + c.metrics.coverage.missingTotal, 0);
+  const unsupportedTotal = aggregate.perCase.reduce(
+    (s, c) => s + c.metrics.coverage.unsupportedTotal,
+    0
+  );
+  lines.push(
+    `> JD 理解那一组的标注量很薄：全数据集 ${missingTotal} 条「档案无支撑」标注、` +
+      `${unsupportedTotal} 条「虚报覆盖」标注。一条就能让某个案例的比率动 25 个百分点以上 ——` +
+      `这两种数当旗标看，别当测量值。`
+  );
+  lines.push("");
+  lines.push(
+    `> 占比类的数字都按**案例平均**（判定类的混淆矩阵除外，那个按原始计数合并）。` +
+      `所以没有标注的案例在覆盖虚报率里计 0 分，等于白拿一个满分 ——` +
+      `这是已知的稀释问题，本轮没有改：看数据之后改口径，改出来的结论不可信。`
+  );
+  lines.push("");
+
   // 缓存没命中时 l1Drift 测的是模型抖动而非缓存 —— 必须说清楚，
   // 否则会把缓存故障误读成「模型不稳定」
   if (aggregate.stability?.l1Checked && !aggregate.stability.l1FromCache) {
@@ -132,43 +160,106 @@ export const buildReport = (input: ReportInput): string => {
   // ── 分案例 ──
   lines.push(`## 分案例`);
   lines.push("");
-  lines.push(`| 案例 | NDCG@5 | 斯皮尔曼 | 关键经历召回 | 理想重合 | 选择质量 | 用时 |`);
-  lines.push(`|---|---|---|---|---|---|---|`);
+  lines.push(`| 案例 | NDCG@5 | 斯皮尔曼 | 关键经历召回 | 理想重合 | 选择质量 | 缺失项召回 | 覆盖虚报 | 用时 |`);
+  lines.push(`|---|---|---|---|---|---|---|---|---|`);
   for (const { caseId, metrics } of aggregate.perCase) {
     const run = runs[caseId];
+    const cov = metrics.coverage;
     lines.push(
-      `| ${caseId} | ${metrics.ranking.ndcgAt5.toFixed(2)} | ${metrics.ranking.spearman.toFixed(2)} | ${metrics.selection.mustHaveRecall === 1 ? "✅" : "❌"} | ${metrics.selection.idealJaccard.toFixed(2)} | ${metrics.selection.selectionQuality.toFixed(2)} | ${run ? `${(run.usage.elapsedMs / 1000).toFixed(1)}s` : "-"} |`
+      `| ${caseId} | ${metrics.ranking.ndcgAt5.toFixed(2)} | ${metrics.ranking.spearman.toFixed(2)} | ${metrics.selection.mustHaveRecall === 1 ? "✅" : "❌"} | ${metrics.selection.idealJaccard.toFixed(2)} | ${metrics.selection.selectionQuality.toFixed(2)} | ${cov.missingTotal === 0 ? "—" : pct(cov.missingRecall)} | ${cov.unsupportedTotal === 0 ? "—" : pct(cov.coverageFalsePositive)} | ${run ? `${(run.usage.elapsedMs / 1000).toFixed(1)}s` : "-"} |`
     );
   }
   lines.push("");
 
   // ── 失败案例：指标只说明「差」，这里说明「差在哪」 ──
+  const hasCoverageMiss = (caseId: string): boolean => {
+    const runsOfCase = input.perRun?.[caseId];
+    if (!runsOfCase) return false;
+    return runsOfCase.some(
+      (m) => m.coverage.missingMissed.length > 0 || m.coverage.unsupportedClaimed.length > 0
+    );
+  };
+
   const hasFailures = aggregate.perCase.some(
     (c) =>
       c.metrics.judgment.falseNegatives.length > 0 ||
       c.metrics.selection.missed.length > 0 ||
-      c.metrics.judgment.hallucinations.length > 0
+      c.metrics.judgment.hallucinations.length > 0 ||
+      hasCoverageMiss(c.caseId)
   );
 
   if (hasFailures) {
     lines.push(`## 失败案例`);
     lines.push("");
+    lines.push(
+      `> 判定与排序的明细取自**首次运行**；覆盖度那一块的命中次数是**跨全部运行**统计的。`
+    );
+    lines.push("");
     for (const { caseId, metrics } of aggregate.perCase) {
       const { falseNegatives, falsePositives, hallucinations } = metrics.judgment;
       const { missed } = metrics.selection;
+      const coverageMiss = hasCoverageMiss(caseId);
       if (
         falseNegatives.length === 0 &&
         falsePositives.length === 0 &&
         missed.length === 0 &&
-        hallucinations.length === 0
+        hallucinations.length === 0 &&
+        !coverageMiss
       )
         continue;
 
       lines.push(`### ${caseId}`);
       lines.push("");
+      const topN = input.runs[caseId]?.analysis?.topN ?? 5;
+
+      if (coverageMiss) {
+        const runsOfCase = input.perRun?.[caseId] ?? [];
+        // 人工标注过的缺口 = 任意一次运行里出现过「命中」或「漏掉」的那些
+        const goldItems = Array.from(
+          new Set(
+            runsOfCase.flatMap((m) => [...m.coverage.missingFound, ...m.coverage.missingMissed])
+          )
+        );
+        const hitsOf = (item: string): number =>
+          runsOfCase.filter((m) => m.coverage.missingFound.includes(item)).length;
+
+        lines.push(
+          `**覆盖判断（人工标注了 ${goldItems.length} 条「JD 要求、档案没支撑」，模型三次运行各报各的）**`
+        );
+        lines.push("");
+        goldItems.forEach((item) => {
+          const hits = hitsOf(item);
+          const mark = hits === runsOfCase.length ? "✅" : hits === 0 ? "❌" : "⚠️";
+          lines.push(
+            `- ${mark} ${item} —— ${runsOfCase.length} 次运行里报出 ${hits} 次`
+          );
+        });
+        const claimed = Array.from(
+          new Set(runsOfCase.flatMap((m) => m.coverage.unsupportedClaimed))
+        );
+        if (claimed.length > 0) {
+          lines.push("");
+          lines.push(
+            `**虚报覆盖（人工认为档案不支持，模型列进了 covered）**：${claimed.join("、")}`
+          );
+        }
+        // 模型每次实际报出的缺口 —— 读者可以自己看它报的是不是同一件事
+        const reported = Array.from(
+          new Set(
+            (input.runs[caseId]?.analysis?.summary.coverage.missing ?? []).map((x) => x)
+          )
+        );
+        if (reported.length > 0) {
+          lines.push("");
+          lines.push(`模型首次运行报出的缺口：${reported.join("、")}`);
+        }
+        lines.push("");
+      }
 
       if (falseNegatives.length > 0) {
-        lines.push(`**漏判（人工认为该推荐，AI 判了不推荐）**`);
+        // v4 起模型只排序，不判「推荐 / 不推荐」—— 所以这里说的是名次，
+        // 不是模型的判定。沿用旧措辞会让人以为模型做了一次它没做的判断
+        lines.push(`**排序偏低（人工标为推荐，AI 排在前 ${topN} 名之外）**`);
         lines.push("");
         falseNegatives.forEach((f) => {
           lines.push(`- ${f.title} —— 人工：${f.goldReason ?? "—"}｜AI：${f.aiReason || "（无理由）"}`);
@@ -177,7 +268,7 @@ export const buildReport = (input: ReportInput): string => {
       }
 
       if (falsePositives.length > 0) {
-        lines.push(`**误判（人工判不相关，AI 推了）**`);
+        lines.push(`**排序偏高（人工标为不相关，AI 排进了前 ${topN} 名）**`);
         lines.push("");
         falsePositives.forEach((f) => {
           lines.push(`- ${f.title} —— AI：${f.aiReason || "（无理由）"}`);

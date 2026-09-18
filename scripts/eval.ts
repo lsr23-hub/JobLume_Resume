@@ -101,6 +101,9 @@ const main = async () => {
   const caseMetrics: CaseMetrics[] = [];
   const failures: Array<{ caseId: string; error: string }> = [];
   const firstRuns: Record<string, CaseRun> = {};
+  // 覆盖度那一项要看全部运行 —— 模型每次报的缺口不一样，
+  // 只拿首次运行讲「漏了哪条」会把三次里漏两次的缺口说成没漏
+  const perRunMetrics: Record<string, CaseMetrics[]> = {};
   const stabilityInputs: Parameters<typeof computeStabilityMetrics>[0] = {
     runs: [],
     cachedRun: null,
@@ -124,7 +127,8 @@ const main = async () => {
       console.log(`失败：${first.error}`);
     } else {
       // 指标按 N 次运行取均值 —— 单次运行会被模型自身抖动淹没
-      const m = averageCaseMetrics(result.runs.map((r) => metricsFor(evalCase, r)));
+      perRunMetrics[evalCase.id] = result.runs.map((r) => metricsFor(evalCase, r));
+      const m = averageCaseMetrics(perRunMetrics[evalCase.id]);
       caseMetrics.push(m);
       // 不打印「漏判/误判」：v4 起模型只排序，那个二分标签由代码按名次推出来，
       // 拿它算混淆矩阵衡量的是代码的截断线，不是模型
@@ -178,6 +182,7 @@ const main = async () => {
     dataset,
     aggregate,
     runs: firstRuns,
+    perRun: perRunMetrics,
   });
 
   writeFileSync(join(outDir, "report.md"), report);

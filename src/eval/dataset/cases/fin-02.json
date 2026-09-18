@@ -117,7 +117,10 @@
       }
     },
     "budget": 7,
-    "missingSkills": [],
+    "missingSkills": [
+      "零售客户经营数据统计与报表经验",
+      "客户分层与产品持有分析"
+    ],
     "targetPages": 1
   }
 }

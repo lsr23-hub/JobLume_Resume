@@ -63,6 +63,9 @@
       }
     },
     "budget": 2,
+    "unsupportedSkills": [
+      "数据仓库建模"
+    ],
     "missingSkills": [
       "Java / Scala 编程能力",
       "Spark / Flink 大数据框架",
