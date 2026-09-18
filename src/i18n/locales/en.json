@@ -125,15 +125,16 @@
       "importSuccess": "Configuration imported successfully",
       "importError": "Import failed, please check the file format",
       "importDialog": {
-        "title": "Import Resume",
+        "title": "Import",
         "jsonTitle": "Import JSON",
         "jsonDescription": "Import an exported resume config file (.json)",
         "pdfTitle": "Import PDF",
-        "pdfDescription": "Use Gemini into structured resume data",
+        "pdfDescription": "Use AI to read a PDF resume and **save education / work / projects into your career database** — so you can generate résumés for different roles later",
         "importing": "Importing, please wait...",
         "aiConfigRequired": "Please configure your DeepSeek API Key in AI settings first",
-        "pdfSuccess": "PDF imported successfully",
-        "pdfError": "PDF import failed. Please check PDF content or Gemini configuration"
+        "pdfSuccess": "Imported {count} entries into your career database",
+        "pdfError": "PDF import failed. Check the PDF content or your AI configuration",
+        "pdfNothingExtracted": "Nothing usable was recognised in this PDF"
       },
       "notice": {
         "title": "Attention",
@@ -918,7 +919,8 @@
       "note": "Renders as \"Group name: content\" on the resume. Skill names are extracted later by the AI matching step — no need to split them yourself.",
       "certificateLabel": "Certificates & awards",
       "certificatePlaceholder": "One per line, e.g.\nCET-6 (642)\nACM-ICPC Asia Regional — Silver",
-      "certificateNote": "One per line. These are folded into the Skills section on the resume as \"Certificates: first; second\"."
+      "certificateNote": "One per line. These are folded into the Skills section on the resume as \"Certificates: first; second\".",
+      "importedGroupName": "Skills"
     },
     "selfEvaluation": {
       "placeholder": "A few sentences on your strengths and positioning",

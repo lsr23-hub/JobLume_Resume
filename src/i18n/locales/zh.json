@@ -126,15 +126,16 @@
       "importSuccess": "配置导入成功",
       "importError": "配置导入失败，请检查文件格式",
       "importDialog": {
-        "title": "导入简历",
+        "title": "导入",
         "jsonTitle": "导入 JSON",
         "jsonDescription": "导入已导出的简历配置文件（.json）",
         "pdfTitle": "导入 PDF",
-        "pdfDescription": "使用 Gemini 自动识别生成简历结构",
+        "pdfDescription": "用 AI 识别 PDF 简历，把教育 / 工作 / 项目**存进职业数据库** —— 之后可以反复生成不同岗位的简历",
         "importing": "正在导入，请稍候...",
         "aiConfigRequired": "请先在 AI 设置页填入 DeepSeek API Key",
-        "pdfSuccess": "PDF 导入成功",
-        "pdfError": "PDF 导入失败，请检查 PDF 内容或 Gemini 配置"
+        "pdfSuccess": "已把 {count} 条经历导入职业数据库",
+        "pdfError": "PDF 导入失败，请检查 PDF 内容或 AI 配置",
+        "pdfNothingExtracted": "没从这份 PDF 里识别出可用内容"
       },
       "notice": {
         "title": "注意",
@@ -920,7 +921,8 @@
       "note": "简历上会显示为「分组名称：内容」。技能名的识别由后续的 AI 匹配分析完成，无需手动拆分。",
       "certificateLabel": "证书奖项",
       "certificatePlaceholder": "一行一条，如：\nCET-6（642 分）\nACM-ICPC 亚洲区域赛 银奖",
-      "certificateNote": "一行一条。简历上会并进「专业技能」板块，显示成「证书奖项：第一条；第二条」。"
+      "certificateNote": "一行一条。简历上会并进「专业技能」板块，显示成「证书奖项：第一条；第二条」。",
+      "importedGroupName": "技能"
     },
     "selfEvaluation": {
       "placeholder": "用几句话概括你的优势与定位",

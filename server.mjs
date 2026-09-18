@@ -18,6 +18,11 @@ const MIME_TYPES = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".map": "application/json; charset=utf-8",
+  // .mjs 必须给 JavaScript 的 MIME，否则浏览器按模块加载时会拒绝执行
+  // （Strict MIME type checking）。pdfjs 的 worker 就是 .mjs —— 缺这一条
+  // 会让 PDF 简历导入在**部署版里直接不可用**，而 dev 下 vite 自己处理，看不出来。
+  ".mjs": "text/javascript; charset=utf-8",
+  ".wasm": "application/wasm",
   ".png": "image/png",
   ".svg": "image/svg+xml",
   ".txt": "text/plain; charset=utf-8",

@@ -21,6 +21,7 @@ import { useAIConfigStore } from "@/store/useAIConfigStore";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { useJobTargetStore } from "@/store/useJobTargetStore";
 import { generateResume } from "@/lib/profile/generateResume";
+import { profileImportFromAiResult } from "@/lib/profile/importFromAi";
 import { generateUUID } from "@/utils/uuid";
 import { CreateResumeWizard, type WizardChoice } from "./CreateResumeWizard";
 import { ImportResumeDialog } from "./ImportResumeDialog";
@@ -28,7 +29,6 @@ import { ResumeCardItem } from "./ResumeCardItem";
 import { AnimatedImportButton } from "./AnimatedImportButton";
 import {
     extractJsonContent,
-    createResumeFromAIResult,
     toStringArray
 } from "./utils";
 import pdfWorkerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
@@ -48,7 +48,7 @@ export const ResumeWorkbench = () => {
         addResume,
         deleteResume,
     } = useResumeStore();
-    const { profile } = useCareerProfileStore();
+    const { profile, addEntity, addSkillGroup, updateBasic } = useCareerProfileStore();
     const { targets } = useJobTargetStore();
     const { deepseekApiKey, deepseekModelId } = useAIConfigStore();
     const router = useRouter();
@@ -313,13 +313,29 @@ export const ResumeWorkbench = () => {
             throw new Error("Invalid AI response");
         }
 
-        const nameWithoutExt = file.name.replace(/\.[^.]+$/, "").trim();
-        const resume = createResumeFromAIResult(aiResume, nameWithoutExt);
-        const resumeId = addResume(resume);
-        setActiveResume(resumeId);
+        // 落到**职业数据库**，不是简历。
+        //
+        // 这条路径原来直接造一份简历 —— 那是上游的设计（简历即数据）。
+        // 但本项目的架构是「数据库是唯一事实来源」：内容只进简历的话，
+        // 导进来就用完了，享受不到匹配、复用、一库多版本生成。
+        const imported = profileImportFromAiResult(aiResume, {
+            skillGroupName: tSection("skills.importedGroupName"),
+        });
+
+        if (imported.entities.length === 0) {
+            toast.error(t("dashboard.resumes.importDialog.pdfNothingExtracted"));
+            return;
+        }
+
+        for (const entity of imported.entities) addEntity(entity);
+        if (imported.skillGroup) addSkillGroup(imported.skillGroup);
+        if (Object.keys(imported.basic).length > 0) updateBasic(imported.basic);
+
         setIsImportDialogOpen(false);
-        toast.success(t("dashboard.resumes.importDialog.pdfSuccess"));
-        router.push({ to: "/app/workbench/$id", params: { id: resumeId } });
+        toast.success(
+            t("dashboard.resumes.importDialog.pdfSuccess", { count: imported.entities.length })
+        );
+        router.push("/app/dashboard/profile");
     };
 
     const handleJsonFileChange = async (
