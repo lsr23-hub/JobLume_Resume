@@ -32,6 +32,13 @@ import {
   clearHistoryGroup,
 } from "./resumeHistory";
 import { reportHydrationFailure } from "@/store/persistGuard";
+import { useCareerProfileStore } from "@/store/useCareerProfileStore";
+import {
+  USER_SCOPE_VERSION,
+  migrateResumeState,
+  normalizeResumeState,
+  type ResumePersisted,
+} from "@/store/userScope";
 
 interface PendingSync {
   timer: ReturnType<typeof setTimeout>;
@@ -39,6 +46,20 @@ interface PendingSync {
 }
 
 interface ResumeStore {
+  // ── 持久化切片 ──
+  /** 全部用户的简历，按 userId 分桶 */
+  byUser: Record<string, Record<string, ResumeData>>;
+  /** 各用户当前打开的那一份 */
+  activeByUser: Record<string, string | null>;
+
+  // ── 当前用户的别名（不持久化）──
+  /**
+   * `byUser[currentUserId]` 的别名。
+   *
+   * 为什么留这三个而不是让调用方都换 selector：全仓 33 个文件按
+   * `const { activeResume, updateX } = useResumeStore()` 取值，改成传参要动 33 处。
+   * 代价是每次写入都要重算它们 —— 所以写入统一走下面那个包装过的 `set`。
+   */
   resumes: Record<string, ResumeData>;
   activeResumeId: string | null;
   activeResume: ResumeData | null;
@@ -54,6 +75,8 @@ interface ResumeStore {
     options?: UpdateResumeOptions
   ) => void;
   setActiveResume: (resumeId: string) => void;
+  /** 切用户时把那个用户的简历切片装进别名。由当前用户变化的订阅调用 */
+  setActiveUser: (userId: string | null) => void;
   updateResumeFromFile: (
     resume: ResumeData,
     sourceModifiedAt?: number
@@ -101,7 +124,8 @@ interface ResumeStore {
   removeCertificate: (id: string) => void;
 }
 
-type PersistedResumeStore = Pick<ResumeStore, "resumes" | "activeResumeId">;
+// 持久化切片：按用户分桶。类型定义在 userScope（迁移函数与它同源）
+type PersistedResumeStore = ResumePersisted;
 
 const createDefaultCustomItem = (): CustomItem => ({
   id: generateUUID(),
@@ -286,7 +310,45 @@ const debouncedSyncToFile = (
 
 export const useResumeStore = create(
   persist<ResumeStore, [], [], PersistedResumeStore>(
-    (set, get) => ({
+    (rawSet, get) => {
+      /**
+       * 唯一的写入出口。
+       *
+       * 与档案 store 的 `put()` 同一个思路 —— 别名机制最容易写漏，所以把
+       * 「写完别名跟着更新」收在一处。区别是这里收在 `set` 这一层：35 个
+       * action 体因此一个字都不用改（它们闭包里的 `set` 就是下面这个）。
+       *
+       * 只关心 `resumes` / `activeResumeId` 的写入；写别的字段（history、
+       * future）原样透传。
+       */
+      const set: typeof rawSet = (partial, replace) => {
+        const next = (
+          typeof partial === "function" ? partial(get()) : partial
+        ) as Partial<ResumeStore>;
+        const touchesResumes = "resumes" in next || "activeResumeId" in next;
+        const userId = useCareerProfileStore.getState().currentUserId;
+
+        if (!touchesResumes || !userId) {
+          rawSet(partial as never, replace as never);
+          return;
+        }
+
+        const state = get();
+        const resumes = next.resumes ?? state.resumes;
+        const activeResumeId =
+          "activeResumeId" in next ? next.activeResumeId ?? null : state.activeResumeId;
+
+        rawSet({
+          ...next,
+          byUser: { ...state.byUser, [userId]: resumes },
+          activeByUser: { ...state.activeByUser, [userId]: activeResumeId },
+          activeResume: activeResumeId ? resumes[activeResumeId] ?? null : null,
+        } as never);
+      };
+
+      return {
+      byUser: {},
+      activeByUser: {},
       resumes: {},
       activeResumeId: null,
       activeResume: null,
@@ -984,31 +1046,48 @@ export const useResumeStore = create(
         syncResumeToFile(resume);
         return resume.id;
       },
-    }),
+
+      setActiveUser: (userId) => {
+        const { byUser, activeByUser } = get();
+        const resumes = (userId ? byUser[userId] : undefined) ?? {};
+        const activeResumeId = (userId ? activeByUser[userId] : null) ?? null;
+        // 用 rawSet：这一步是「装载」，写回去会污染 byUser
+        rawSet({
+          resumes,
+          activeResumeId,
+          activeResume: activeResumeId ? resumes[activeResumeId] ?? null : null,
+        } as never);
+      },
+      };
+    },
     {
       // 显式标出 state 的类型：签名里出现类型参数，persist 才能把 store 的类型推对
       onRehydrateStorage: (_state: ResumeStore) => (_s?: ResumeStore, error?: unknown) =>
         reportHydrationFailure("resume", error),
       name: "resume-storage",
-      storage: createJSONStorage<PersistedResumeStore>(() =>
+      storage: createJSONStorage<ResumePersisted>(() =>
         createSafeLocalStorage()
       ),
-      partialize: (state): PersistedResumeStore => ({
-        resumes: state.resumes,
-        activeResumeId: state.activeResumeId,
+      // version 与 migrate 必须一起加，理由见 persistGuard 的头注释
+      version: USER_SCOPE_VERSION,
+      migrate: (persisted, version) => migrateResumeState(persisted, version),
+      partialize: (state): ResumePersisted => ({
+        byUser: state.byUser,
+        activeByUser: state.activeByUser,
       }),
       merge: (persistedState, currentState) => {
-        // persistedState 在**首次访问**（storage 里还没有这个键）时是 undefined。
-        // 原来直接读 .resumes 必然抛错，而 zustand 的 .catch 会把它吞掉 ——
-        // 表现是「静默停在初始状态」，谁都不会发现。全新浏览器就是这条路。
-        const persisted = (persistedState ?? {}) as Partial<PersistedResumeStore>;
-        const resumes = persisted.resumes ?? currentState.resumes;
-        const activeResumeId =
-          persisted.activeResumeId ?? currentState.activeResumeId;
+        // persistedState 在**首次访问**（storage 里还没有这个键）时是 undefined，
+        // 另外「版本字段缺失」的 blob 根本不进 migrate、会原样落到这里 ——
+        // normalizeResumeState 是这两条路的共同防线。
+        const { byUser, activeByUser } = normalizeResumeState(persistedState);
+        const currentUserId = useCareerProfileStore.getState().currentUserId;
+        const resumes = (currentUserId ? byUser[currentUserId] : undefined) ?? {};
+        const activeResumeId = (currentUserId ? activeByUser[currentUserId] : null) ?? null;
 
         return {
           ...currentState,
-          ...persisted,
+          byUser,
+          activeByUser,
           resumes,
           activeResumeId,
           activeResume: activeResumeId ? resumes[activeResumeId] ?? null : null,
@@ -1017,3 +1096,18 @@ export const useResumeStore = create(
     }
   )
 );
+
+/**
+ * 当前用户一变，就把那个用户的简历切片装进别名。
+ *
+ * 为什么用模块级订阅而不是让每个切人入口自己记得调：切人有两个入口
+ * （`UserSelectDialog` 的选卡与新建），将来还可能有第三个 —— 订阅让「忘记
+ * 同步」在结构上不可能发生。这是 `useResumeStore` 对 `useCareerProfileStore`
+ * 的唯一一处依赖，单向、无环（档案 store 不反向依赖简历 store），是
+ * `docs/02-data-model.md` §7.2「三个 store 互不 import」的一处刻意例外。
+ */
+useCareerProfileStore.subscribe((state, prev) => {
+  if (state.currentUserId !== prev.currentUserId) {
+    useResumeStore.getState().setActiveUser(state.currentUserId);
+  }
+});

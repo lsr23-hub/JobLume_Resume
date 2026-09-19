@@ -39,7 +39,13 @@ const storedResume = (page: Page, pick: (r: any) => unknown) =>
   page.evaluate((src) => {
     const raw = JSON.parse(localStorage.getItem("resume-storage") ?? "null");
     const st = raw?.state ?? {};
-    const r = st.resumes?.[st.activeResumeId] ?? Object.values(st.resumes ?? {})[0];
+    // 简历按用户分桶（见 store/userScope）：取当前用户那一桶。
+    // 注意 currentUserId 存在 career-profile-storage 里，不在 resume-storage。
+    const uid = JSON.parse(
+      localStorage.getItem("career-profile-storage") ?? "null"
+    )?.state?.currentUserId as string | undefined;
+    const bucket = (st.byUser?.[uid ?? ""] ?? {}) as Record<string, unknown>;
+    const r = bucket[st.activeByUser?.[uid ?? ""]] ?? Object.values(bucket)[0];
     // eslint-disable-next-line no-new-func
     return r ? new Function("r", `return (${src})(r)`)!(r) : null;
   }, pick.toString());

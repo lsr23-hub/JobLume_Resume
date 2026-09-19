@@ -182,7 +182,13 @@ step(/\/app\/workbench\//.test(page.url()), "⑪ 生成后进入编辑器");
 
 const snap = await page.evaluate(() => {
   const raw = JSON.parse(localStorage.getItem("resume-storage") ?? "null");
-  const list = Object.values((raw?.state?.resumes ?? {}) as Record<string, unknown>);
+  const st = raw?.state ?? {};
+  // 简历按用户分桶（见 store/userScope）：取当前用户那一桶。
+  // 注意 currentUserId 存在 career-profile-storage 里，不在 resume-storage。
+  const uid = JSON.parse(
+    localStorage.getItem("career-profile-storage") ?? "null"
+  )?.state?.currentUserId as string | undefined;
+  const list = Object.values((st.byUser?.[uid ?? ""] ?? {}) as Record<string, unknown>);
   const r = (list as Array<Record<string, unknown>>).sort(
     (a, b) => String(b.createdAt).localeCompare(String(a.createdAt))
   )[0] as { snapshot?: Record<string, unknown>; menuSections?: Array<{ id: string; enabled: boolean }> };

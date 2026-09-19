@@ -61,17 +61,8 @@ export interface GenerateResumeInput {
  * 新建向导用它拦在第一步 —— 空库生成出来是一份除了姓名什么都不剩的简历，
  * 与其让用户走完三步再拿到一份空壳，不如一开始就说清楚。
  */
-export const hasUsableProfile = (profile: CareerProfile | null): boolean => {
-  if (!profile) return false;
-  return Boolean(
-    profile.basic?.name?.trim() ||
-      Object.keys(profile.entities ?? {}).length > 0 ||
-      (profile.skillGroups ?? []).length > 0 ||
-      (profile.certificateText ?? "").trim() ||
-      (profile.languageText ?? "").trim() ||
-      (profile.selfEvaluationContent ?? "").trim()
-  );
-};
+// 定义搬到了自己的叶子文件（原因见那里的注释）；这里转出，保持既有引用路径可用
+export { hasUsableProfile } from "./hasUsableProfile";
 
 /** 把数据库里的可见条目按板块归类 —— 即「全都收进简历」的 selection */
 export const selectAllEntities = (

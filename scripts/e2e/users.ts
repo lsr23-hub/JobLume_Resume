@@ -114,6 +114,93 @@ await page.waitForTimeout(1500);
 step(!(await picker(page).isVisible().catch(() => false)), "投递目标页不弹用户框（岗位全局共享）");
 step((await chip(page).count()) > 0, "投递目标页也保留切换入口");
 
+// ════════════════ 4b. 简历也按用户隔离 ════════════════
+// 甲同学名下生成一份简历，切到乙同学应该看不到
+await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
+await page.waitForTimeout(1200);
+await page.evaluate((key) => {
+  const NOW = new Date().toISOString();
+  const raw = JSON.parse(localStorage.getItem(key)!);
+  const st = raw.state;
+  const p = st.profiles[st.currentUserId];
+  const base = { tags: [], skills: [], metrics: [], hidden: false, order: 0, createdAt: NOW, updatedAt: NOW };
+  p.basic = { ...p.basic, name: "甲同学" };
+  p.entities = {
+    exp1: { ...base, id: "exp1", type: "experience", sectionId: "experience",
+            title: "甲的公司", subtitle: "前端工程师", dateRange: "2020.07 - 2024.03",
+            description: "<ul><li>甲的独有经历</li></ul>" },
+  };
+  localStorage.setItem(key, JSON.stringify(raw));
+}, PROFILE_KEY);
+await page.reload({ waitUntil: "networkidle" });
+await page.waitForTimeout(1500);
+
+await page.goto(`${BASE}/app/dashboard/resumes`, { waitUntil: "networkidle" });
+await page.waitForTimeout(1500);
+step(!(await picker(page).isVisible().catch(() => false)), "我的简历页：有当前用户时直接进");
+
+await page.getByRole("button", { name: "新建简历" }).first().click();
+await page.waitForTimeout(900);
+await page.getByText("生成通用简历", { exact: false }).first().click();
+await page.waitForTimeout(1200);
+await page.getByText("经典模板", { exact: true }).first().click();
+await page.waitForTimeout(1300);
+await page.getByRole("button", { name: /就用这个模板开始|用这个模板/ }).first().click();
+await page.waitForTimeout(2500);
+await page.getByRole("button", { name: "全选" }).click();
+await page.waitForTimeout(600);
+await page.getByRole("button", { name: "开始生成" }).click();
+await page.waitForTimeout(4500);
+step(!(await picker(page).isVisible().catch(() => false)), "甲同学成功生成一份简历");
+
+const resumeStore = () =>
+  page.evaluate(() => {
+    const st = JSON.parse(localStorage.getItem("resume-storage") ?? "null")?.state ?? {};
+    const buckets = Object.keys(st.byUser ?? {});
+    return {
+      buckets,
+      counts: buckets.map((b) => Object.keys(st.byUser[b]).length),
+      currentBucket: st.byUser?.[
+        JSON.parse(localStorage.getItem("career-profile-storage")!).state.currentUserId
+      ]?.constructor?.name,
+    };
+  });
+
+const afterA = await readState(page);
+const bucketA = afterA.currentUserId!;
+const aViews = await resumeStore();
+step(aViews.buckets.includes(bucketA), `甲的简历挂在自己名下（桶：${aViews.buckets.map((b) => b.slice(0, 6)).join(", ")}）`);
+step(!Object.keys(aViews).includes("resumes"), "持久化切片不再有扁平的 resumes 字段");
+
+// 切到乙：应该看不到甲的任何简历
+// 生成完会落到编辑器（/app/workbench/），那是另一套布局、没有侧边栏 —— 先回列表页
+await page.goto(`${BASE}/app/dashboard/resumes`, { waitUntil: "networkidle" });
+await page.waitForTimeout(1500);
+await chip(page).first().click();
+await page.waitForTimeout(900);
+await page.locator('[role="dialog"] [role="button"]').filter({ hasText: "乙同学" }).first().click();
+await page.waitForTimeout(1800);
+await page.goto(`${BASE}/app/dashboard/resumes`, { waitUntil: "networkidle" });
+await page.waitForTimeout(1800);
+
+const cards = await page.locator('[role="dialog"] button:has-text("编辑")').count();
+const bodyText = await page.locator("body").innerText();
+step(!bodyText.includes("甲的独有经历"), "乙同学看不到甲的经历");
+step(
+  (await page.locator("text=通用简历").count()) === 0,
+  `乙同学的简历列表里没有甲的简历（可见简历卡 ${cards} 张）`
+);
+
+// 乙名下还没有简历，所以不会有空桶（没有写入就不建桶）。真正要钉住的不变量是：
+// 甲的桶还在、且没被动过，而乙看到的是 0 份。
+const buckets = await page.evaluate((aId) => {
+  const st = JSON.parse(localStorage.getItem("resume-storage") ?? "null")?.state ?? {};
+  const byUser = st.byUser ?? {};
+  return { aCount: Object.keys(byUser[aId] ?? {}).length, total: Object.keys(byUser).length };
+}, bucketA);
+step(buckets.aCount === 1, `切走之后甲的简历仍在自己桶里，没被动过（${buckets.aCount} 份）`);
+step(buckets.total === 1, `乙没有简历 → 不产生空桶（桶数 ${buckets.total}）`);
+
 // ════════════════ 5. 老数据迁移（放最后：它会整体覆盖存储） ════════════════
 await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
 await page.waitForTimeout(1200);

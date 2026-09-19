@@ -92,7 +92,12 @@ await page.waitForTimeout(1500);
 const seeded = await page.evaluate(() => {
   const raw = JSON.parse(localStorage.getItem("resume-storage") || "null");
   if (!raw) return { ok: false, reason: "resume-storage 不存在" };
-  const first = Object.values(raw.state.resumes ?? {})[0];
+  // 简历按用户分桶（见 store/userScope）：取当前用户那一桶。
+  // first 是桶内对象的引用，改完整体 stringify 回去即可。
+  const st = raw.state ?? {};
+  // currentUserId 存在 career-profile-storage 里，不在 resume-storage
+  const uid = JSON.parse(localStorage.getItem("career-profile-storage") || "null")?.state?.currentUserId;
+  const first = Object.values(st.byUser?.[uid] ?? {})[0];
   if (!first) return { ok: false, reason: "还没有简历" };
   const before = first.templateId;
   first.templateId = "swiss";          // 本次精简删掉的模板

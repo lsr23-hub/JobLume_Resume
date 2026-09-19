@@ -20,7 +20,21 @@ export const CURRENT_PROFILE_PATH = "state.profiles[state.currentUserId]";
  * 幂等：已经有当前用户时什么也不做。脚本在 `goto` 到板块页之后调用它。
  */
 export const ensureCurrentUser = async (page) => {
+  // 先看存储（快、不依赖渲染）。已经有当前用户就直接返回 —— 否则每次调用都要
+  // 白等一个「弹窗始终不出现」的超时。
+  const hasUser = await page
+    .evaluate(() => {
+      const st = JSON.parse(localStorage.getItem("career-profile-storage") ?? "null")?.state;
+      return Boolean(st?.currentUserId);
+    })
+    .catch(() => false);
+  if (hasUser) return false;
+
+  // 注意必须**等**弹窗出现：`goto` 之后 React 还没渲染完，直接 isVisible()
+  // 会拿到 false，于是静默什么都不做 —— 脚本继续跑，然后在几十行之后以
+  // 「简历桶是空的」这种毫不相干的症状炸掉。
   const dialog = page.locator('[role="dialog"]').filter({ hasText: "选择用户" });
+  await dialog.waitFor({ state: "visible", timeout: 8000 }).catch(() => {});
   if (!(await dialog.isVisible().catch(() => false))) return false;
 
   await page.getByRole("button", { name: "新建用户" }).first().click();

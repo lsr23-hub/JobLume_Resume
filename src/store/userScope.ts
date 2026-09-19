@@ -10,7 +10,7 @@
 import type { CareerProfile } from "@/types/profile";
 import type { ResumeData } from "@/types/resume";
 import type { AnalysisCache, JobTarget, MatchAnalysis } from "@/types/jobTarget";
-import { hasUsableProfile } from "@/lib/profile/generateResume";
+import { hasUsableProfile } from "@/lib/profile/hasUsableProfile";
 
 /**
  * 迁移前的存量数据统一落在它名下。
