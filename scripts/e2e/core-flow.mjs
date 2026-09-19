@@ -167,7 +167,7 @@ if (printInfo?.html) {
 const VITALS = ["--canvas", "--ink", "--coral", "--surface-card", "--hairline", "--background", "--primary", "--border"];
 for (const theme of ["light", "dark"]) {
   const p3 = await ctx.newPage();
-  await p3.addInitScript((t) => localStorage.setItem("magic-resume-theme", t), theme);
+  await p3.addInitScript((t) => localStorage.setItem("joblume-theme", t), theme);
   await p3.goto(`${BASE}/app/dashboard/resumes`, { waitUntil: "networkidle" });
   await p3.waitForTimeout(1200);
   const v = await p3.evaluate((names) => {
@@ -178,11 +178,15 @@ for (const theme of ["light", "dark"]) {
     out._bodyBg = getComputedStyle(document.body).backgroundColor;
     // 透明＝链断了
     out._transparent = out._bodyBg.startsWith("rgba(0, 0, 0, 0");
+    // 主题有没有真的切过去。没有这条断言，storage key 一旦写错，两次都会跑浅色，
+    // 上面那两条「dark 主题 token 全部解析」照样通过 —— 暗色检查变成空转。
+    out._darkClass = document.documentElement.classList.contains("dark");
     return out;
   }, VITALS);
   const empty = VITALS.filter((n) => !v[n]);
   step(empty.length === 0, `${theme} 主题：${VITALS.length} 个 token 全部解析${empty.length ? `（缺 ${empty.join(",")}）` : ""}`);
   step(!v._transparent, `${theme} 主题：body 底色非透明（${v._bodyBg}）`);
+  step(v._darkClass === (theme === "dark"), `${theme} 主题：html 上的 dark class 与所选主题一致`);
   await p3.close();
 }
 
