@@ -8,9 +8,11 @@ import {
   listUserIds,
   readSaveFile,
   readSaveTree,
+  removeSaveFile,
   removeUserDir,
   resolveSavePath,
   savesEnabled,
+  writeSaveFile,
 } from "./saves";
 
 const ROOT = "/repo";
@@ -190,6 +192,81 @@ describe("读取", () => {
       await expect(removeUserDir(root, bad)).rejects.toThrow();
     }
   );
+});
+
+// ─────────────────────────── 写入侧的「写前备份」 ───────────────────────────
+
+describe("写前备份 .bak", () => {
+  let root: string;
+
+  beforeEach(async () => {
+    root = await fs.mkdtemp(path.join(os.tmpdir(), "joblume-saves-"));
+  });
+
+  afterEach(async () => {
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  const bakOf = (userId: string, rel: string) =>
+    path.join(root, "saves", userId, `${rel}.bak`);
+
+  it("首次写入不产生 .bak —— 没有上一版可备", async () => {
+    await writeSaveFile(root, UID, "profile", undefined, { basic: { name: "甲" } });
+    await expect(fs.access(bakOf(UID, "profile.json"))).rejects.toThrow();
+  });
+
+  it("第二次写入：.bak 里是**上一版**，当前文件是新内容", async () => {
+    await writeSaveFile(root, UID, "profile", undefined, { basic: { name: "第一版" } });
+    await writeSaveFile(root, UID, "profile", undefined, { basic: { name: "第二版" } });
+
+    expect(await readSaveFile(root, UID, "profile")).toEqual({ basic: { name: "第二版" } });
+    const bak = JSON.parse(await fs.readFile(bakOf(UID, "profile.json"), "utf8"));
+    expect(bak).toEqual({ basic: { name: "第一版" } });
+  });
+
+  it("只留一代：第三次写入后 .bak 是第二版，不是第一版", async () => {
+    for (const name of ["一", "二", "三"]) {
+      await writeSaveFile(root, UID, "profile", undefined, { basic: { name } });
+    }
+    const bak = JSON.parse(await fs.readFile(bakOf(UID, "profile.json"), "utf8"));
+    expect(bak.basic.name).toBe("二");
+  });
+
+  it("简历 / 岗位各自有自己的 .bak", async () => {
+    await writeSaveFile(root, UID, "resume", "r1", { id: "r1", title: "旧" });
+    await writeSaveFile(root, UID, "resume", "r1", { id: "r1", title: "新" });
+    await writeSaveFile(root, UID, "jd", "t1", { id: "t1", company: "甲" });
+
+    const bak = JSON.parse(await fs.readFile(bakOf(UID, "resumes/r1.json"), "utf8"));
+    expect(bak.title).toBe("旧");
+    await expect(fs.access(bakOf(UID, "jds/t1.json"))).rejects.toThrow();
+  });
+
+  it("**.bak 不会被当成一份存档读出来** —— 否则界面上会多出幽灵条目", async () => {
+    await writeSaveFile(root, UID, "resume", "r1", { id: "r1", title: "旧" });
+    await writeSaveFile(root, UID, "resume", "r1", { id: "r1", title: "新" });
+
+    expect(await listSaveIds(root, UID, "resume")).toEqual(["r1"]);
+    const tree = await readSaveTree(root, UID);
+    expect(Object.keys(tree.resumes)).toEqual(["r1"]);
+    expect(tree.problems).toEqual([]);
+  });
+
+  it("删除是显式动作：.json 与 .bak 一起清掉，不留「删了还在」的副本", async () => {
+    await writeSaveFile(root, UID, "resume", "r1", { id: "r1", title: "旧" });
+    await writeSaveFile(root, UID, "resume", "r1", { id: "r1", title: "新" });
+    await removeSaveFile(root, UID, "resume", "r1");
+
+    await expect(fs.access(path.join(root, "saves", UID, "resumes", "r1.json"))).rejects.toThrow();
+    await expect(fs.access(bakOf(UID, "resumes/r1.json"))).rejects.toThrow();
+  });
+
+  it("removeUserDir 一把带走，包括所有 .bak", async () => {
+    await writeSaveFile(root, UID, "profile", undefined, { basic: { name: "一" } });
+    await writeSaveFile(root, UID, "profile", undefined, { basic: { name: "二" } });
+    await removeUserDir(root, UID);
+    expect(await listUserIds(root)).toEqual([]);
+  });
 });
 
 describe("端点开关", () => {

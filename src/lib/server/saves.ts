@@ -12,7 +12,7 @@ export { isSaveKind, SAVE_KINDS, type SaveKind } from "@/lib/saves/kinds";
  * 2. 拼完之后再用 `path.relative` 确认没跑出 `saves/`（纵深防御，防字符集被绕过）
  * 3. 读写只发生在 `saves/` 下，而静态文件服务的是 `dist/client`，两者不相交
  *
- * 目录形状：
+ * 目录形状（`.bak` 是上一版，见 `writeSaveFile`）：
  * ```
  * saves/<userId>/profile.json
  * saves/<userId>/resumes/<resumeId>.json
@@ -130,6 +130,20 @@ export const writeSaveFile = async (
   }
 
   await fs.mkdir(path.dirname(full), { recursive: true });
+
+  // 覆盖之前把上一版留一份。存档是**唯一副本**，所以「写进去的内容是坏的」这件事
+  // 没有第二处能兜底 —— 一次写出空档案就真没了。多一个 4KB 的文件换一次后悔药。
+  //
+  // 只留一代（每次覆盖 `.bak`）：够救「上一次写坏了」，也让目录不至于越长越胖。
+  // 首次写入（原文件不存在）不产生 `.bak`。
+  try {
+    await fs.copyFile(full, `${full}.bak`);
+  } catch (error) {
+    // 没有原文件是正常的；别的错（权限、磁盘满）不吞 —— 备份都做不了的话，
+    // 紧接着的写入大概率也保不住，宁可让调用方看见
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
+
   await fs.writeFile(full, body, "utf8");
   return full;
 };
@@ -152,7 +166,12 @@ export const removeSaveFile = async (
   id: unknown
 ): Promise<string> => {
   const full = resolveSavePath(root, userId, kind, id);
-  await fs.rm(full, { force: true });
+  // 连 `.bak` 一起清掉：**删除是用户的显式动作**，留一份「删了还在」的副本
+  // 正是「删除没删掉」那类抱怨的来源。`.bak` 保护的是写坏，不是反悔。
+  await Promise.all([
+    fs.rm(full, { force: true }),
+    fs.rm(`${full}.bak`, { force: true }),
+  ]);
   return full;
 };
 
