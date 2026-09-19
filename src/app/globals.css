@@ -290,3 +290,44 @@
 }
 
 
+
+/* ─────────────────────────────────────────────────────────────
+   明暗切换：以点击处为圆心的圆形揭示动画。
+
+   机制是原生 View Transitions（`document.startViewTransition`）把新旧两帧
+   各截一张快照，再让新帧用 `clip-path: circle()` 从 0% 扩到 100%。
+   圆心来自点击坐标，由 JS 写进 `--theme-x` / `--theme-y`。
+
+   为什么不给 `::view-transition-old` 也加动画：旧帧应当**原地不动**被盖住，
+   两帧同时动会互相干扰，看着像页面在抖。
+   ───────────────────────────────────────────────────────────── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 0;
+}
+
+::view-transition-new(root) {
+  z-index: 1;
+  animation: theme-reveal 0.55s ease-in;
+}
+
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0% at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+  to {
+    clip-path: circle(100% at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+}
+
+/* 尊重系统的「减少动态效果」设置 */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}

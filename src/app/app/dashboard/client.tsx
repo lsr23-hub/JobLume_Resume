@@ -23,6 +23,7 @@ import {
 import Logo from "@/components/shared/Logo";
 import { useLocale, useTranslations } from "@/i18n/compat/client";
 import { CurrentUserChip } from "./CurrentUserChip";
+import ThemeToggle from "@/components/shared/ThemeToggle";
 
 interface MenuItem {
   title: string;
@@ -181,7 +182,13 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
             </SidebarGroup>
           </SidebarContent>
           <SidebarFooter>
-            <CurrentUserChip />
+            <div className="flex items-center gap-1">
+              <div className="min-w-0 flex-1">
+                <CurrentUserChip />
+              </div>
+              {/* 工作台此前没有任何明暗切换入口 —— 只有编辑器头部有 */}
+              <ThemeToggle mode="toggle" />
+            </div>
           </SidebarFooter>
         </Sidebar>
         {/* min-w-0 是必需的：flex item 默认 min-width:auto，不加则无法收缩到
