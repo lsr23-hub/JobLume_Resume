@@ -18,6 +18,7 @@
     "eval:review": "tsx scripts/eval-review.ts",
     "canary": "tsx scripts/match-canary.ts",
     "e2e:core": "node scripts/e2e/core-flow.mjs",
+    "e2e:acceptance": "tsx scripts/e2e/acceptance.ts",
     "e2e:picker": "node scripts/e2e/editor-picker.mjs",
     "e2e:legacy": "node scripts/e2e/legacy-template.mjs"
   },
