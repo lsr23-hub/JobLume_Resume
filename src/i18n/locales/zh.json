@@ -966,6 +966,24 @@
       "emptyTitle": "没能从这份 JD 提取到要求项",
       "emptyHint": "多半是模型返回的结构不对（也可能是 JD 太短）。可以点「忽略缓存重跑」再试一次。"
     },
+    "fit": {
+      "level": {
+        "strong": "匹配度高",
+        "partial": "部分匹配",
+        "gap": "差距较大",
+        "unknown": "无法判定"
+      },
+      "reason": {
+        "no_analysis": "这个岗位还没有分析过",
+        "no_requirements": "没能从这份 JD 提取到可判定的要求项",
+        "must_missing": "有 {count} 条硬性要求没有对应经历",
+        "must_thin": "有 {count} 条硬性要求只算勉强够上",
+        "nice_missing": "加分项里有 {count} 条没有对应经历",
+        "backed": "全部硬性要求都有经历支撑"
+      },
+      "legacy": "这份结果来自旧版分析，要求项没有经历指向，因此最高只能判到「部分匹配」",
+      "hint": "等级由要求项的状态推出，不是模型给的分数 —— 依据在下面的要求项里逐条可核对"
+    },
     "staleContentChanged": "当前结果基于修改前的数据（{count} 条经历已变更）",
     "staleGeneric": "当前结果基于修改前的数据（JD 或模型已变）"
   },

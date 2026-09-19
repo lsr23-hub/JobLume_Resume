@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { RequirementList } from "./RequirementList";
+import { FitLevelPanel } from "./FitLevelPanel";
 
 export const TargetsWorkbench = () => {
   const t = useTranslations("targets");
@@ -248,10 +249,13 @@ export const TargetsWorkbench = () => {
                 )}
 
                 {current.matchAnalysis && (
-                  <RequirementList
-                    analysis={current.matchAnalysis}
-                    entities={entities}
-                  />
+                  <>
+                    <FitLevelPanel analysis={current.matchAnalysis} />
+                    <RequirementList
+                      analysis={current.matchAnalysis}
+                      entities={entities}
+                    />
+                  </>
                 )}
               </div>
             )}

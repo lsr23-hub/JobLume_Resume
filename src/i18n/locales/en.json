@@ -965,6 +965,24 @@
       "emptyTitle": "Could not extract any requirements from this JD",
       "emptyHint": "Most likely the model returned an unexpected shape (or the JD is very short). Try “Ignore cache and re-run”."
     },
+    "fit": {
+      "level": {
+        "strong": "Strong match",
+        "partial": "Partial match",
+        "gap": "Significant gaps",
+        "unknown": "Cannot determine"
+      },
+      "reason": {
+        "no_analysis": "This job has not been analyzed yet",
+        "no_requirements": "Could not extract any judgeable requirement from this JD",
+        "must_missing": "{count} hard requirement(s) have no supporting experience",
+        "must_thin": "{count} hard requirement(s) are only thinly supported",
+        "nice_missing": "{count} nice-to-have(s) have no supporting experience",
+        "backed": "Every hard requirement is backed by experience"
+      },
+      "legacy": "This result predates the current analysis format; its requirements carry no experience links, so it can score no higher than Partial match",
+      "hint": "The level is derived from the requirement statuses, not scored by the model — every judgement is checkable in the requirement list below"
+    },
     "staleContentChanged": "Showing results from before your edits ({count} entries changed)",
     "staleGeneric": "Showing results from before your edits (JD or model changed)"
   },
