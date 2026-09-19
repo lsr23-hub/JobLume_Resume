@@ -1,5 +1,6 @@
 import React from "react";
 import { ResumeData } from "@/types/resume";
+import { withSectionOverrides } from "@/lib/sectionSettings";
 import { ResumeTemplate } from "@/types/template";
 import BaseInfo from "./sections/BaseInfo";
 import ExperienceSection from "./sections/ExperienceSection";
@@ -36,15 +37,15 @@ const TimelineTemplate: React.FC<TimelineTemplateProps> = ({ data, template }) =
     const renderSection = (sectionId: string) => {
         switch (sectionId) {
             case "basic":
-                return <BaseInfo basic={data.basic} globalSettings={data.globalSettings} template={template} />;
+                return <BaseInfo basic={data.basic} globalSettings={withSectionOverrides(data.globalSettings, "basic")} template={template} />;
             case "experience":
-                return <ExperienceSection experiences={data.experience} globalSettings={data.globalSettings} showTitle={false} />;
+                return <ExperienceSection experiences={data.experience} globalSettings={withSectionOverrides(data.globalSettings, "experience")} showTitle={false} />;
             case "education":
-                return <EducationSection education={data.education} globalSettings={data.globalSettings} showTitle={false} />;
+                return <EducationSection education={data.education} globalSettings={withSectionOverrides(data.globalSettings, "education")} showTitle={false} />;
             case "skills":
-                return <SkillSection skill={data.skillContent} globalSettings={data.globalSettings} showTitle={false} />;
+                return <SkillSection skill={data.skillContent} globalSettings={withSectionOverrides(data.globalSettings, "skills")} showTitle={false} />;
             case "projects":
-                return <ProjectSection projects={data.projects} globalSettings={data.globalSettings} showTitle={false} />;
+                return <ProjectSection projects={data.projects} globalSettings={withSectionOverrides(data.globalSettings, "projects")} showTitle={false} />;
             case "certificates":
                 return (
                     <SectionWrapper sectionId="certificates" style={{ marginTop: `${data.globalSettings?.sectionSpacing || 24}px` }}>
@@ -54,7 +55,7 @@ const TimelineTemplate: React.FC<TimelineTemplateProps> = ({ data, template }) =
                 );
 
             case "selfEvaluation":
-                return <SelfEvaluationSection content={data.selfEvaluationContent} globalSettings={data.globalSettings} showTitle={false} />;
+                return <SelfEvaluationSection content={data.selfEvaluationContent} globalSettings={withSectionOverrides(data.globalSettings, "selfEvaluation")} showTitle={false} />;
             default:
                 if (sectionId in data.customData) {
                     const title = data.menuSections.find((s) => s.id === sectionId)?.title || sectionId;

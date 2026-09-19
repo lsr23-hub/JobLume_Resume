@@ -3,6 +3,7 @@ import { motion, Reorder, useDragControls } from "framer-motion";
 import { Eye, EyeOff, GripVertical, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MenuSection } from "@/types/resume";
+import { Switch } from "@/components/ui/switch";
 import { useTranslations } from "@/i18n/compat/client";
 import {
   AlertDialog,
@@ -25,6 +26,13 @@ interface LayoutItemProps {
   updateMenuSections: (sections: MenuSection[]) => void;
   removeCustomData: (sectionId: string) => void;
   menuSections: MenuSection[];
+  /** 该板块当前生效的展示设置（覆盖优先，否则取全局默认） */
+  display: { centerSubtitle: boolean; flexibleHeaderLayout: boolean };
+  /** 写该板块的展示覆盖 */
+  onToggleDisplay: (patch: { centerSubtitle?: boolean; flexibleHeaderLayout?: boolean }) => void;
+  /** 仅基本信息用：图标模式 */
+  useIconMode?: boolean;
+  onToggleIconMode?: (on: boolean) => void;
 }
 
 const LayoutItem = ({
@@ -35,10 +43,42 @@ const LayoutItem = ({
   toggleSectionVisibility,
   updateMenuSections,
   removeCustomData,
-  menuSections
+  menuSections,
+  display,
+  onToggleDisplay,
+  useIconMode,
+  onToggleIconMode,
 }: LayoutItemProps) => {
   const dragControls = useDragControls();
   const t = useTranslations("common");
+  const tSide = useTranslations("workbench.sidePanel");
+
+  /**
+   * 板块级的展示开关。
+   *
+   * 只在**该板块被选中时**展开 —— 十个板块各挂两个开关，常显会把列表淹掉。
+   */
+  const displayToggles = (
+    <div className="space-y-2 border-t border-border/60 px-3 py-3" onClick={(e) => e.stopPropagation()}>
+      {onToggleIconMode && (
+        <ToggleRow
+          label={tSide("mode.useIconMode.title")}
+          checked={Boolean(useIconMode)}
+          onChange={onToggleIconMode}
+        />
+      )}
+      <ToggleRow
+        label={tSide("mode.centerSubtitle.title")}
+        checked={display.centerSubtitle}
+        onChange={(v) => onToggleDisplay({ centerSubtitle: v })}
+      />
+      <ToggleRow
+        label={tSide("mode.flexibleHeaderLayout.title")}
+        checked={display.flexibleHeaderLayout}
+        onChange={(v) => onToggleDisplay({ flexibleHeaderLayout: v })}
+      />
+    </div>
+  );
 
   if (isBasic) {
     return (
@@ -65,6 +105,7 @@ const LayoutItem = ({
             {item.title}
           </span>
         </div>
+        {activeSection === item.id && displayToggles}
       </div>
     );
   }
@@ -76,7 +117,7 @@ const LayoutItem = ({
       dragListener={false}
       dragControls={dragControls}
       className={cn(
-        "rounded-lg group border flex overflow-hidden ",
+        "rounded-lg group border flex flex-col overflow-hidden ",
         "bg-card border-border",
         "hover:border-primary/50 transition-colors",
         activeSection === item.id &&
@@ -85,6 +126,7 @@ const LayoutItem = ({
       whileHover={{ scale: 1.01 }}
       whileDrag={{ scale: 1.02 }}
     >
+      <div className="flex">
       <div
         onPointerDown={(event) => {
           dragControls.start(event);
@@ -189,8 +231,25 @@ const LayoutItem = ({
           </AlertDialog>
         </div>
       </div>
+      </div>
+      {activeSection === item.id && displayToggles}
     </Reorder.Item>
   );
 };
+
+const ToggleRow = ({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (on: boolean) => void;
+}) => (
+  <label className="flex items-center justify-between gap-3">
+    <span className="text-xs text-muted-foreground">{label}</span>
+    <Switch className="scale-90" checked={checked} onCheckedChange={onChange} />
+  </label>
+);
 
 export default LayoutItem;

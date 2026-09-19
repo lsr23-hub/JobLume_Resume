@@ -1,5 +1,6 @@
 import React from "react";
 import { ResumeData } from "@/types/resume";
+import { withSectionOverrides } from "@/lib/sectionSettings";
 import { ResumeTemplate } from "@/types/template";
 import BaseInfo from "./sections/BaseInfo";
 import ExperienceSection from "./sections/ExperienceSection";
@@ -25,15 +26,15 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({ data, template }) => {
     const renderSection = (sectionId: string) => {
         switch (sectionId) {
             case "basic":
-                return <BaseInfo basic={data.basic} globalSettings={data.globalSettings} template={template} />;
+                return <BaseInfo basic={data.basic} globalSettings={withSectionOverrides(data.globalSettings, "basic")} template={template} />;
             case "experience":
-                return <ExperienceSection experiences={data.experience} globalSettings={data.globalSettings} />;
+                return <ExperienceSection experiences={data.experience} globalSettings={withSectionOverrides(data.globalSettings, "experience")} />;
             case "education":
-                return <EducationSection education={data.education} globalSettings={data.globalSettings} />;
+                return <EducationSection education={data.education} globalSettings={withSectionOverrides(data.globalSettings, "education")} />;
             case "skills":
-                return <SkillSection skill={data.skillContent} globalSettings={data.globalSettings} />;
+                return <SkillSection skill={data.skillContent} globalSettings={withSectionOverrides(data.globalSettings, "skills")} />;
             case "projects":
-                return <ProjectSection projects={data.projects} globalSettings={data.globalSettings} />;
+                return <ProjectSection projects={data.projects} globalSettings={withSectionOverrides(data.globalSettings, "projects")} />;
             case "certificates":
                 return (
                     <SectionWrapper sectionId="certificates" style={{ marginTop: `${data.globalSettings?.sectionSpacing || 24}px` }}>
@@ -43,7 +44,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({ data, template }) => {
                 );
 
             case "selfEvaluation":
-                return <SelfEvaluationSection content={data.selfEvaluationContent} globalSettings={data.globalSettings} />;
+                return <SelfEvaluationSection content={data.selfEvaluationContent} globalSettings={withSectionOverrides(data.globalSettings, "selfEvaluation")} />;
             default:
                 if (sectionId in data.customData) {
                     const title = data.menuSections.find((s) => s.id === sectionId)?.title || sectionId;
@@ -79,7 +80,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({ data, template }) => {
                         {basicSection && renderSection(basicSection.id)}
                         {educationSection && (
                             <div className="mt-6">
-                                <EducationSection education={data.education} globalSettings={data.globalSettings} variant="sidebar" />
+                                <EducationSection education={data.education} globalSettings={withSectionOverrides(data.globalSettings, "education")} variant="sidebar" />
                             </div>
                         )}
                     </td>

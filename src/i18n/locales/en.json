@@ -368,7 +368,6 @@
         }
       },
       "mode": {
-        "title": "Mode",
         "useIconMode": {
           "title": "Icon Mode"
         },

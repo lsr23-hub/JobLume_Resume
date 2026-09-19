@@ -180,6 +180,8 @@ export function SidePanel({
             updateMenuSections={updateMenuSections}
             removeCustomData={removeCustomData}
             reorderSections={reorderSections}
+            globalSettings={globalSettings}
+            onUpdateGlobalSettings={(patch) => updateGlobalSettings?.(patch)}
           />
 
           <div className="space-y-2 py-4">
@@ -756,58 +758,6 @@ export function SidePanel({
           </div>
         </SettingCard>
 
-        {/* 模式设置 */}
-        <SettingCard icon={Zap} title={t("mode.title")}>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">
-                {t("mode.useIconMode.title")}
-              </Label>
-              <div className="flex items-center gap-4">
-                <Switch
-                  checked={globalSettings.useIconMode}
-                  onCheckedChange={(checked) =>
-                    updateGlobalSettings({
-                      useIconMode: checked,
-                    })
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">
-                {t("mode.centerSubtitle.title")}
-              </Label>
-              <div className="flex items-center gap-4">
-                <Switch
-                  checked={globalSettings.centerSubtitle}
-                  onCheckedChange={(checked) =>
-                    updateGlobalSettings({
-                      centerSubtitle: checked,
-                    })
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">
-                {t("mode.flexibleHeaderLayout.title")}
-              </Label>
-              <div className="flex items-center gap-4">
-                <Switch
-                  checked={globalSettings.flexibleHeaderLayout}
-                  onCheckedChange={(checked) =>
-                    updateGlobalSettings({
-                      flexibleHeaderLayout: checked,
-                    })
-                  }
-                />
-              </div>
-            </div>
-          </div>
-        </SettingCard>
       </div>
     </motion.div>
   );

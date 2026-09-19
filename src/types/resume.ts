@@ -153,6 +153,16 @@ export type GlobalSettings = {
   flexibleHeaderLayout?: boolean | undefined;
   autoOnePage?: boolean | undefined;
   pageBreakLinesVisible?: boolean | undefined;
+  /**
+   * 板块级的展示覆盖（副标题居中 / 长标题模式）。
+   *
+   * 没列出的板块沿用上面那两个全局字段 —— 全局值因此退化成默认值，
+   * 存量简历的外观零变化，不需要迁移。见 `@/lib/sectionSettings`。
+   */
+  sectionOverrides?: Record<
+    string,
+    { centerSubtitle?: boolean; flexibleHeaderLayout?: boolean }
+  >;
 };
 
 export interface ResumeTheme {
