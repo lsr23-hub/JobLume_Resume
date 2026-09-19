@@ -1,7 +1,14 @@
 type FontSource = {
   family: string;
   url: string;
-  format: "truetype" | "opentype" | "woff" | "woff2";
+  /**
+   * 一律是 `woff2` —— `public/fonts/` 下放的是**子集化产物**，不是原始字体。
+   * 原始 TTF/OTF（共 ~113MB）在 `font-sources/` 下、不进库，只在重新生成子集时
+   * 用得上，见 `pnpm subset:fonts` 与 `public/fonts/README.md`。
+   *
+   * 子集后的字形覆盖见 `scripts/subset-fonts.ts` 的字符表。
+   */
+  format: "woff2";
   weight: string;
   style: "normal" | "italic";
 };
@@ -26,15 +33,15 @@ const FONT_DEFINITIONS: FontDefinition[] = [
     sources: [
       {
         family: "Alibaba PuHuiTi",
-        url: "/fonts/AlibabaPuHuiTi-3-55-Regular.ttf",
-        format: "truetype",
+        url: "/fonts/AlibabaPuHuiTi-3-55-Regular.woff2",
+        format: "woff2",
         weight: "400",
         style: "normal"
       },
       {
         family: "Alibaba PuHuiTi",
-        url: "/fonts/AlibabaPuHuiTi-3-85-Bold.ttf",
-        format: "truetype",
+        url: "/fonts/AlibabaPuHuiTi-3-85-Bold.woff2",
+        format: "woff2",
         weight: "700",
         style: "normal"
       }
@@ -54,8 +61,8 @@ const FONT_DEFINITIONS: FontDefinition[] = [
     sources: [
       {
         family: "MiSans",
-        url: "/fonts/MiSans-Normal.ttf",
-        format: "truetype",
+        url: "/fonts/MiSans-Normal.woff2",
+        format: "woff2",
         weight: "400",
         style: "normal"
       },
@@ -64,8 +71,8 @@ const FONT_DEFINITIONS: FontDefinition[] = [
         // 原先这里写的是 `MiSans-Bold.ttf` —— **那个文件根本不存在**，于是选了
         // MiSans 之后导出/打印会 404，字体静默回退。
         family: "MiSans",
-        url: "/fonts/MiSans-Medium.ttf",
-        format: "truetype",
+        url: "/fonts/MiSans-Medium.woff2",
+        format: "woff2",
         weight: "700",
         style: "normal"
       }
@@ -81,22 +88,22 @@ const FONT_DEFINITIONS: FontDefinition[] = [
     sources: [
       {
         family: "Noto Sans SC",
-        url: "/fonts/NotoSansSC-Regular.otf",
-        format: "opentype",
+        url: "/fonts/NotoSansSC-Regular.woff2",
+        format: "woff2",
         weight: "400",
         style: "normal"
       },
       {
         family: "Noto Sans SC",
-        url: "/fonts/NotoSansSC-Medium.otf",
-        format: "opentype",
+        url: "/fonts/NotoSansSC-Medium.woff2",
+        format: "woff2",
         weight: "500",
         style: "normal"
       },
       {
         family: "Noto Sans SC",
-        url: "/fonts/NotoSansSC-Bold.otf",
-        format: "opentype",
+        url: "/fonts/NotoSansSC-Bold.woff2",
+        format: "woff2",
         weight: "700",
         style: "normal"
       }
@@ -114,28 +121,30 @@ const FONT_DEFINITIONS: FontDefinition[] = [
     sources: [
       {
         family: "Source Han Serif SC",
-        url: "/fonts/SourceHanSerifSC-Regular.otf",
-        format: "opentype",
+        url: "/fonts/SourceHanSerifSC-Regular.woff2",
+        format: "woff2",
         weight: "400",
         style: "normal"
       },
       {
         family: "Source Han Serif SC",
-        url: "/fonts/SourceHanSerifSC-Medium.otf",
-        format: "opentype",
+        url: "/fonts/SourceHanSerifSC-Medium.woff2",
+        format: "woff2",
         weight: "500",
         style: "normal"
       },
       {
         family: "Source Han Serif SC",
-        url: "/fonts/SourceHanSerifSC-Bold.otf",
-        format: "opentype",
+        url: "/fonts/SourceHanSerifSC-Bold.woff2",
+        format: "woff2",
         weight: "700",
         style: "normal"
       }
     ]
   }
 ];
+
+export { FONT_DEFINITIONS };
 
 const fontDataUrlCache = new Map<string, Promise<string>>();
 const loadedFontFamilies = new Set<string>();

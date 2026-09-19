@@ -17,19 +17,29 @@ import { Toaster } from "@/components/ui/sonner";
 import { getPreferredLocale } from "@/i18n/runtime";
 import { ReactGrab } from "@/components/dev/ReactGrab";
 
+/**
+ * 首屏预加载的字体。
+ *
+ * 只预加载**默认字体**（Alibaba PuHuiTi）的两个字重 —— 它们是首次渲染就要用的。
+ * 其余三个字族按需加载（用户选了才拉，见 `utils/fonts.ts`）。
+ *
+ * ⚠️ 扩展名与 `type` 必须与 `public/fonts/` 下实际的产物一致：那里放的是
+ * **子集化后的 WOFF2**，不是原始 TTF/OTF（见 `pnpm subset:fonts`）。
+ * 写错的话预加载会 404 且控制台只留一行 warning，字体静默回退。
+ */
 const defaultFontPreloadLinks = [
   {
     rel: "preload",
-    href: "/fonts/AlibabaPuHuiTi-3-55-Regular.ttf",
+    href: "/fonts/AlibabaPuHuiTi-3-55-Regular.woff2",
     as: "font",
-    type: "font/ttf",
+    type: "font/woff2",
     crossOrigin: "anonymous" as const
   },
   {
     rel: "preload",
-    href: "/fonts/AlibabaPuHuiTi-3-85-Bold.ttf",
+    href: "/fonts/AlibabaPuHuiTi-3-85-Bold.woff2",
     as: "font",
-    type: "font/ttf",
+    type: "font/woff2",
     crossOrigin: "anonymous" as const
   }
 ];

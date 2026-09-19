@@ -39,3 +39,8 @@ eval-results/
 # 把 `src/lib/saves/`（存档功能的源码）一并忽略掉。实测踩过 —— 那批源码因此
 # 从没进过 git，而本地构建照常通过，直到有人 clone 才发现构建不过。
 /saves/
+
+# 字体的**源文件**（原始 TTF/OTF，共 ~113MB）。应用加载的是 public/fonts 下的
+# 子集化产物，这些原始文件只在重新生成子集时用得上，不进库。
+# 重新生成见 `pnpm subset:fonts` 与 public/fonts/README.md。
+/font-sources/

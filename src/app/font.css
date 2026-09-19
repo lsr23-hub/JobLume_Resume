@@ -1,6 +1,6 @@
 @font-face {
   font-family: "Alibaba PuHuiTi";
-  src: url("/fonts/AlibabaPuHuiTi-3-55-Regular.ttf") format("truetype");
+  src: url("/fonts/AlibabaPuHuiTi-3-55-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -8,7 +8,7 @@
 
 @font-face {
   font-family: "Alibaba PuHuiTi";
-  src: url("/fonts/AlibabaPuHuiTi-3-85-Bold.ttf") format("truetype");
+  src: url("/fonts/AlibabaPuHuiTi-3-85-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -16,7 +16,7 @@
 
 @font-face {
   font-family: "MiSans";
-  src: url("/fonts/MiSans-Normal.ttf") format("truetype");
+  src: url("/fonts/MiSans-Normal.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -24,7 +24,7 @@
 
 @font-face {
   font-family: "MiSans";
-  src: url("/fonts/MiSans-Medium.ttf") format("truetype");
+  src: url("/fonts/MiSans-Medium.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -32,7 +32,7 @@
 
 @font-face {
   font-family: "Noto Sans SC";
-  src: url("/fonts/NotoSansSC-Regular.otf") format("opentype");
+  src: url("/fonts/NotoSansSC-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -40,7 +40,7 @@
 
 @font-face {
   font-family: "Noto Sans SC";
-  src: url("/fonts/NotoSansSC-Medium.otf") format("opentype");
+  src: url("/fonts/NotoSansSC-Medium.woff2") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -48,7 +48,7 @@
 
 @font-face {
   font-family: "Noto Sans SC";
-  src: url("/fonts/NotoSansSC-Bold.otf") format("opentype");
+  src: url("/fonts/NotoSansSC-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -56,7 +56,7 @@
 
 @font-face {
   font-family: "Source Han Serif SC";
-  src: url("/fonts/SourceHanSerifSC-Regular.otf") format("opentype");
+  src: url("/fonts/SourceHanSerifSC-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -64,7 +64,7 @@
 
 @font-face {
   font-family: "Source Han Serif SC";
-  src: url("/fonts/SourceHanSerifSC-Medium.otf") format("opentype");
+  src: url("/fonts/SourceHanSerifSC-Medium.woff2") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -72,7 +72,7 @@
 
 @font-face {
   font-family: "Source Han Serif SC";
-  src: url("/fonts/SourceHanSerifSC-Bold.otf") format("opentype");
+  src: url("/fonts/SourceHanSerifSC-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
