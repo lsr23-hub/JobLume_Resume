@@ -9,6 +9,8 @@
  *   pnpm e2e:users
  */
 import { chromium, type Page } from "playwright";
+// 只为副作用而引入：它注册了退出时清扫 saves/ 的钩子（见该文件的注释）
+import "./userScope.mjs";
 
 const BASE = process.env.E2E_BASE ?? "http://localhost:3000";
 const PROFILE_KEY = "career-profile-storage";

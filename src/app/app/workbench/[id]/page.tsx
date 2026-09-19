@@ -22,6 +22,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useSavesMirror } from "@/hooks/useSavesMirror";
 
 const LAYOUT_CONFIG = {
   DEFAULT: [20, 32, 48],
@@ -162,6 +163,9 @@ LayoutControls.displayName = "LayoutControls";
 export const runtime = "edge";
 
 export default function Home() {
+  // 编辑器不在 DashboardLayout 之下，镜像得在这里也挂一次（start 是幂等的）
+  useSavesMirror();
+
   const [sidePanelCollapsed, setSidePanelCollapsed] = useState(false);
   const [editPanelCollapsed, setEditPanelCollapsed] = useState(false);
   const [previewPanelCollapsed, setPreviewPanelCollapsed] = useState(false);

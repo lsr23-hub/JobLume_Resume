@@ -1,11 +1,16 @@
+import fs from "node:fs";
+import path from "node:path";
+
 /**
- * 多用户改造后，e2e 脚本共用的两件事。
+ * 多用户改造后，e2e 脚本共用的三件事。
  *
  * 1. **先有当前用户。** 改造前「导航到职业数据库」会惰性创建一份档案，脚本靠这个
  *    前提往 storage 里灌数据。现在门禁会拦下没有当前用户的访问，所以脚本必须先
  *    点一次「新建用户」。
  * 2. **档案的路径变了。** `state.profile`（标量）→
  *    `state.profiles[state.currentUserId]`（按用户索引）。
+ * 3. **收尾清扫 `saves/`**（见文件末尾）。存档镜像一上线，每个脚本建的用户都会
+ *    在盘上留一个目录，不清就会跟真数据混在一起。
  *
  * 用 `.mjs` 而不是 `.ts`：`core-flow.mjs` / `editor-picker.mjs` / `legacy-template.mjs`
  * 是 JS，tsx 也能 import `.mjs`，一份 helper 两边都能用。
@@ -42,3 +47,35 @@ export const ensureCurrentUser = async (page) => {
   await page.waitForTimeout(800);
   return true;
 };
+
+/**
+ * 跑 e2e 会**真的往仓库根下的 `saves/` 写文件** —— 存档镜像一上线，每个脚本
+ * 建出来的用户都会在盘上留一个目录。不清理的话，跑几轮之后 `saves/` 里就混满
+ * 了空档案，和开发者的真数据分不出来。
+ *
+ * 做法：模块加载时（脚本刚起来、还没建任何用户之前）给 `saves/` 拍一张快照，
+ * 进程退出时把**快照之外**的目录删掉。于是：
+ * - 跑之前就存在的目录（真数据）一律不动
+ * - 中途 throw / 断言失败也照样清 —— `exit` 钩子会跑，这正是它比
+ *   「每个脚本自己在末尾写清理」强的地方（第一版就是这么漏掉一个孤儿目录的）
+ *
+ * 只用同步 API：`exit` 钩子里不允许异步。
+ */
+const SAVES_ROOT = path.join(process.cwd(), "saves");
+const preexistingSaves = new Set(
+  fs.existsSync(SAVES_ROOT) ? fs.readdirSync(SAVES_ROOT) : []
+);
+
+const sweepNewSaves = () => {
+  if (!fs.existsSync(SAVES_ROOT)) return;
+  for (const name of fs.readdirSync(SAVES_ROOT)) {
+    if (preexistingSaves.has(name)) continue;
+    try {
+      fs.rmSync(path.join(SAVES_ROOT, name), { recursive: true, force: true });
+    } catch {
+      // 清理只是收尾，失败不该把脚本的退出码改掉
+    }
+  }
+};
+
+process.on("exit", sweepNewSaves);

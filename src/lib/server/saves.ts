@@ -1,5 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import type { SaveKind } from "@/lib/saves/kinds";
+
+export { isSaveKind, SAVE_KINDS, type SaveKind } from "@/lib/saves/kinds";
 
 /**
  * 默认存档目录：`<仓库根>/saves/<userId>/`。
@@ -24,8 +27,6 @@ const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
 
 export const isSafeSegment = (value: unknown): value is string =>
   typeof value === "string" && SAFE_SEGMENT.test(value);
-
-export type SaveKind = "profile" | "resume" | "jd";
 
 const SUBDIR: Record<SaveKind, string> = {
   profile: "",
@@ -93,5 +94,27 @@ export const writeSaveFile = async (
 
   await fs.mkdir(path.dirname(full), { recursive: true });
   await fs.writeFile(full, body, "utf8");
+  return full;
+};
+
+/**
+ * 删掉一份存档。
+ *
+ * 为什么需要它：`saves/` 是**镜像**，删了简历/岗位却留着旧文件，磁盘上就会
+ * 攒下一堆对不上的东西，`git status` 里也永远显示为未清理。文件不存在不算错
+ * （镜像本来就可能落后），幂等。
+ *
+ * 刻意**只做单文件**，没有「删掉某个用户的整个目录」这个操作 —— 递归删除的
+ * 破坏面比写文件大得多，而路径校验再严也不该被用来做 `rm -rf`。删用户时
+ * 磁盘上的目录会留下，见 README 的说明。
+ */
+export const removeSaveFile = async (
+  root: string,
+  userId: unknown,
+  kind: SaveKind,
+  id: unknown
+): Promise<string> => {
+  const full = resolveSavePath(root, userId, kind, id);
+  await fs.rm(full, { force: true });
   return full;
 };

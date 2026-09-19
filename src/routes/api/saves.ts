@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { writeSaveFile, type SaveKind } from "@/lib/server/saves";
+import { isSaveKind, removeSaveFile, writeSaveFile } from "@/lib/server/saves";
+import type { SaveKind } from "@/lib/saves/kinds";
 
 /**
  * 把一份数据镜像到 `<仓库根>/saves/<userId>/`。
@@ -12,11 +13,6 @@ import { writeSaveFile, type SaveKind } from "@/lib/server/saves";
  * 真相源仍是浏览器 localStorage，这里只是镜像：写失败不影响应用继续用，
  * 调用方自行决定要不要提示用户。
  */
-const KINDS: readonly SaveKind[] = ["profile", "resume", "jd"];
-
-const isKind = (v: unknown): v is SaveKind =>
-  typeof v === "string" && (KINDS as readonly string[]).includes(v);
-
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -40,7 +36,7 @@ export const Route = createFileRoute("/api/saves")({
 
         const { userId, kind, id, data } = payload as Record<string, unknown>;
 
-        if (!isKind(kind)) {
+        if (!isSaveKind(kind)) {
           return json({ ok: false, error: `未知的 kind：${String(kind)}` }, 400);
         }
         if (data === undefined) {
@@ -55,6 +51,39 @@ export const Route = createFileRoute("/api/saves")({
           return json({ ok: true, path: rel });
         } catch (error) {
           // 校验失败是**调用方的错**（400），写盘失败是环境问题（500）
+          const message = error instanceof Error ? error.message : String(error);
+          const isValidation = message.startsWith("[saves]");
+          return json({ ok: false, error: message }, isValidation ? 400 : 500);
+        }
+      },
+
+      /**
+       * 删掉一份存档 —— 删简历 / 删岗位时，磁盘上的镜像文件要跟着消失。
+       *
+       * 安全校验走的是同一个 `resolveSavePath`，所以能删的范围与能写的范围
+       * 完全一致；**没有「删整个用户目录」这个操作**，理由见 `removeSaveFile`。
+       */
+      DELETE: async ({ request }) => {
+        let payload: unknown;
+        try {
+          payload = await request.json();
+        } catch {
+          return json({ ok: false, error: "请求体不是合法 JSON" }, 400);
+        }
+        if (typeof payload !== "object" || payload === null) {
+          return json({ ok: false, error: "请求体不是对象" }, 400);
+        }
+
+        const { userId, kind, id } = payload as Record<string, unknown>;
+        if (!isSaveKind(kind)) {
+          return json({ ok: false, error: `未知的 kind：${String(kind)}` }, 400);
+        }
+
+        try {
+          const full = await removeSaveFile(process.cwd(), userId, kind, id);
+          const rel = full.slice(process.cwd().length + 1);
+          return json({ ok: true, path: rel });
+        } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           const isValidation = message.startsWith("[saves]");
           return json({ ok: false, error: message }, isValidation ? 400 : 500);
