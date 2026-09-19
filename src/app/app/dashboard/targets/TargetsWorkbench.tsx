@@ -1,34 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, RefreshCw, Sparkles, Trash2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
-import { useRouter } from "@/lib/navigation";
 import { useTranslations } from "@/i18n/compat/client";
 import { useJobTargetStore, selectSortedTargets } from "@/store/useJobTargetStore";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
-import { useResumeStore } from "@/store/useResumeStore";
 import { useAIConfigStore } from "@/store/useAIConfigStore";
 import { analyzeMatch } from "@/lib/match/analyzeMatch";
 import { buildEntityFingerprints, checkCache } from "@/lib/match/analysisCache";
 import type { JobTarget } from "@/types/jobTarget";
-import { generateResume } from "@/lib/profile/generateResume";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { generateUUID } from "@/utils/uuid";
-import { CandidateList } from "./CandidateList";
+import { RequirementList } from "./RequirementList";
 
 export const TargetsWorkbench = () => {
   const t = useTranslations("targets");
-  // 板块名挂在 profile 命名空间下，见 CandidateList 的同名说明
-  const tSection = useTranslations("profile");
-  const router = useRouter();
 
   const { targets, addTarget, updateTarget, removeTarget, setAnalysis } = useJobTargetStore();
   const { profile } = useCareerProfileStore();
-  const { addResume } = useResumeStore();
   const ai = useAIConfigStore();
 
   const list = useMemo(() => selectSortedTargets(targets), [targets]);
@@ -38,8 +29,6 @@ export const TargetsWorkbench = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [checked, setChecked] = useState<Record<string, string[]>>({});
-  const [disabledSections, setDisabledSections] = useState<Set<string>>(new Set());
 
   const entities = useMemo(
     () =>
@@ -47,12 +36,8 @@ export const TargetsWorkbench = () => {
     [profile?.entities]
   );
 
-  // 切换目标或被分析后，用分析结果初始化勾选状态。
-  // AI 不预设勾选：这里默认全部不勾，仅「推荐」项作为待选建议。
   useEffect(() => {
     setError(null);
-    setChecked({});
-    setDisabledSections(new Set());
   }, [selectedId]);
 
   const aiReady = Boolean(ai.deepseekApiKey.trim());
@@ -126,66 +111,6 @@ export const TargetsWorkbench = () => {
     if (entityCorrections.length > 0) {
       toast.warning(t("corrections", { count: entityCorrections.length }));
     }
-  };
-
-  const toggleEntity = (entityId: string) => {
-    if (!current) return;
-    setChecked((prev) => {
-      const cur = prev[current.id] ?? [];
-      return {
-        ...prev,
-        [current.id]: cur.includes(entityId)
-          ? cur.filter((id) => id !== entityId)
-          : [...cur, entityId],
-      };
-    });
-  };
-
-  const toggleSection = (sectionId: string, enabled: boolean) => {
-    setDisabledSections((prev) => {
-      const next = new Set(prev);
-      if (enabled) next.delete(sectionId);
-      else next.add(sectionId);
-      return next;
-    });
-  };
-
-  const selection = current ? (checked[current.id] ?? []) : [];
-  const selectedSet = new Set(selection);
-
-  const handleGenerate = () => {
-    if (!current || !profile) return;
-
-    const now = new Date().toISOString();
-    const id = generateUUID();
-    const selectedBySection: Record<string, string[]> = {};
-    for (const entityId of selection) {
-      const entity = profile.entities[entityId];
-      if (!entity) continue;
-      (selectedBySection[entity.sectionId] ??= []).push(entityId);
-    }
-
-    const resume = generateResume({
-      profile,
-      mode: "targeted",
-      target: current,
-      templateId: "classic",
-      id,
-      title: `${current.company} · ${current.position}`,
-      now,
-      selection: selectedBySection,
-      disabledSections,
-      tSection,
-      certificateLabel: tSection("certificatesLabel"),
-      // 只有这条路径知道用户在页面上手动改过哪些勾选
-      manuallyAdjustedIds: Object.entries(current.matchAnalysis?.items ?? {})
-        .filter(([, item]) => item.manuallyAdjusted)
-        .map(([entityId]) => entityId),
-    });
-
-    addResume(resume);
-    toast.success(t("generateSuccess"));
-    router.push(`/app/workbench/${id}`);
   };
 
   return (
@@ -322,25 +247,12 @@ export const TargetsWorkbench = () => {
                   </div>
                 )}
 
-                <CandidateList
-                  analysis={current.matchAnalysis}
-                  entities={entities}
-                  checked={selectedSet}
-                  onToggle={toggleEntity}
-                  onToggleSection={toggleSection}
-                  disabledSections={disabledSections}
-                />
-
-                <div className="sticky bottom-0 -mx-6 border-t border-border/40 bg-background/95 px-6 py-4 backdrop-blur">
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-sm text-muted-foreground">
-                      {t("selectedCount", { count: selection.length })}
-                    </span>
-                    <Button onClick={handleGenerate} disabled={selection.length === 0}>
-                      {t("generate")}
-                    </Button>
-                  </div>
-                </div>
+                {current.matchAnalysis && (
+                  <RequirementList
+                    analysis={current.matchAnalysis}
+                    entities={entities}
+                  />
+                )}
               </div>
             )}
           </div>
