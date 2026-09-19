@@ -564,20 +564,27 @@ export interface AnalysisCache {
 |---|---|---|---|
 | `useCareerProfileStore` | `career-profile-storage` | `{ profiles: Record<userId, CareerProfile>, currentUserId }` | 新建 |
 | `useResumeStore` | `resume-storage` | `{ byUser: Record<userId, Record<resumeId, ResumeData>>, activeByUser }` | 扩展 |
-| `useJobTargetStore` | `job-target-storage` | `{ targets: Record<targetId, JobTarget> }` | 新建 |
+| `useJobTargetStore` | `job-target-storage` | `{ targetsByUser: Record<userId, Record<targetId, JobTarget>> }` | 新建 |
 
 **为什么拆三个 store**：`CareerProfile` 的数据量远大于单份简历，混在一个 store 里会导致任何一处修改都触发全量持久化。拆分后各自的持久化互不干扰。
 
-**用户维度（D30）**：职业档案、简历、岗位分析都按 `userId` 分桶；`currentUserId`
-存在档案 store 里（用户就是一份档案，不另设用户记录）。投递目标**本身**保持全局
-共享 —— 多个用户可以投同一个岗位，但 `JobTarget.analysesByUser` 让各人只看得到
-自己那份匹配分析。
+**用户维度（D30，岗位部分已被 D34 取代）**：职业档案、简历、投递目标三样都按
+`userId` 分桶；`currentUserId` 存在档案 store 里（用户就是一份档案，不另设用户
+记录）。D30 当时让岗位本身保持全局共享、只有分析按人分（`analysesByUser`），
+**D34 又改成了岗位本身也跟随用户** —— 于是那层索引失去意义，分析塌回单槽
+`matchAnalysis`。这是简化：一层结构，前提没了就该没。
 
-三个 store 都带 `version: 1` + `migrate` + `merge`，迁移把存量数据归到固定字面量
+三样都带 `version` + `migrate` + `merge`，迁移把存量数据归到固定字面量
 `LEGACY_USER_ID` 名下（**不生成随机 id**：三个 store 各自独立迁移、没有协调者，
 各生成一个 id 会让简历挂在一个档案不认识的用户名下）。两条必须守住的规则：
 `migrate` 遇坏输入**抛错**而不是返回空结构（抛错不写盘，返回空结构会把空数据
 当成迁移结果提交），且必须**同步**（异步会让 persist 解构一个未 await 的 Promise）。
+版本号：档案与简历是 `1`，投递目标是 `2`（它多走过一次 v1→v2 的扇出）。
+
+**磁盘副本（D35）**：三份状态还会防抖 1.5s 镜像一份到 `<仓库根>/saves/<userId>/`
+（`profile.json` / `resumes/<id>.json` / `jds/<id>.json`）。**单向** —— 只从浏览器
+流向磁盘。接线在 `hooks/useSavesMirror.ts`，差分是纯函数在 `lib/saves/mirror.ts`；
+写入端点与安全边界见 README 的「数据存在哪里」。
 
 ### 7.2 事件契约
 
@@ -606,10 +613,10 @@ useResumeStore.getState().addResume(resume);
 
 **唯一例外**：`useResumeStore` 内部为了维护 `sourceMap` 的一致性，需要在 `updateResume` 时读取 `sourceMap` —— 但这是读自身状态，不构成跨 store 依赖。
 
-#### 一处刻意的例外：`useResumeStore` → `useCareerProfileStore`
+#### 刻意的例外：简历 / 投递目标 → 档案 store
 
-简历 store 会 `import` 档案 store，读 `getState().currentUserId` 来定位「当前用户的
-简历桶」。上面那条约定在这里**刻意破例**，理由是：
+简历 store 与投递目标 store 都会 `import` 档案 store，读 `getState().currentUserId`
+来定位「当前用户的那一份」。上面那条约定在这里**刻意破例**，理由是：
 
 - 这条依赖**真实存在** —— 简历本来就属于某个人，藏起来不如写出来
 - 它是**单向无环**的：档案 store 不反向依赖简历 store（也不需要，它不必知道简历存在）
@@ -617,11 +624,13 @@ useResumeStore.getState().addResume(resume);
   或在简历 store 里镜像一份 `currentUserId`（多一份真相 + 多一个同步点）
 
 配套两条保障：**写入统一走 store 内部包装过的 `set`**，由它把当前用户的切片镜像回
-`byUser`（35 个 action 体因此一个字没改）；**切用户靠模块级订阅**档案 store，而不是
-让每个切人入口自己记得调 —— 切人有「选卡」「新建」等入口，订阅让「忘记同步」在结构
-上不可能发生。
+`byUser` / `targetsByUser`（两边的 action 体因此一个字没改）；**切用户靠模块级订阅**
+档案 store，而不是让每个切人入口自己记得调 —— 切人有「选卡」「新建」等入口，订阅让
+「忘记同步」在结构上不可能发生。
 
-> `useJobTargetStore` **没有**这条例外：它由 UI 层传参调用，不反向 import 任何 store。
+两处收口有一处**有意的差别**：简历那边没有当前用户时会放行去写别名，投递目标那边
+整个 no-op。放行会写进一个 `merge` 时被抹掉的分片（界面上看得到、刷新就没了），
+岗位 v2 起必须属于某个人，所以按档案 store `put()` 的纪律直接不写。
 
 ### 7.3 分析结果的所有权
 
@@ -740,6 +749,8 @@ localStorage 中的引用形式: `idb:img_xxxxxxxx`
 | D31 | **迁移的两条硬规则**：`migrate` 遇坏输入**抛错**、且必须**同步** | 返回空结构 / 允许异步 | 抛错会跳过 merge/set/setItem，磁盘原封不动、只弹提示；返回空结构反而会被当成迁移结果提交并写盘。异步则更凶：persist 从不 await `migrate` 的返回值，会把 pending Promise 交给 `merge` 展成空对象，然后因为 `migrated === true` **立刻把空状态写盘** —— 静默全量清空 |
 | D32 | **简历 store 单向 import 档案 store**（§7.2 的刻意例外） | 严格互不 import | 见 §7.2 的例外说明。核心权衡：这条依赖真实存在且无环，而「33 个调用点各传 `userId`」改动面大、收益为零 |
 | D33 | **备份的归属字段是纯提示，不参与逻辑** | 用姓名做归属校验/匹配 | 姓名会重复、会改，拿它判定只会制造新的错误来源。它的唯一职责是让用户在导入前看到「这份是谁的、要写进谁名下」—— 多用户下最容易静默出错的一步。老备份没有这个字段也必须照常能读 |
+| D34 | **投递目标也完全按用户隔离**（取代码 D30 里「岗位本身保持全局共享」那一半）：`targets` 改成 `targetsByUser[userId][targetId]`，`JobTarget` 上的 `analysesByUser` / `cachesByUser` 塌回单槽 `matchAnalysis` / `analysisCache` | 维持 D30 的「岗位共享、分析各人分」 | 用 saves/ 做本地存档时，「JD 跟随用户走」比「多人共投一个岗位」更贴合真实用法 —— 一个人替家人朋友各投各的，不是几个人抢同一个岗位。连带后果是一层结构被删掉而不是又加一层：v1 那层 `analysesByUser` 存在的唯一理由就是「岗位共享但分析不共享」，前提没了，层也就该没了。**代价（已知边界）**：v1 存量数据里「没有任何人分析过」的岗位无法判断归属，只能归到 `LEGACY_USER_ID`，而在已经有多用户档案的安装里这个名字很可能没有对应档案 → 那些岗位还在盘上但界面上够不着。影响面局限于「v1 的盘 + 多个真实用户」这一种情况 |
+| D35 | **`saves/<userId>/` 是单向镜像**：浏览器 localStorage 仍是真相源，改动防抖 1.5s 写一份到磁盘；磁盘上改的不会被读回来 | 用 saves/ 当真相源（双向同步） | 双向同步要处理冲突合并，而这是单人本地工具，收益远小于复杂度。单向的话最坏情况只是「镜像落后」或「手改被覆盖」，不会丢数据。**已知边界**：删用户不会删掉 `saves/` 下对应目录 —— 服务端只做单文件读写，递归删除的破坏面比写文件大得多 |
 
 ---
 

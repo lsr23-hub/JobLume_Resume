@@ -247,8 +247,8 @@ saves/<userId>/jds/<targetId>.json
 | 3 | `.gitignore` 加 `saves/` —— 这是**用户数据**，绝不能入库 | ✅ |
 | 4a | 岗位 v1→v2 迁移（扇出）+ normalize + `targetsOf` | ✅ 8 条单测 |
 | 4b | target store 接 `version: 2`、改形状、切读取点、改 `types/jobTarget.ts` 成单槽 | ✅ 提交 `edf0472` |
-| 5 | 镜像接线：store 写入后防抖同步到 saves/ | ⬜ |
-| 6 | 文档：README 的「服务端不保存任何用户数据」必须改 | ⬜ |
+| 5 | 镜像接线：store 写入后防抖同步到 saves/ | ✅ 提交 `5028c8d` |
+| 6 | 文档：README 的「服务端不保存任何用户数据」必须改 | ✅ 见下 |
 
 **⚠️ 安全边界（已写进代码注释，也要写进 README）**：`/api/saves` 是全项目唯一
 按请求往磁盘写文件的端点。三层防护：字符集白名单（不含 `.` `/` `\`）、
@@ -305,3 +305,47 @@ targeted 15 / users 64。`e2e:users` 从 55 项涨到 64 项。
 | 2 | **v1→v2 扇出的边界：没人分析过的岗位归到 `LEGACY_USER_ID`**，而多用户安装里这个名字很可能没有对应档案（档案迁移早就跑过了）→ 岗位还在盘上，但界面上够不着 | **未修**，是 4a 已定的规则（`users.test` 的 §4c-2 钉住了它）。影响面：只有在「v1 的盘 + 多个真实用户」这一种情况下会丢可见性。真要做，得让 `migrate` 知道当前用户 —— 那是改 migrate 的签名，不是补丁 |
 | 3 | `acceptance` ⑫ 名不副实：它走的是**档案页的「导出数据」**（`ProfileArchive`，只有职业数据库），却挂着「全库备份与恢复」的名字 —— 简历丢没丢根本不在观测面里 | ✅ 已改成走通用设置的「导出全库备份 / 导入备份 / 覆盖导入」，三样都从盘上数 |
 | 4 | `useResumeStore` 的 set 层收口与岗位 store **不对称**：简历那边没有当前用户时会放行去写别名（岗位那边整个 no-op）。目前唯一够得着的入口是通用设置的备份导入，且 `replaceResumes` 自带守卫 | **未修**。要不要把简历那层也收紧是个独立决定 —— 它被 35 个 action 共用，改了影响面比岗位大 |
+
+---
+
+## 2026-09-19 追加：第 5 / 6 步（本轮）
+
+### 5. 存档镜像接线
+
+分工：`lib/saves/mirror.ts` 只算差分（纯函数，可脱浏览器测）；`hooks/useSavesMirror.ts`
+负责订阅、攒批、发请求。
+
+三个要点：
+
+- **订阅 store 而不是包 action**：写入路径太多（简历 35 个 action、档案十几个），
+  挨个包一定会漏。订阅是结构上不会漏的做法。
+- **增量的根据是引用相等**：三个 store 的写入都是 `{ ...state, [id]: next }` ——
+  变动的那条换新对象、没动过的保持同一个引用。所以不必深比较。
+- **攒批按 userId 分开**：不能只用一个队列 + flush 时读「此刻的当前用户」——
+  用户可能在防抖窗口里切走了，那样会把甲的改动写进乙的目录。
+
+挂载点**两处**：编辑器（`/app/workbench/$id`）不在 `DashboardLayout` 之下，
+只挂面板会漏掉绝大部分改动。
+
+新增 `DELETE /api/saves` 与 `removeSaveFile`。**刻意只做单文件**，没有「删掉整个
+用户目录」—— 递归删除的破坏面比写文件大得多。代价：删用户后 `saves/<id>/` 会留下，
+README 里写明了。
+
+### 6. 文档同步
+
+| 文件 | 改动 |
+|---|---|
+| `README.md` | 「服务端不保存任何用户数据」这句**是错的**，已改；新增 `saves/` 副本与「服务端保存了什么」两节；补上 `/api/saves` 的安全边界（唯一写盘端点、无认证、**且不在限流之内**） |
+| `docs/02-data-model.md` | §7.1 三个 store 的存储表与结构、§7.2 的例外从一处扩成两处（投递目标 store 也 import 档案 store）、§9 追加 D34（岗位按用户隔离）与 D35（单向镜像） |
+| `docs/05-api-and-config.md` | 路由表补 `/api/saves`；顺手删掉已经不存在了的 `/api/resume-import` 与 `/api/proxy/image` |
+| `docs/06-ai-enablement-map.md` | 「3 个 AI 路由」→ 2（`/api/resume-import` 已删） |
+| `docs/01-PRD.md` | FR-DB-05 里的 PDF 导入入口已下线，改成实际只剩 JSON 导入 |
+
+### 本轮新发现
+
+| # | 发现 | 处置 |
+|---|---|---|
+| 1 | **`/api/saves` 不在限流之内。** 限流（`guardRequest`）只挂在 `llmRoute` 上，即 `/api/match` 与 `/api/tag`。README 的部署一节原写「`/api/*` 每分钟 30 次」，把范围说大了 | ✅ 已改正 README 与 docs/05，并在安全边界里点明这一点 |
+| 2 | **限流的 `image` 桶是死代码。** `/api/proxy/image` 上一轮删了，但 `BucketName` 里的 `"image"`、`LIMITS.image` 与那两条测试还在，README 也还在说「图片代理 120 次」 | 文档已改；**代码里的死桶未删**（它牵动 `rateLimit.ts` 与测试，属独立清理） |
+| 3 | **`docs/upstream-derivation.md` 的统计已经不准。** `routes/api/proxy/image.ts` 与 `routes/api/resume-import.ts` 被列在「一、被修改过的上游文件（59）」里，但两个文件都已删除 —— 计数与清单都要重算 | **未动**。要改得同时修 `## 统计` 那一节，属独立一轮 |
+| 4 | 存档镜像一上线，**每个 e2e 脚本都会往 `saves/` 里写东西**，跑几轮就和真数据混在一起 | ✅ `userScope.mjs` 加载时给 `saves/` 拍快照、退出时删掉快照之外的目录。真数据不动，中途崩溃也照样清。反证：临时停用清扫跑一遍 `e2e:core`，盘上留下 1 个目录 / 2 个文件 |

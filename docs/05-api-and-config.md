@@ -69,10 +69,15 @@ useAIConfigStore.getState().isConfigured(): boolean   // deepseekApiKey 非空�
 |---|---|---|---|
 | `/api/match` | POST | LLM 推荐标注分析 | 本项目新增 |
 | `/api/tag` | POST | 经历自动归类（与 `/api/match` 共用处理器，只换 prompt） | 本项目新增 |
-| `/api/resume-import` | POST | 简历 PDF 解析（用于职业数据库导入） | 沿用上游 |
-| `/api/proxy/image` | GET | 图片代理 | 沿用上游 |
+| `/api/saves` | POST | 把一份数据镜像到 `saves/<userId>/` | 本项目新增 |
+| `/api/saves` | DELETE | 删掉 `saves/<userId>/` 下的一份存档 | 本项目新增 |
 
-> 上游的 `/api/polish`（段落润色）与 `/api/grammar`（语法检查）本项目从未调用，且改写类 AI 已按产品决策移除（「AI 只判定，不动你的文字」，见提交 `7168adf`），两条路由已删除。
+> 上游的 `/api/polish`（段落润色）与 `/api/grammar`（语法检查）本项目从未调用，且改写类 AI 已按产品决策移除（「AI 只判定，不动你的文字」，见提交 `7168adf`），两条路由已删除。`/api/resume-import`（PDF 解析）与 `/api/proxy/image`（图片代理）后来也一并删掉了 —— 前者由客户端自己解析，后者随简历导入功能的下线失去调用方。
+
+> ⚠️ **`/api/saves` 是本项目唯一按请求往磁盘写文件的端点，且既不需要认证也不在限流之内
+> （限流只挂在 `/api/match`、`/api/tag` 上）。** 它只写 `saves/` 之下，路径片段由
+> `lib/server/saves.ts` 的白名单校验。**部署到公网前必须关掉** —— 那等于对外开一个
+> 文件写入面。理由与三层防护见该文件头注释与 README。
 
 ### 2.2 通用请求约定
 
