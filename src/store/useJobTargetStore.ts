@@ -11,6 +11,7 @@ import {
   migrateTargetState,
   normalizeTargetState,
   withAnalysisFor,
+  withoutUserAnalyses,
 } from "@/store/userScope";
 
 export const JOB_TARGET_STORAGE_KEY = "job-target-storage";
@@ -23,6 +24,8 @@ interface JobTargetStore {
   removeTarget: (id: string) => void;
   /** 写入分析结果与缓存 */
   setAnalysis: (id: string, analysis: MatchAnalysis, cache: AnalysisCache) => void;
+  /** 删用户时清掉他在每条岗位上留下的分析 */
+  purgeUserAnalyses: (userId: string) => void;
 }
 
 const warnedKeys = new Set<string>();
@@ -83,6 +86,13 @@ export const useJobTargetStore = create<JobTargetStore>()(
       removeTarget: (id) => {
         const targets = { ...get().targets };
         delete targets[id];
+        set({ targets });
+      },
+
+      purgeUserAnalyses: (userId) => {
+        const targets = Object.fromEntries(
+          Object.entries(get().targets).map(([id, t]) => [id, withoutUserAnalyses(t, userId)])
+        );
         set({ targets });
       },
 

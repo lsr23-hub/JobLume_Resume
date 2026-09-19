@@ -77,6 +77,8 @@ interface ResumeStore {
   setActiveResume: (resumeId: string) => void;
   /** 切用户时把那个用户的简历切片装进别名。由当前用户变化的订阅调用 */
   setActiveUser: (userId: string | null) => void;
+  /** 删用户时清掉他名下的全部简历。若删的是当前用户，别名也会被清空 */
+  purgeUser: (userId: string) => void;
   updateResumeFromFile: (
     resume: ResumeData,
     sourceModifiedAt?: number
@@ -1045,6 +1047,18 @@ export const useResumeStore = create(
 
         syncResumeToFile(resume);
         return resume.id;
+      },
+
+      purgeUser: (userId) => {
+        const { [userId]: _dropped, ...byUser } = get().byUser;
+        const { [userId]: _droppedActive, ...activeByUser } = get().activeByUser;
+        // 用 rawSet：这是一次整体替换，不该走镜像逻辑
+        rawSet({ byUser, activeByUser } as never);
+        // 若删的正是当前用户，别名要跟着清空（档案 store 那边同时会把
+        // currentUserId 置空，订阅也会再兜一次底）
+        if (useCareerProfileStore.getState().currentUserId === userId) {
+          rawSet({ resumes: {}, activeResumeId: null, activeResume: null } as never);
+        }
       },
 
       setActiveUser: (userId) => {

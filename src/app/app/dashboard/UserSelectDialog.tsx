@@ -1,12 +1,24 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, UserRound } from "lucide-react";
+import { Plus, Trash2, UserRound } from "lucide-react";
 import { useTranslations } from "@/i18n/compat/client";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
+import { useResumeStore } from "@/store/useResumeStore";
 import { useResolvedImage } from "@/hooks/useResolvedImage";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { useDeleteUser } from "@/hooks/useDeleteUser";
 
 /** 一张用户卡：证件照铺满，底部渐变遮罩上写名字 —— 与「我的简历」卡片同一套视觉语言 */
 const UserCard = ({
@@ -14,11 +26,13 @@ const UserCard = ({
   index,
   active,
   onPick,
+  onRequestDelete,
 }: {
   userId: string;
   index: number;
   active: boolean;
   onPick: () => void;
+  onRequestDelete: () => void;
 }) => {
   const t = useTranslations("userSelect");
   const profile = useCareerProfileStore((s) => s.profiles[userId]);
@@ -55,6 +69,24 @@ const UserCard = ({
               <UserRound className="h-12 w-12 opacity-40" />
             </div>
           )}
+          {/* 删除入口只在 hover 时露出来：默认情况下这是张「选人」卡 */}
+          <button
+            type="button"
+            aria-label={t("delete")}
+            title={t("delete")}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRequestDelete();
+            }}
+            className={cn(
+              "absolute right-2 top-2 z-20 rounded-full p-1.5 transition-opacity",
+              "bg-card/80 text-muted-foreground opacity-0 backdrop-blur-sm",
+              "hover:bg-destructive hover:text-destructive-foreground",
+              "group-hover:opacity-100 focus-visible:opacity-100"
+            )}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
           <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[55%] bg-gradient-to-t from-white via-white/90 to-transparent dark:from-gray-950 dark:via-gray-950/90" />
           <div className="absolute inset-x-0 bottom-0 px-4 pb-3 pt-12 z-10">
             <span className="text-[15px] font-semibold truncate text-foreground drop-shadow-sm block">
@@ -92,6 +124,20 @@ export const UserSelectDialog = ({ open, onOpenChange }: UserSelectDialogProps =
   const createUser = useCareerProfileStore((s) => s.createUser);
   const setCurrentUser = useCareerProfileStore((s) => s.setCurrentUser);
   const [busy, setBusy] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const deleteUser = useDeleteUser();
+
+  const pendingProfile = pendingDelete
+    ? useCareerProfileStore.getState().profiles[pendingDelete]
+    : undefined;
+  const pendingName = pendingProfile?.basic?.name?.trim() || t("unnamed");
+  const pendingResumeCount = useResumeStore((s) => (pendingDelete ? Object.keys(s.byUser[pendingDelete] ?? {}).length : 0));
+
+  const handleConfirmDelete = () => {
+    if (!pendingDelete) return;
+    deleteUser(pendingDelete);
+    setPendingDelete(null);
+  };
 
   const dismissible = onOpenChange !== undefined;
 
@@ -141,6 +187,7 @@ export const UserSelectDialog = ({ open, onOpenChange }: UserSelectDialogProps =
                   index={index}
                   active={id === currentUserId}
                   onPick={() => handlePick(id)}
+                  onRequestDelete={() => setPendingDelete(id)}
                 />
               ))}
             </AnimatePresence>
@@ -177,6 +224,35 @@ export const UserSelectDialog = ({ open, onOpenChange }: UserSelectDialogProps =
           </div>
         </div>
       </DialogContent>
+
+      {/*
+        二次确认。删除是不可逆的，而且会连带删掉名下的简历与分析 ——
+        文案必须把这件事说清楚，不能只说「删除用户」。
+      */}
+      <AlertDialog
+        open={pendingDelete !== null}
+        onOpenChange={(next) => !next && setPendingDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("deleteTitle", { name: pendingName })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("deleteBody", { count: pendingResumeCount })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t("deleteConfirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

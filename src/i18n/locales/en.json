@@ -978,7 +978,12 @@
     "empty": "No one here yet. Create one to start.",
     "unnamed": "Unnamed",
     "noTitle": "No details yet",
-    "switchHint": "Switch person"
+    "switchHint": "Switch person",
+    "delete": "Delete person",
+    "deleteTitle": "Delete “{name}”?",
+    "deleteBody": "This person's career profile, their {count} resume(s), and their analyses on every job target will all be deleted. This cannot be undone.",
+    "deleteConfirm": "Delete",
+    "cancel": "Cancel"
   },
   "backup": {
     "title": "Backup",

@@ -260,6 +260,77 @@ const analysisBuckets = await page.evaluate((aId) => {
 step(analysisBuckets.users.length === 1 && analysisBuckets.users[0] === analysisBuckets.aId,
   `分析只挂在甲名下（${analysisBuckets.users.length} 份）`);
 
+// ════════════════ 4d. 删除用户：二次确认 + 连带清理 ════════════════
+await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
+await page.waitForTimeout(1500);
+await switchTo(page, "甲同学");
+await chip(page).first().click();
+await page.waitForTimeout(900);
+
+const before = await readState(page);
+step(before.ids.length === 2, `删除前有 2 个用户（${before.names.join(" / ")}）`);
+const jiaId = before.ids[before.names.indexOf("甲同学")]!;
+const yiId = before.ids[before.names.indexOf("乙同学")]!;
+
+// 点乙那张卡右上角的删除
+await page.locator('[role="dialog"] [role="button"]').filter({ hasText: "乙同学" })
+  .first().locator('button[aria-label="删除用户"]').click();
+await page.waitForTimeout(700);
+
+const confirmDlg = page.locator('[role="alertdialog"]');
+step(await confirmDlg.isVisible(), "点删除弹出二次确认（不是直接删）");
+const confirmText = await confirmDlg.innerText();
+step(confirmText.includes("乙同学"), `确认框点名了要删谁（${confirmText.split("\n")[0]}）`);
+step(/简历|分析/.test(confirmText), "确认框说明了会连带删除简历与分析");
+step(/无法恢复|cannot be undone/.test(confirmText), "确认框写明了不可恢复");
+
+// 先取消，什么都不该变
+await confirmDlg.getByRole("button", { name: "取消" }).click();
+await page.waitForTimeout(700);
+step((await readState(page)).ids.length === 2, "点取消 → 什么都没删");
+
+// 再来一次，这回确认
+await page.locator('[role="dialog"] [role="button"]').filter({ hasText: "乙同学" })
+  .first().locator('button[aria-label="删除用户"]').click();
+await page.waitForTimeout(700);
+await page.locator('[role="alertdialog"]').getByRole("button", { name: "删除" }).click();
+await page.waitForTimeout(1500);
+
+const after = await readState(page);
+step(after.ids.length === 1 && after.ids[0] === jiaId, `乙同学已被删除（剩下 ${after.names.join(", ")}）`);
+step(after.currentUserId === jiaId, "当前用户仍是甲（删的不是他）");
+
+const survivors = await page.evaluate((ids) => {
+  const r = JSON.parse(localStorage.getItem("resume-storage") ?? "null")?.state ?? {};
+  const t = JSON.parse(localStorage.getItem("job-target-storage") ?? "null")?.state?.targets ?? {};
+  return {
+    resumeBuckets: Object.keys(r.byUser ?? {}),
+    analysisOwners: Object.values(t).flatMap((x: any) => Object.keys(x.analysesByUser ?? {})),
+    jia: ids.jia,
+    yi: ids.yi,
+  };
+}, { jia: jiaId, yi: yiId });
+step(!survivors.resumeBuckets.includes(survivors.yi), "乙名下的简历桶被清掉");
+step(!survivors.analysisOwners.includes(survivors.yi), "乙在各岗位上的分析被清掉");
+step(survivors.resumeBuckets.includes(survivors.jia), "甲的简历桶完好无损");
+step(survivors.analysisOwners.includes(survivors.jia), "甲的分析完好无损");
+
+// 删掉当前用户 → 回到选择弹窗
+await page.locator('[role="dialog"] [role="button"]').filter({ hasText: "甲同学" })
+  .first().locator('button[aria-label="删除用户"]').click();
+await page.waitForTimeout(700);
+await page.locator('[role="alertdialog"]').getByRole("button", { name: "删除" }).click();
+await page.waitForTimeout(1600);
+step((await readState(page)).ids.length === 0, "删光之后没有用户");
+step(
+  (await picker(page).first().innerText()).includes("还没有用户"),
+  "回到空的选择弹窗（不是白屏）"
+);
+step(
+  (await picker(page).count()) === 1,
+  `只剩一个选择弹窗，没有叠加（${await picker(page).count()} 个）`
+);
+
 // ════════════════ 5. 老数据迁移（放最后：它会整体覆盖存储） ════════════════
 await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
 await page.waitForTimeout(1200);
