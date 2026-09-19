@@ -952,22 +952,12 @@
     "analyzeFailed": "Analysis failed",
     "fallbackHint": "You can still pick experiences manually — generation never depends on AI.",
     "corrections": "Corrected {count} non-conforming items from the model",
-    "generate": "Generate resume",
-    "generateSuccess": "Resume generated, opening workbench",
-    "selectedCount": "{count} selected",
-    "sections": "Sections:",
-    "clearAll": "Clear",
-    "noDefaultHint": "Nothing is pre-checked — what goes in must be your own choice",
-    "emptyDescriptionHint": "This entry has no description, so the AI judgment may be unstable. Add details and re-analyze.",
     "coverage": {
-      "title": "Skill coverage",
       "covered": "Covered",
       "weak": "Thin coverage",
       "missing": "Missing",
       "missingNote": "Missing items are reported only; the tool will not fabricate experience for you."
     },
-    "topNStarHint": "The model ranked this near the top — a ranking signal, not a verdict that it must go on the resume",
-    "selectTopRanked": "Select top-ranked",
     "requirements": {
       "title": "JD requirements",
       "summary": "{total} total · {missing} missing",

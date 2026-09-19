@@ -953,22 +953,12 @@
     "analyzeFailed": "分析失败",
     "fallbackHint": "仍可手动勾选经历后生成简历 —— 生成流程不依赖 AI。",
     "corrections": "已修正 AI 返回的 {count} 处不合规内容",
-    "generate": "生成简历",
-    "generateSuccess": "已生成简历，正在打开工作台",
-    "selectedCount": "已选 {count} 条",
-    "sections": "板块：",
-    "clearAll": "清空",
-    "noDefaultHint": "初始状态不预勾选 —— 放进简历的必须是你自己选的",
-    "emptyDescriptionHint": "该条目描述为空，AI 判定可能不稳定 —— 建议补充内容后重新分析",
     "coverage": {
-      "title": "技能覆盖度",
       "covered": "已覆盖",
       "weak": "覆盖薄弱",
       "missing": "缺失",
       "missingNote": "缺失项只作提示，工具不会替你编造经历。"
     },
-    "topNStarHint": "模型把这条排在了前列 —— 这是排序信号，不是「必须放进简历」的结论",
-    "selectTopRanked": "全选排名靠前的项",
     "requirements": {
       "title": "JD 要求",
       "summary": "共 {total} 条 · 缺失 {missing}",
