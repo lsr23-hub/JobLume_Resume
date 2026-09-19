@@ -28,16 +28,17 @@ export const SaveBar = () => {
   }, [flash]);
 
   const handleSave = () => {
-    const current = useCareerProfileStore.getState().profile;
-    if (!current) {
+    if (!useCareerProfileStore.getState().profile) {
       toast.error(t("save.failed"));
       return;
     }
 
     try {
-      // 新引用触发 persist 中间件再写一次；不直接拼 storage 格式，
-      // 避免与 zustand 内部结构耦合
-      useCareerProfileStore.setState({ profile: { ...current } });
+      // 走 store 的 touchProfile：换一个新引用触发 persist 再写一次，
+      // 同时让 profile 别名与 profiles 保持同源。原来直接
+      // `setState({ profile })`，多用户改造后那会写进一个不属于
+      // 持久化切片的野生字段。
+      useCareerProfileStore.getState().touchProfile();
       setFlash(true);
       toast.success(t("save.success"));
     } catch {

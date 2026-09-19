@@ -972,6 +972,14 @@
     "staleContentChanged": "当前结果基于修改前的数据（{count} 条经历已变更）",
     "staleGeneric": "当前结果基于修改前的数据（JD 或模型已变）"
   },
+  "userSelect": {
+    "title": "选择用户",
+    "description": "职业数据库与简历都按用户分开存放。选一个人开始，或新建一个。",
+    "create": "新建用户",
+    "empty": "还没有用户。新建一个开始吧。",
+    "unnamed": "未命名",
+    "noTitle": "尚未填写信息"
+  },
   "backup": {
     "title": "数据备份",
     "description": "把职业数据库、全部简历与投递目标导出为单个 JSON 文件。三者在数据层相互关联，必须整体备份才能保持关系完整。",

@@ -25,8 +25,9 @@ import { CreateResumeWizard, type WizardChoice } from "./CreateResumeWizard";
 import { ImportResumeDialog } from "./ImportResumeDialog";
 import { ResumeCardItem } from "./ResumeCardItem";
 import { AnimatedImportButton } from "./AnimatedImportButton";
+import { RequireUser } from "../RequireUser";
 
-export const ResumeWorkbench = () => {
+const ResumeWorkbenchInner = () => {
     const t = useTranslations();
     // 板块名与证书标签都挂在 profile 命名空间下（见 SECTION_DEFS.titleKey）
     const tSection = useTranslations("profile");
@@ -401,3 +402,10 @@ export const ResumeWorkbench = () => {
         </ScrollArea>
     );
 };
+
+/** 同「职业数据库」：简历也是按用户存的，先进板块前先选人 */
+export const ResumeWorkbench = () => (
+  <RequireUser>
+    <ResumeWorkbenchInner />
+  </RequireUser>
+);

@@ -206,12 +206,12 @@
 | 步 | 内容 | 状态 |
 |---|---|---|
 | 1a | `src/store/userScope.ts` —— 三份持久化状态的迁移 + 归一化 + 按用户读写分析的辅助 | ✅ 21 条单测 |
-| 1b | 三个 store 改形状、接 `version: 1` + `migrate`、收敛 `commit()` 别名 | ⬜ 下一步 |
-| 2 | 稳定 selector（模块作用域函数）+ `useResolvedImage` | ⬜ |
-| 3 | `UserSelectDialog` + `RequireUser` + 侧边栏 chip | ⬜ |
+| 1b | `useCareerProfileStore` 改形状、接 `version: 1` + `migrate` + `merge`、收敛 `put()` 写入漏斗 | ✅ 9 条单测 |
+| 2 | 稳定 selector（模块作用域函数）+ `useResolvedImage` | ◐ hook 已建；简历/目标 store 的 selector 未做 |
+| 3 | `UserSelectDialog` + `RequireUser` + 侧边栏 chip | ◐ 弹窗与门禁已接；**侧边栏 chip 未做**（暂时只能刷新后靠持久化记忆切人） |
 | 4 | 分析读写点切到"当前用户那一份"；删掉 `JobTarget` 上的旧单槽字段 | ⬜ |
 | 5 | 备份调用点按用户收口（`lib/backup.ts` 本身不用改） | ⬜ |
-| 6 | 6 个既有 e2e 脚本改 localStorage 路径 + 新增 `e2e:users` | ⬜ |
+| 6 | 6 个既有 e2e 脚本改 localStorage 路径 + 新增 `e2e:users` | ⬜ **当前 4 个既有套件因路径没改而失败** |
 | 7 | 文档同步（含已有的 `resume-store` 笔误等存量错误） | ⬜ |
 
 **第 1a 步留下的过渡缝**：`userScope.ts` 导出了 `ScopedJobTarget = JobTarget & TargetScopedAnalysis`。

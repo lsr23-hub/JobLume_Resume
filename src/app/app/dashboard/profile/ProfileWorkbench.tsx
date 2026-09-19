@@ -11,6 +11,7 @@ import { SaveBar } from "./SaveBar";
 import { ImportProfileDialog } from "./ImportProfileDialog";
 import { ExportProfileButton } from "./ExportProfileButton";
 import { AutoCategorizeButton } from "./AutoCategorizeButton";
+import { RequireUser } from "../RequireUser";
 
 /** 走「条目列表」形态的板块；其余由专属面板负责 */
 const ENTITY_SECTIONS = new Set([
@@ -21,7 +22,7 @@ const ENTITY_SECTIONS = new Set([
   "honors",
 ]);
 
-export const ProfileWorkbench = () => {
+const ProfileWorkbenchInner = () => {
   const t = useTranslations("profile");
   const { profile, ensureProfile } = useCareerProfileStore();
   const [activeSection, setActiveSection] = useState("basic");
@@ -110,4 +111,14 @@ const Placeholder = ({ title, body }: { title: string; body: string }) => (
     <p className="font-medium">{title}</p>
     {body && <p className="mt-2 text-sm text-muted-foreground">{body}</p>}
   </div>
+);
+
+/**
+ * 进「职业数据库」之前必须先有当前用户：没有就渲染用户选择弹窗，
+ * 且**不渲染**下面的内容（不是盖一层弹窗）。
+ */
+export const ProfileWorkbench = () => (
+  <RequireUser>
+    <ProfileWorkbenchInner />
+  </RequireUser>
 );

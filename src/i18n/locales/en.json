@@ -971,6 +971,14 @@
     "staleContentChanged": "Showing results from before your edits ({count} entries changed)",
     "staleGeneric": "Showing results from before your edits (JD or model changed)"
   },
+  "userSelect": {
+    "title": "Choose a person",
+    "description": "Career profiles and resumes are stored per person. Pick one, or create a new one.",
+    "create": "New person",
+    "empty": "No one here yet. Create one to start.",
+    "unnamed": "Unnamed",
+    "noTitle": "No details yet"
+  },
   "backup": {
     "title": "Backup",
     "description": "Export your career database, all resumes, and all job targets as a single JSON file. The three are linked in the data layer, so they must be backed up together to stay consistent.",

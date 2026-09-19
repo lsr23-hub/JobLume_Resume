@@ -16,6 +16,12 @@ import { parseDateRange } from "@/lib/profile/entityUtils";
 import { generateUUID } from "@/utils/uuid";
 import { needsCategorizing } from "@/lib/profile/categories";
 import { reportHydrationFailure } from "@/store/persistGuard";
+import {
+  USER_SCOPE_VERSION,
+  migrateProfileState,
+  normalizeProfileState,
+  type ProfilePersisted,
+} from "@/store/userScope";
 
 export const PROFILE_STORAGE_KEY = "career-profile-storage";
 
@@ -58,11 +64,49 @@ export type NewEntity = Partial<Omit<ProfileEntity, "id" | "createdAt" | "update
 };
 
 interface ProfileStore {
+  // ── 持久化切片 ──
+  /** 全部用户，key 为 userId。用户就是一份职业档案，不另设用户记录 */
+  profiles: Record<string, CareerProfile>;
+  /** 当前用户。为空 → 进「职业数据库」「我的简历」时弹用户选择框 */
+  currentUserId: string | null;
+
+  /**
+   * 当前用户的档案，**非持久化的别名**。
+   *
+   * 为什么留这个别名而不是让调用方都改成 `useCurrentProfile()`：全仓有 16 个
+   * 文件按 `const { profile } = useCareerProfileStore()` 取值，改成传参或换
+   * selector 要动 16 处，收益为零。代价是每处写入都必须重算它 —— 所以写入
+   * 统一走模块级的 `put()`，不要直接 `set({ profile })`。
+   */
   profile: CareerProfile | null;
 
-  /** 首次访问时惰性创建，避免在 store 初始化阶段调用 Date.now() */
-  ensureProfile: () => CareerProfile;
+  // ── 用户管理 ──
+  /**
+   * 读当前档案，并跑一遍惰性字段迁移（`syncBasicPresets` 那一套仍在此处）。
+   *
+   * **不再创建档案**：以前没有档案就立刻造一份空档案写盘，多用户下这会写出
+   * `profiles[null]` 这个幽灵键 —— 用户列表里看不见、也永远删不掉。新建用户
+   * 现在只有一条路：`createUser()`。
+   *
+   * 返回 null 表示「还没选用户」，调用方必须自己 guard。
+   */
+  ensureProfile: () => CareerProfile | null;
 
+  /** 建一个空档案并设为当前用户，返回新 userId */
+  createUser: () => string;
+  setCurrentUser: (userId: string | null) => void;
+  /** 删除用户及其档案。若删的是当前用户，currentUserId 置空（回到选择弹窗） */
+  removeUser: (userId: string) => void;
+
+  /**
+   * 把当前档案换一个新的对象引用，触发 persist 再写一次。
+   *
+   * 存在的原因：`profile/SaveBar.tsx` 原来直接 `setState({ profile: {...} })`，
+   * 新形状下那会写进一个不属于持久化切片的野生字段。
+   */
+  touchProfile: () => void;
+
+  /** 没有当前用户时返回空串 */
   addEntity: (input: NewEntity) => string;
   updateEntity: (id: string, patch: Partial<ProfileEntity>) => void;
   removeEntity: (id: string) => void;
@@ -221,27 +265,84 @@ const touch = (profile: CareerProfile): CareerProfile => ({
   meta: { ...profile.meta, updatedAt: new Date().toISOString() },
 });
 
+/**
+ * 唯一的写入出口。
+ *
+ * 每个 action 都必须经过它，由它重算 `profile` 别名。绕过它直接
+ * `set({ profile })` 会让别名与 `profiles` 脱节 —— 那正是这套设计里最容易
+ * 写漏的一处，所以收敛成一个函数而不是散在各处。
+ */
+const put = (
+  set: (partial: Partial<ProfileStore>) => void,
+  get: () => ProfileStore,
+  next: CareerProfile
+): void => {
+  const { profiles, currentUserId } = get();
+  if (!currentUserId) return;
+  set({ profiles: { ...profiles, [currentUserId]: next }, profile: next });
+};
+
+/** 读当前用户的档案，不创建 */
+const readCurrent = (get: () => ProfileStore): CareerProfile | null => {
+  const { profiles, currentUserId } = get();
+  return currentUserId ? profiles[currentUserId] ?? null : null;
+};
+
+/** 由持久化切片推出 `profile` 别名 */
+const deriveProfile = (
+  profiles: Record<string, CareerProfile>,
+  currentUserId: string | null
+): CareerProfile | null =>
+  currentUserId ? profiles[currentUserId] ?? null : null;
+
 export const useCareerProfileStore = create<ProfileStore>()(
   persist(
     (set, get) => ({
+      profiles: {},
+      currentUserId: null,
       profile: null,
 
       ensureProfile: () => {
-        const existing = get().profile;
-        if (existing) {
-          const synced = syncLanguageText(syncCertificateText(syncBasicPresets(existing)));
-          if (synced !== existing) set({ profile: synced });
-          return synced;
-        }
+        const existing = readCurrent(get);
+        if (!existing) return null;
 
+        const synced = syncLanguageText(syncCertificateText(syncBasicPresets(existing)));
+        if (synced !== existing) put(set, get, synced);
+        return synced;
+      },
+
+      createUser: () => {
+        const id = generateUUID();
         const created = createEmptyProfile(createEmptyBasic(), new Date().toISOString());
         created.sectionOrder = [...DEFAULT_SECTION_ORDER];
-        set({ profile: created });
-        return created;
+        set({
+          profiles: { ...get().profiles, [id]: created },
+          currentUserId: id,
+          profile: created,
+        });
+        return id;
+      },
+
+      setCurrentUser: (userId) => {
+        const profiles = get().profiles;
+        const next = userId && profiles[userId] ? userId : null;
+        set({ currentUserId: next, profile: deriveProfile(profiles, next) });
+      },
+
+      removeUser: (userId) => {
+        const { [userId]: _removed, ...profiles } = get().profiles;
+        const currentUserId = get().currentUserId === userId ? null : get().currentUserId;
+        set({ profiles, currentUserId, profile: deriveProfile(profiles, currentUserId) });
+      },
+
+      touchProfile: () => {
+        const current = readCurrent(get);
+        if (current) put(set, get, { ...current });
       },
 
       addEntity: (input) => {
         const profile = get().ensureProfile();
+        if (!profile) return "";
         const id = generateUUID();
         const now = new Date().toISOString();
 
@@ -270,17 +371,16 @@ export const useCareerProfileStore = create<ProfileStore>()(
           ...withDerivedDates({ dateRange: input.dateRange ?? "" }),
         };
 
-        set({
-          profile: touch({
-            ...profile,
-            entities: { ...profile.entities, [id]: entity },
-          }),
-        });
+        put(set, get, touch({
+          ...profile,
+          entities: { ...profile.entities, [id]: entity },
+        }));
         return id;
       },
 
       applyCategories: (categories) => {
         const profile = get().ensureProfile();
+        if (!profile) return;
         const entities = { ...profile.entities };
         let changed = 0;
 
@@ -294,40 +394,38 @@ export const useCareerProfileStore = create<ProfileStore>()(
         }
 
         if (changed === 0) return;
-        set({ profile: touch({ ...profile, entities }) });
+        put(set, get, touch({ ...profile, entities }));
       },
 
       updateEntity: (id, patch) => {
-        const profile = get().profile;
+        const profile = readCurrent(get);
         const current = profile?.entities[id];
         if (!profile || !current) return;
 
-        set({
-          profile: touch({
-            ...profile,
-            entities: {
-              ...profile.entities,
-              [id]: {
-                ...current,
-                ...withDerivedDates(patch),
-                updatedAt: new Date().toISOString(),
-              },
+        put(set, get, touch({
+          ...profile,
+          entities: {
+            ...profile.entities,
+            [id]: {
+              ...current,
+              ...withDerivedDates(patch),
+              updatedAt: new Date().toISOString(),
             },
-          }),
-        });
+          },
+        }));
       },
 
       removeEntity: (id) => {
-        const profile = get().profile;
+        const profile = readCurrent(get);
         if (!profile || !profile.entities[id]) return;
 
         const entities = { ...profile.entities };
         delete entities[id];
-        set({ profile: touch({ ...profile, entities }) });
+        put(set, get, touch({ ...profile, entities }));
       },
 
       reorderEntities: (sectionId, orderedIds) => {
-        const profile = get().profile;
+        const profile = readCurrent(get);
         if (!profile) return;
 
         const entities = { ...profile.entities };
@@ -338,11 +436,12 @@ export const useCareerProfileStore = create<ProfileStore>()(
           }
         });
 
-        set({ profile: touch({ ...profile, entities }) });
+        put(set, get, touch({ ...profile, entities }));
       },
 
       addSkillGroup: (input) => {
         const profile = get().ensureProfile();
+        if (!profile) return "";
         const id = generateUUID();
         const group: SkillGroup = {
           id,
@@ -351,62 +450,60 @@ export const useCareerProfileStore = create<ProfileStore>()(
           order: profile.skillGroups.length,
         };
 
-        set({
-          profile: touch({ ...profile, skillGroups: [...profile.skillGroups, group] }),
-        });
+        put(set, get, touch({ ...profile, skillGroups: [...profile.skillGroups, group] }));
         return id;
       },
 
       updateSkillGroup: (id, patch) => {
-        const profile = get().profile;
+        const profile = readCurrent(get);
         if (!profile) return;
 
-        set({
-          profile: touch({
-            ...profile,
-            skillGroups: profile.skillGroups.map((g) => (g.id === id ? { ...g, ...patch } : g)),
-          }),
-        });
+        put(set, get, touch({
+          ...profile,
+          skillGroups: profile.skillGroups.map((g) => (g.id === id ? { ...g, ...patch } : g)),
+        }));
       },
 
       removeSkillGroup: (id) => {
-        const profile = get().profile;
+        const profile = readCurrent(get);
         if (!profile) return;
 
-        set({
-          profile: touch({
-            ...profile,
-            skillGroups: profile.skillGroups.filter((g) => g.id !== id),
-          }),
-        });
+        put(set, get, touch({
+          ...profile,
+          skillGroups: profile.skillGroups.filter((g) => g.id !== id),
+        }));
       },
 
       updateBasic: (patch) => {
         const profile = get().ensureProfile();
-        set({ profile: touch({ ...profile, basic: { ...profile.basic, ...patch } }) });
+        if (!profile) return;
+        put(set, get, touch({ ...profile, basic: { ...profile.basic, ...patch } }));
       },
 
       setCertificateText: (certificateText) => {
         const profile = get().ensureProfile();
-        set({ profile: touch({ ...profile, certificateText }) });
+        if (!profile) return;
+        put(set, get, touch({ ...profile, certificateText }));
       },
 
       setLanguageText: (languageText) => {
         const profile = get().ensureProfile();
-        set({ profile: touch({ ...profile, languageText }) });
+        if (!profile) return;
+        put(set, get, touch({ ...profile, languageText }));
       },
 
       setSelfEvaluationContent: (selfEvaluationContent) => {
         const profile = get().ensureProfile();
-        set({ profile: touch({ ...profile, selfEvaluationContent }) });
+        if (!profile) return;
+        put(set, get, touch({ ...profile, selfEvaluationContent }));
       },
 
-      replaceProfile: (profile) => set({ profile }),
+      replaceProfile: (profile) => put(set, get, profile),
 
       resetProfile: () => {
         const created = createEmptyProfile(createEmptyBasic(), new Date().toISOString());
         created.sectionOrder = [...DEFAULT_SECTION_ORDER];
-        set({ profile: created });
+        put(set, get, created);
       },
     }),
     {
@@ -415,7 +512,21 @@ export const useCareerProfileStore = create<ProfileStore>()(
         reportHydrationFailure("career-profile", error),
       name: PROFILE_STORAGE_KEY,
       storage: createJSONStorage(() => safeLocalStorage),
-      partialize: (state) => ({ profile: state.profile }),
+      // version 与 migrate 必须同一次提交里一起加：只加 version 而不给 migrate，
+      // zustand 会静默停在初始空值，用户下一次写入就覆盖掉全部数据。
+      version: USER_SCOPE_VERSION,
+      migrate: (persisted, version) => migrateProfileState(persisted, version),
+      partialize: (state): ProfilePersisted => ({
+        profiles: state.profiles,
+        currentUserId: state.currentUserId,
+      }),
+      // merge 是第二道防线，不是 migrate 的重复：persist 的版本判据是
+      // `typeof v.version === "number"`，**版本字段缺失的 blob 根本不进 migrate**
+      // （手改过 localStorage、或别的工具写出的数据就是这样）。
+      merge: (persisted, current) => {
+        const { profiles, currentUserId } = normalizeProfileState(persisted);
+        return { ...current, profiles, currentUserId, profile: deriveProfile(profiles, currentUserId) };
+      },
     }
   )
 );
