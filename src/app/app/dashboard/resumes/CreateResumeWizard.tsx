@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { TemplateGallery } from "./TemplateGallery";
+import { ContentSelection } from "./ContentSelection";
+import { selectAllEntities } from "@/lib/profile/generateResume";
 
 /** 生成哪一类简历。与 `ResumeSnapshot.mode` 的取值对齐（manual 是编辑器里手建的） */
 export type ResumeKind = "generic" | "targeted";
@@ -33,9 +35,12 @@ export interface WizardChoice {
   /**
    * 最终收进简历的条目。
    *
-   * 通常是全选；只有篇幅超出、用户点了「应用并生成」时才是精简过的集合。
+   * 通用简历是全选（篇幅超出时是精简过的集合）；岗位专用简历是用户在
+   * 「内容选择」步里勾出来的。
    */
   selection: Record<string, string[]>;
+  /** 用户在内容选择步里关掉的板块。通用简历路径为空集 */
+  disabledSections: Set<string>;
 }
 
 interface Props {
@@ -44,7 +49,7 @@ interface Props {
   onComplete: (choice: WizardChoice) => void;
 }
 
-type Step = "mode" | "target" | "template" | "fit";
+type Step = "mode" | "target" | "template" | "fit" | "content";
 
 /**
  * 新建简历向导。
@@ -62,10 +67,19 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
   const [step, setStep] = useState<Step>("mode");
   const [mode, setMode] = useState<ResumeKind>("generic");
   const [targetId, setTargetId] = useState<string | null>(null);
-  const { measuring, pending, pickTemplate, reset, measureHost } = useTemplateFit({
+
+  // 岗位专用路径的状态。通用路径不用它们
+  const [templateId, setTemplateId] = useState<string | null>(null);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [disabledSections, setDisabledSections] = useState<Set<string>>(new Set());
+  const [pages, setPages] = useState<number | null>(null);
+  const [planning, setPlanning] = useState(false);
+
+  const { measuring, pending, pickTemplate, reset, measurePlan, measureHost } = useTemplateFit({
     mode,
     targetId,
-    onFits: (templateId, selection) => onComplete({ mode, targetId, templateId, selection }),
+    onFits: (tpl, selection) =>
+      onComplete({ mode, targetId, templateId: tpl, selection, disabledSections: new Set() }),
   });
 
   const sortedTargets = useMemo(() => selectSortedTargets(targets), [targets]);
@@ -77,6 +91,10 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
       setStep("mode");
       setMode("generic");
       setTargetId(null);
+      setTemplateId(null);
+      setChecked(new Set());
+      setDisabledSections(new Set());
+      setPages(null);
       reset();
     }, 300);
     return () => window.clearTimeout(timer);
@@ -91,7 +109,72 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
 
   const pickTarget = (id: string) => {
     setTargetId(id);
+    // 选择是跟着目标走的，换目标就把上一次的勾选丢掉
+    setChecked(new Set());
+    setDisabledSections(new Set());
+    setPages(null);
     setStep("template");
+  };
+
+  const allVisibleIds = () => {
+    const ids = new Set<string>();
+    for (const e of Object.values(profile?.entities ?? {})) {
+      if (!e.hidden) ids.add(e.id);
+    }
+    return ids;
+  };
+
+  /**
+   * 岗位专用路径选完模板：**不测算、不弹提议**，直接进内容选择。
+   *
+   * 默认勾选分两种情况：
+   * - **有分析结果** → 一条都不勾。D19 的规则：AI 一预设勾选，用户会直接点
+   *   确认而不逐条审视。这里正是有推荐可审的时候
+   * - **没有分析结果**（未配 Key / 分析失败 / 没分析过）→ 全选。没有任何推荐
+   *   可审，让用户从零勾一遍纯属折磨，而且这正是改动前一直以来的行为
+   */
+  const pickTargetedTemplate = async (tpl: string) => {
+    setTemplateId(tpl);
+    const analysis = targetId ? targets[targetId]?.matchAnalysis ?? null : null;
+    const initial = analysis ? new Set<string>() : allVisibleIds();
+    setChecked(initial);
+    setStep("content");
+
+    // 进页面后量一次篇幅，作为提示。用户改勾选后这个数会标为待重算
+    setPlanning(true);
+    const selection = groupBySection(initial);
+    const plan = await measurePlan(selection, tpl);
+    setPages(plan?.pagesBefore ?? null);
+    setPlanning(false);
+  };
+
+  const groupBySection = (ids: Set<string>): Record<string, string[]> => {
+    const out: Record<string, string[]> = {};
+    for (const id of Array.from(ids)) {
+      const entity = profile?.entities[id];
+      if (!entity) continue;
+      (out[entity.sectionId] ??= []).push(id);
+    }
+    return out;
+  };
+
+  const toggleEntity = (entityId: string) => {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(entityId)) next.delete(entityId);
+      else next.add(entityId);
+      return next;
+    });
+    setPages(null); // 选择变了，之前量出来的页数不再作数
+  };
+
+  const toggleSection = (sectionId: string, enabled: boolean) => {
+    setDisabledSections((prev) => {
+      const next = new Set(prev);
+      if (enabled) next.delete(sectionId);
+      else next.add(sectionId);
+      return next;
+    });
   };
 
   /**
@@ -106,6 +189,9 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
   const goBack = () => {
     if (currentStep === "fit") {
       reset();
+      setStep("template");
+    } else if (currentStep === "content") {
+      // 回退不清勾选 —— 用户可能只是回去换个模板再看看
       setStep("template");
     } else if (currentStep === "template" && mode === "targeted") setStep("target");
     else setStep("mode");
@@ -142,6 +228,8 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
               {currentStep === "target" && t("dashboard.resumes.createDialog.selectTargetTitle")}
               {currentStep === "template" && t("dashboard.resumes.createDialog.selectTemplateTitle")}
               {currentStep === "fit" && t("dashboard.resumes.createDialog.fitTitle")}
+              {currentStep === "content" &&
+                t("dashboard.resumes.createDialog.contentTitle")}
             </div>
 
             <button
@@ -246,7 +334,21 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
                 )}
 
                 {currentStep === "template" && (
-                  <TemplateGallery onPick={pickTemplate} />
+                  <TemplateGallery
+                    onPick={mode === "targeted" ? pickTargetedTemplate : pickTemplate}
+                  />
+                )}
+
+                {currentStep === "content" && templateId && (
+                  <ContentSelection
+                    analysis={targetId ? targets[targetId]?.matchAnalysis ?? null : null}
+                    entities={Object.values(profile?.entities ?? {}).filter((e) => !e.hidden)}
+                    checked={checked}
+                    onToggle={toggleEntity}
+                    onToggleSection={toggleSection}
+                    disabledSections={disabledSections}
+                    pages={pages}
+                  />
                 )}
 
                 {currentStep === "fit" && pending && (
@@ -259,6 +361,7 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
                         targetId,
                         templateId: pending.templateId,
                         selection: pending.plan.kept,
+                        disabledSections: new Set(),
                       })
                     }
                     onKeepAll={() =>
@@ -267,6 +370,7 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
                         targetId,
                         templateId: pending.templateId,
                         selection: pending.selection,
+                        disabledSections: new Set(),
                       })
                     }
                   />
@@ -274,6 +378,32 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
               </div>
             </ScrollArea>
           </div>
+
+          {currentStep === "content" && (
+            <div className="flex-none border-t border-border/40 px-8 py-4">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm text-muted-foreground">
+                  {planning
+                    ? t("dashboard.resumes.createDialog.fitMeasuring")
+                    : t("dashboard.resumes.createDialog.selectedCount", { count: checked.size })}
+                </span>
+                <Button
+                  disabled={checked.size === 0 || planning}
+                  onClick={() =>
+                    onComplete({
+                      mode,
+                      targetId,
+                      templateId: templateId!,
+                      selection: groupBySection(checked),
+                      disabledSections,
+                    })
+                  }
+                >
+                  {t("dashboard.resumes.createDialog.startGenerate")}
+                </Button>
+              </div>
+            </div>
+          )}
 
           {measureHost}
 

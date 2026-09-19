@@ -34,7 +34,7 @@ export interface GenerateResumeInput {
 
   /**
    * 用户主动关掉的板块。不传表示全部按内容自动判定。
-   * 只有带勾选界面的调用方会传。
+   * 岗位专用简历的「内容选择」步会传；通用简历路径没有板块开关，不传。
    */
   disabledSections?: Set<string>;
 

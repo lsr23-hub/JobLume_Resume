@@ -153,8 +153,12 @@ export const ResumeWorkbench = () => {
             id,
             title,
             now,
-            // 篇幅取舍后可能是精简过的集合，不再一律全选
+            // 通用简历：篇幅取舍后可能是精简过的集合，不再一律全选
+            // 岗位专用简历：用户在「内容选择」步里勾出来的集合
             selection: choice.selection,
+            // 用户在内容选择步里关掉的板块。缺了这一环，板块开关会变成
+            // 纯装饰 —— 界面上关掉了，生成的简历里还在
+            disabledSections: choice.disabledSections,
             tSection: tSection,
             certificateLabel: tSection("certificatesLabel"),
         });
