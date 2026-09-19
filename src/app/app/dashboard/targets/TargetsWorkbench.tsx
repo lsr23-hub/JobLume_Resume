@@ -8,7 +8,7 @@ import { useAIConfigStore } from "@/store/useAIConfigStore";
 import { analyzeMatch } from "@/lib/match/analyzeMatch";
 import { buildEntityFingerprints, checkCache } from "@/lib/match/analysisCache";
 import type { JobTarget } from "@/types/jobTarget";
-import { analysisFor, cacheFor } from "@/store/userScope";
+import { RequireUser } from "../RequireUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,20 @@ import { cn } from "@/lib/utils";
 import { RequirementList } from "./RequirementList";
 import { FitLevelPanel } from "./FitLevelPanel";
 
-export const TargetsWorkbench = () => {
+/**
+ * 「投递目标」也先选人。
+ *
+ * v2 起岗位本身按用户隔离（JD 跟随用户走），没有当前用户时这个页面无主 ——
+ * 建出来的 JD 会落进一个没有归属的分片，列表上看得到、刷新就没了。
+ * 与职业数据库 / 我的简历同一个门禁。
+ */
+export const TargetsWorkbench = () => (
+  <RequireUser>
+    <TargetsWorkbenchInner />
+  </RequireUser>
+);
+
+const TargetsWorkbenchInner = () => {
   const t = useTranslations("targets");
 
   const { targets, addTarget, updateTarget, removeTarget, setAnalysis } = useJobTargetStore();
@@ -27,15 +40,9 @@ export const TargetsWorkbench = () => {
   const list = useMemo(() => selectSortedTargets(targets), [targets]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const current = selectedId ? targets[selectedId] : null;
-  /**
-   * 当前用户在这条岗位上的分析。
-   *
-   * 分析按「岗位 × 用户」存（岗位全局共享，分析各人一份），所以读的时候必须
-   * 显式带上当前用户 —— 否则会把别人的结论当成自己的展示出来。
-   */
-  const currentUserId = useCareerProfileStore((s) => s.currentUserId);
-  const currentAnalysis = analysisFor(current, currentUserId);
-  const currentCache = cacheFor(current, currentUserId);
+  // 岗位自带它那一份分析（v2 起一条岗位只属于一个人），不必再带 userId 去索引
+  const currentAnalysis = current?.matchAnalysis ?? null;
+  const currentCache = current?.analysisCache ?? null;
 
   const [isCreating, setIsCreating] = useState(false);
   const [running, setRunning] = useState(false);
@@ -147,7 +154,7 @@ export const TargetsWorkbench = () => {
           )}
           {list.map((target) => {
             const active = target.id === selectedId;
-            const recommended = analysisFor(target, currentUserId)?.summary.recommendedCount;
+            const recommended = target.matchAnalysis?.summary.recommendedCount;
             return (
               <button
                 key={target.id}

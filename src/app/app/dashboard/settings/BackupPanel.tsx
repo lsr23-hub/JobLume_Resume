@@ -5,6 +5,7 @@ import { useTranslations } from "@/i18n/compat/client";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { useResumeStore } from "@/store/useResumeStore";
 import { useJobTargetStore } from "@/store/useJobTargetStore";
+import { normalizeImportedTarget } from "@/store/userScope";
 import {
   buildBackup,
   estimateBackupSize,
@@ -39,6 +40,7 @@ const BackupPanel = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { profile, replaceProfile } = useCareerProfileStore();
+  const currentUserId = useCareerProfileStore((s) => s.currentUserId);
   const { targets } = useJobTargetStore();
   const resumes = useResumeStore((s) => s.resumes);
 
@@ -92,11 +94,20 @@ const BackupPanel = () => {
     // 而持久化切片只有 byUser —— 导入的简历会刷新即丢
     useResumeStore.getState().replaceResumes(resumeResult.merged);
 
+    // 备份文件不带形状标记：v1 时代的文件里分析是按 userId 索引的，v0 的是单槽。
+    // 导入前一并收敛成 v2 的单槽形状，归属取当前用户 —— 别人名下的分析顶上来
+    // 只会是误导，宁可当作「还没分析过」
+    const incomingTargets = currentUserId
+      ? payload.targets
+          .map((x) => normalizeImportedTarget(x, currentUserId))
+          .filter((x): x is NonNullable<typeof x> => x !== null)
+      : [];
     const targetResult =
       mode === "replace"
-        ? { merged: Object.fromEntries(payload.targets.map((x) => [x.id, x])), added: payload.targets.length, skipped: 0 }
-        : mergeById(targets, payload.targets);
-    useJobTargetStore.setState({ targets: targetResult.merged });
+        ? { merged: Object.fromEntries(incomingTargets.map((x) => [x.id, x])), added: incomingTargets.length, skipped: 0 }
+        : mergeById(targets, incomingTargets);
+    // 走 action：setState 不经过 set 层收口，只会改别名、不进 targetsByUser
+    useJobTargetStore.getState().replaceTargets(targetResult.merged);
 
     toast.success(
       t("importSuccess", {

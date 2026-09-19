@@ -97,21 +97,23 @@ await ensureCurrentUser(page);
       p.basic = { ...p.basic, name: "林可", title: "前端工程师" };
       p.entities = Object.fromEntries(entities.map((e) => [e.id, e]));
       localStorage.setItem("career-profile-storage", JSON.stringify(raw));
-      // 分析按「岗位 × 用户」存 —— 必须种在**当前用户**名下。
-      // 用旧的单槽形状种下去的话，迁移会把它归到 LEGACY_USER_ID，
-      // 而 ensureCurrentUser 建的是另一个 id，于是界面上一片空白。
+      // v2：岗位本身按用户隔离，分析是单槽 —— 必须种在**当前用户**名下。
+      // 种成 v1 形状的话迁移也能兜住（会扇出到 uid 名下），但那样测的就是
+      // 迁移路径而不是运行时的正常形状了；迁移另有用例，见 users.ts 的 4c-2。
       const uid = raw.state.currentUserId;
       localStorage.setItem(
         "job-target-storage",
         JSON.stringify({
           state: {
-            targets: {
-              t1: { id: "t1", company: "华泰证券", position: "高级前端工程师", jdRaw: jd,
-                    note: "", analysesByUser: { [uid]: analysis }, cachesByUser: {},
-                    createdAt: now, updatedAt: now },
+            targetsByUser: {
+              [uid]: {
+                t1: { id: "t1", company: "华泰证券", position: "高级前端工程师", jdRaw: jd,
+                      note: "", matchAnalysis: analysis, analysisCache: null,
+                      createdAt: now, updatedAt: now },
+              },
             },
           },
-          version: 1,
+          version: 2,
         })
       );
     },

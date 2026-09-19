@@ -12,7 +12,6 @@ import {
 import { useTranslations } from "@/i18n/compat/client";
 import { useRouter } from "@/lib/navigation";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
-import { analysisFor } from "@/store/userScope";
 import { hasUsableProfile } from "@/lib/profile/generateResume";
 import { useJobTargetStore, selectSortedTargets } from "@/store/useJobTargetStore";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -62,7 +61,6 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
   const router = useRouter();
   const { targets } = useJobTargetStore();
   const { profile } = useCareerProfileStore();
-  const currentUserId = useCareerProfileStore((s) => s.currentUserId);
   const [step, setStep] = useState<Step>("mode");
   const [mode, setMode] = useState<ResumeKind>("generic");
   const [targetId, setTargetId] = useState<string | null>(null);
@@ -309,7 +307,7 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
 
                 {currentStep === "content" && templateId && (
                   <ContentSelection
-                    analysis={analysisFor(targetId ? targets[targetId] : null, currentUserId)}
+                    analysis={(targetId ? targets[targetId] : null)?.matchAnalysis ?? null}
                     entities={Object.values(profile?.entities ?? {}).filter((e) => !e.hidden)}
                     checked={checked}
                     onToggle={toggleEntity}

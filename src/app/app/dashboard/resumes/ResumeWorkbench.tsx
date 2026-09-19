@@ -18,7 +18,6 @@ import { getConfig, getFileHandle } from "@/utils/fileSystem";
 import { preloadFontFamily } from "@/utils/fonts";
 import { useResumeStore } from "@/store/useResumeStore";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
-import { analysisFor } from "@/store/userScope";
 import { useJobTargetStore } from "@/store/useJobTargetStore";
 import { generateResume } from "@/lib/profile/generateResume";
 import { generateUUID } from "@/utils/uuid";
@@ -139,8 +138,8 @@ const ResumeWorkbenchInner = () => {
             profile,
             mode: choice.mode,
             target,
-            // 分析按「岗位 × 用户」存，取当前用户那一份
-            targetAnalysis: analysisFor(target, currentUserId),
+            // 岗位自带它那一份分析（v2 起一条岗位只属于一个人）
+            targetAnalysis: target?.matchAnalysis ?? null,
             profileId: currentUserId ?? undefined,
             templateId: choice.templateId,
             id,

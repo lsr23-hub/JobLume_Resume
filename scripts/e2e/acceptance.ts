@@ -310,7 +310,7 @@ await page.waitForTimeout(1500);
 const profBtns = await page.evaluate(() =>
   [...document.querySelectorAll("button")].map((b) => (b.innerText || "").trim()).filter(Boolean).slice(0, 25));
 console.log("   档案页按钮:", JSON.stringify(profBtns));
-step(profBtns.some((b) => /导出/.test(b)), "⑪ 备份：档案页有导出入口");
+step(profBtns.some((b) => /导出/.test(b)), "⑪ 备份：档案页有导出入口（只导数据库本身）");
 
 // 真的走一遍往返：导出 → 清空 → 导入 → 数据回来。
 //
@@ -319,6 +319,24 @@ step(profBtns.some((b) => /导出/.test(b)), "⑪ 备份：档案页有导出入
 // 拿它验「全库备份」名不副实，简历丢没丢根本测不出来。
 let backupOk = false;
 try {
+  // 备份覆盖三样：职业数据库、简历、投递目标。简历由第 2 节生成，投递目标
+  // 这一轮没有哪一步会建，所以直接种一条进盘（种完要刷新，store 才会读到）
+  await page.evaluate(() => {
+    const st = JSON.parse(localStorage.getItem("career-profile-storage") ?? "null")?.state ?? {};
+    const uid = st.currentUserId;
+    if (!uid) return;
+    const now = new Date().toISOString();
+    localStorage.setItem("job-target-storage", JSON.stringify({
+      version: 2,
+      state: { targetsByUser: { [uid]: { t1: {
+        id: "t1", company: "备份用岗位", position: "前端", jdRaw: "任职要求：\n1. 三年经验",
+        note: "", matchAnalysis: null, analysisCache: null, createdAt: now, updatedAt: now,
+      } } } },
+    }));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(1500);
+
   await page.goto(`${BASE}/app/dashboard/settings`, { waitUntil: "networkidle" });
   await page.waitForTimeout(1500);
   const dl = page.waitForEvent("download", { timeout: 15000 });
@@ -329,11 +347,13 @@ try {
   const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
   const entityCount = Object.keys(parsed?.profile?.entities ?? {}).length;
   const resumeCount = (parsed?.resumes ?? []).length;
+  const targetCount = (parsed?.targets ?? []).length;
 
   // 清空后重新导入
   await page.evaluate(() => {
     localStorage.removeItem("career-profile-storage");
     localStorage.removeItem("resume-storage");
+    localStorage.removeItem("job-target-storage");
   });
   // 回**有门禁的**档案页建人：`ensureCurrentUser` 靠「选择用户」弹窗判断，
   // 而通用设置不设门禁，在那儿它会静默什么都不做，导入便写进一个不存在的用户
@@ -355,16 +375,22 @@ try {
   const restored = await page.evaluate(() => {
     const st = JSON.parse(localStorage.getItem("career-profile-storage") ?? "null")?.state ?? {};
     const r = JSON.parse(localStorage.getItem("resume-storage") ?? "null")?.state ?? {};
+    const t = JSON.parse(localStorage.getItem("job-target-storage") ?? "null")?.state ?? {};
     return {
       entities: Object.keys(st.profiles?.[st.currentUserId]?.entities ?? {}).length,
       resumes: Object.keys(r.byUser?.[st.currentUserId] ?? {}).length,
+      targets: Object.keys(t.targetsByUser?.[st.currentUserId] ?? {}).length,
     };
   });
-  backupOk = entityCount > 0 && restored.entities === entityCount && restored.resumes === resumeCount;
+  backupOk =
+    entityCount > 0 &&
+    restored.entities === entityCount &&
+    restored.resumes === resumeCount &&
+    restored.targets === targetCount;
   step(
     backupOk,
-    `⑫ 全库备份往返：导出 ${entityCount} 条经历 / ${resumeCount} 份简历 → 清空 → 导入后 ` +
-      `${restored.entities} 条 / ${restored.resumes} 份`
+    `⑫ 全库备份往返：导出 ${entityCount} 条经历 / ${resumeCount} 份简历 / ${targetCount} 个岗位 ` +
+      `→ 清空 → 导入后 ${restored.entities} 条 / ${restored.resumes} 份 / ${restored.targets} 个`
   );
 } catch (e) {
   step(false, `⑫ 全库备份往返失败：${(e as Error).message.split("\n")[0].slice(0, 80)}`);

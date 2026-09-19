@@ -165,18 +165,19 @@ export interface JobTarget {
   note?: string;
 
   /**
-   * 各用户的最近一次分析结果，key 为 userId。
+   * 最近一次匹配分析结果，没有就是 null。
    *
-   * 为什么岗位共享而分析不共享：「这条要求由哪几段经历支撑」只对某一个人成立。
-   * 岗位（公司/职位/JD）多个用户可以共用，分析不能。
+   * **单槽**：v2 起岗位本身按用户隔离（见 `plan/task_plan.md` 的存档目录一节），
+   * 一份岗位副本只属于一个人，不需要再按 userId 索引。v1 那层 `analysesByUser`
+   * 存在的唯一理由是「岗位共享、分析不共享」，前提没了，层也就没了。
    *
-   * 字段留在 `JobTarget` 上而不是提到 store 根：store 的 `targets` 已经按
-   * targetId 索引了，提到根上会丢掉 target 这一维。
+   * 用 null 而不是可选字段：迁移与归一化一律把两个槽都写满，
+   * 读取侧因此不必区分「没有这个键」与「没有分析」。
    */
-  analysesByUser: Record<string, MatchAnalysis>;
+  matchAnalysis: MatchAnalysis | null;
 
-  /** 各用户的分析缓存信息，key 为 userId */
-  cachesByUser: Record<string, AnalysisCache>;
+  /** 上面那份分析对应的缓存信息，没有就是 null */
+  analysisCache: AnalysisCache | null;
 
   createdAt: string;
   updatedAt: string;

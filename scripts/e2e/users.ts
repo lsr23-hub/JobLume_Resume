@@ -2,7 +2,7 @@
  * 多用户主线 —— 把手工验证过的条目固化成可重跑的脚本。
  *
  * 覆盖：门禁（全新安装必须先选人）· 新建与切换 · 持久化 · 数据隔离 ·
- * 老数据迁移 · 投递目标不设门禁。
+ * 老数据迁移 · 三个板块都设门禁。
  *
  * 跑法（需要一个起着的服务端）：
  *   pnpm dev &            # 或 pnpm start
@@ -12,6 +12,8 @@ import { chromium, type Page } from "playwright";
 
 const BASE = process.env.E2E_BASE ?? "http://localhost:3000";
 const PROFILE_KEY = "career-profile-storage";
+/** 种子数据的时间戳。Node 侧与页面侧共用同一个值 */
+const NOW = new Date().toISOString();
 
 const results: Array<{ ok: boolean; msg: string }> = [];
 const step = (ok: boolean, msg: string) => {
@@ -62,6 +64,15 @@ step(
   "门禁是真的不渲染板块内容，不是盖一层弹窗"
 );
 step((await picker(page).innerText()).includes("还没有用户"), "空列表有提示（不是一片空白）");
+
+// 另外两个板块同样拦 —— 投递目标 v2 起也按用户隔离
+for (const seg of ["resumes", "targets"]) {
+  await page.goto(`${BASE}/app/dashboard/${seg}`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(1500);
+  step(await picker(page).isVisible().catch(() => false), `全新安装 → ${seg} 页同样先弹用户选择框`);
+}
+await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
+await page.waitForTimeout(1200);
 
 // ════════════════ 2. 新建 → 进入 → 刷新记住 ════════════════
 await page.getByRole("button", { name: "新建用户" }).first().click();
@@ -116,10 +127,11 @@ const two = await readState(page);
 step(two.ids.length === 2, `两个用户各存一份（${two.names.join(" / ")}）`);
 step(two.names[two.ids.indexOf(two.currentUserId!)] === "甲同学", "currentUserId 指向甲同学");
 
-// ════════════════ 4. 投递目标不设门禁 ════════════════
+// ════════════════ 4. 投递目标同样设门禁 ════════════════
+// v2 起岗位本身按用户隔离（JD 跟随用户走），没有当前用户时这个页面无主
 await page.goto(`${BASE}/app/dashboard/targets`, { waitUntil: "networkidle" });
 await page.waitForTimeout(1500);
-step(!(await picker(page).isVisible().catch(() => false)), "投递目标页不弹用户框（岗位全局共享）");
+step(!(await picker(page).isVisible().catch(() => false)), "投递目标页：有当前用户时直接进");
 step((await chip(page).count()) > 0, "投递目标页也保留切换入口");
 
 // ════════════════ 4b. 简历也按用户隔离 ════════════════
@@ -209,9 +221,9 @@ const buckets = await page.evaluate((aId) => {
 step(buckets.aCount === 1, `切走之后甲的简历仍在自己桶里，没被动过（${buckets.aCount} 份）`);
 step(buckets.total === 1, `乙没有简历 → 不产生空桶（桶数 ${buckets.total}）`);
 
-// ════════════════ 4c. 投递目标：岗位共享，分析各人一份 ════════════════
-// 给甲种一条带分析的岗位，切到乙应该看不到那份分析。
-// 注意先把当前用户切回甲 —— 上一步结束时停在乙，直接种会种到乙名下。
+// ════════════════ 4c. 投递目标：岗位本身按用户隔离 ════════════════
+// 给甲种一条带分析的岗位，切到乙应该**连岗位都看不到** —— v1 曾经是
+// 「岗位全局共享、只有分析按人分」，v2 把岗位本身也划给了用户。
 await page.goto(`${BASE}/app/dashboard/targets`, { waitUntil: "networkidle" });
 await page.waitForTimeout(1500);
 await switchTo(page, "甲同学");
@@ -221,44 +233,104 @@ const targetSeed = await page.evaluate(() => {
   const NOW = new Date().toISOString();
   const uid = JSON.parse(localStorage.getItem("career-profile-storage")!).state.currentUserId;
   localStorage.setItem("job-target-storage", JSON.stringify({
-    version: 1,
-    state: { targets: { t1: {
-      id: "t1", company: "共享岗位", position: "前端", jdRaw: "任职要求：\n1. 三年经验",
-      note: "", cachesByUser: {},
-      analysesByUser: { [uid]: {
+    version: 2,
+    state: { targetsByUser: { [uid]: { t1: {
+      id: "t1", company: "专属岗位", position: "前端", jdRaw: "任职要求：\n1. 三年经验",
+      note: "", analysisCache: null,
+      matchAnalysis: {
         items: {}, rankedIds: [], topN: 5,
         requirements: [{ id: "r1", text: "三年经验", keys: ["经验"], kind: "must",
                          status: "missing", entityIds: [], sourceQuote: "三年经验" }],
         summary: { recommendedCount: 0, coverage: { covered: [], missing: ["经验"], weak: [] }, advice: "x" },
         modelId: "e2e", promptVersion: "v5", analyzedAt: NOW,
-      } },
+      },
       createdAt: NOW, updatedAt: NOW,
-    } } },
+    } } } },
   }));
   return uid;
 });
 await page.reload({ waitUntil: "networkidle" });
 await page.waitForTimeout(1800);
-await page.getByText("共享岗位", { exact: false }).first().click();
+await page.getByText("专属岗位", { exact: false }).first().click();
 await page.waitForTimeout(1500);
 let body = await page.locator("body").innerText();
-step(/不建议投|差距/.test(body), "甲：能看到自己那份分析（等级已渲染）");
+step(/不建议投|差距/.test(body), "甲：能看到自己的岗位与分析（等级已渲染）");
 
-// 切到乙 —— 同一个岗位，但分析是甲的
+// 切到乙 —— 同一个岗位对乙根本不存在
 await switchTo(page, "乙同学");
-await page.getByText("共享岗位", { exact: false }).first().click();
 await page.waitForTimeout(1500);
 body = await page.locator("body").innerText();
-step(body.includes("共享岗位"), "乙：岗位本身仍然可见（岗位全局共享）");
-step(!/不建议投|差距较大/.test(body), "乙：看不到甲的分析结论 —— 这正是「分析按岗位×用户」要防的误导");
+step(!body.includes("专属岗位"), "乙：看不到甲的岗位 —— 岗位本身也按用户隔离");
+step(!/不建议投|差距较大/.test(body), "乙：看不到甲的分析结论");
 step(!body.includes("r1"), "乙：不会渲染出指向别人经历的裸要求项");
 
-const analysisBuckets = await page.evaluate((aId) => {
-  const t = JSON.parse(localStorage.getItem("job-target-storage")!).state.targets.t1;
-  return { users: Object.keys(t.analysesByUser), aId };
+const targetBuckets = await page.evaluate((aId) => {
+  const st = JSON.parse(localStorage.getItem("job-target-storage")!).state;
+  return { owners: Object.keys(st.targetsByUser ?? {}), alias: Object.keys(st.targets ?? {}), aId };
 }, targetSeed);
-step(analysisBuckets.users.length === 1 && analysisBuckets.users[0] === analysisBuckets.aId,
-  `分析只挂在甲名下（${analysisBuckets.users.length} 份）`);
+step(targetBuckets.owners.length === 1 && targetBuckets.owners[0] === targetBuckets.aId,
+  `岗位只挂在甲名下（桶 ${targetBuckets.owners.length} 个）`);
+step(!targetBuckets.alias.includes("targets"),
+  `持久化切片不含 targets 别名（keys 应为 targetsByUser，实际 ${targetBuckets.alias.join(",") || "无"})`);
+
+// ════════════════ 4c-2. 老数据迁移：v1（分析按用户索引）→ v2 扇出 ════════════════
+// 盘上已经有一份 v2 时不来这一遭，所以先退回 v1 的 blob 再刷新。
+// 三条岗位分别覆盖扇出的三条分支：归当前用户 / 归别人 / 没人分析过。
+//
+// 注意：种子在 Node 侧拼好再传进去，不在 `page.evaluate` 里定义具名函数 ——
+// tsx 用的 esbuild 开了 keepNames，会给具名箭头函数塞一个 `__name` 调用，
+// 而那个 helper 只在 bundle 里存在，注入到页面里就是 ReferenceError。
+await switchTo(page, "甲同学");
+await page.goto(`${BASE}/app/dashboard/targets`, { waitUntil: "networkidle" });
+await page.waitForTimeout(1500);
+const jiaIdNow = await page.evaluate(
+  () => JSON.parse(localStorage.getItem("career-profile-storage")!).state.currentUserId as string
+);
+const analysisOf = (modelId: string, recommendedCount: number) => ({
+  items: {}, rankedIds: [], topN: 5, requirements: [],
+  summary: { recommendedCount, coverage: { covered: [], missing: [], weak: [] }, advice: "x" },
+  modelId, promptVersion: "v5", analyzedAt: NOW,
+});
+const v1Base = { position: "前端", jdRaw: "任职要求：\n1. 三年经验", note: "", cachesByUser: {}, createdAt: NOW, updatedAt: NOW };
+await page.evaluate(
+  (blob) => localStorage.setItem("job-target-storage", JSON.stringify(blob)),
+  {
+    version: 1,
+    state: {
+      targets: {
+        t1: { id: "t1", company: "甲分析过的岗位", ...v1Base, analysesByUser: { [jiaIdNow]: analysisOf("甲自己的分析", 3) } },
+        t2: { id: "t2", company: "别人分析过的岗位", ...v1Base, analysesByUser: { "someone-else": analysisOf("别人的分析", 9) } },
+        t3: { id: "t3", company: "没人分析过的岗位", ...v1Base, analysesByUser: {} },
+      },
+    },
+  }
+);
+await page.reload({ waitUntil: "networkidle" });
+await page.waitForTimeout(1800);
+const migratedTargets = await page.evaluate(() => {
+  const st = JSON.parse(localStorage.getItem("job-target-storage")!);
+  const uid = JSON.parse(localStorage.getItem("career-profile-storage")!).state.currentUserId;
+  const buckets = st.state.targetsByUser ?? {};
+  return {
+    version: st.version as number,
+    mine: buckets[uid]?.t1 ?? null,
+    mineT2: buckets[uid]?.t2 ?? null,
+    mineT3: buckets[uid]?.t3 ?? null,
+    theirT2: buckets["someone-else"]?.t2 ?? null,
+    legacyT3: buckets["legacy-default"]?.t3 ?? null,
+  };
+});
+step(migratedTargets.version === 2, `v1 的 blob 被迁到 version 2（实际 ${migratedTargets.version}）`);
+step(migratedTargets.mine?.matchAnalysis?.modelId === "甲自己的分析",
+  "甲分析过的那条 → 副本归甲，且带着甲自己的分析");
+step(migratedTargets.mine?.matchAnalysis?.summary?.recommendedCount === 3,
+  "带过来的是甲自己那份（推荐 3 条），不是别人的（9 条）");
+step(Boolean(migratedTargets.mineT2) === false && Boolean(migratedTargets.mineT3) === false,
+  "甲名下只有自己分析过的那条，别人的与没人分析过的都不进来");
+step(migratedTargets.theirT2?.matchAnalysis?.modelId === "别人的分析",
+  "别人分析过的那条另起一份副本，挂在别人名下");
+step(migratedTargets.legacyT3?.matchAnalysis === null,
+  "没人分析过的那条归到 LEGACY_USER_ID，分析槽为空");
 
 // ════════════════ 4d. 删除用户：二次确认 + 连带清理 ════════════════
 await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
@@ -302,18 +374,18 @@ step(after.currentUserId === jiaId, "当前用户仍是甲（删的不是他）"
 
 const survivors = await page.evaluate((ids) => {
   const r = JSON.parse(localStorage.getItem("resume-storage") ?? "null")?.state ?? {};
-  const t = JSON.parse(localStorage.getItem("job-target-storage") ?? "null")?.state?.targets ?? {};
+  const t = JSON.parse(localStorage.getItem("job-target-storage") ?? "null")?.state ?? {};
   return {
     resumeBuckets: Object.keys(r.byUser ?? {}),
-    analysisOwners: Object.values(t).flatMap((x: any) => Object.keys(x.analysesByUser ?? {})),
+    analysisOwners: Object.keys(t.targetsByUser ?? {}),
     jia: ids.jia,
     yi: ids.yi,
   };
 }, { jia: jiaId, yi: yiId });
 step(!survivors.resumeBuckets.includes(survivors.yi), "乙名下的简历桶被清掉");
-step(!survivors.analysisOwners.includes(survivors.yi), "乙在各岗位上的分析被清掉");
+step(!survivors.analysisOwners.includes(survivors.yi), "乙名下的岗位桶被清掉");
 step(survivors.resumeBuckets.includes(survivors.jia), "甲的简历桶完好无损");
-step(survivors.analysisOwners.includes(survivors.jia), "甲的分析完好无损");
+step(survivors.analysisOwners.includes(survivors.jia), "甲名下的岗位桶完好无损");
 
 // 删掉当前用户 → 回到选择弹窗
 await page.locator('[role="dialog"] [role="button"]').filter({ hasText: "甲同学" })

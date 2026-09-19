@@ -35,9 +35,6 @@ const looksLikeProfile = (v: unknown): v is CareerProfile =>
 const looksLikeResume = (v: unknown): v is ResumeData =>
   isRecord(v) && typeof v.id === "string";
 
-const looksLikeTarget = (v: unknown): v is JobTarget =>
-  isRecord(v) && typeof v.id === "string";
-
 // ─────────────────────────── 职业档案 ───────────────────────────
 
 export interface ProfilePersisted {
@@ -168,26 +165,31 @@ export const normalizeResumeState = (persisted: unknown): ResumePersisted => {
 // ─────────────────────────── 投递目标 ───────────────────────────
 
 /**
- * 岗位的**分析**按用户分开存，岗位本身（JD / 公司 / 职位）保持全局共享 ——
- * 多个用户可以投同一个岗位，但「这条要求由哪几段经历支撑」只对某一个人成立。
+ * 岗位的**归属**按用户分，岗位本身（JD / 公司 / 职位）也跟着走。
  *
- * 字段留在 `JobTarget` 上（而不是提到 store 根），因为 store 的 `targets` 已经
- * 按 targetId 索引了，提到根上会丢掉 target 这一维。
+ * 演变史：v0 是全站一个全局 `targets`、每条岗位一个分析槽；v1 改成了
+ * 「岗位全局共享、只有分析按人分」（`analysesByUser`）；v2 又把岗位本身也
+ * 按用户隔离，于是分析塌回单槽。**v2 是简化不是又加一层** —— v1 那层
+ * `analysesByUser` 存在的唯一理由就是「岗位共享但分析不共享」。
  */
-export interface TargetScopedAnalysis {
+export const TARGET_SCOPE_VERSION = 2;
+
+/** v1 的岗位形状：分析按 userId 索引。**只存在于迁移路径上** */
+type V1Target = Omit<JobTarget, "matchAnalysis" | "analysisCache"> & {
   analysesByUser: Record<string, MatchAnalysis>;
   cachesByUser: Record<string, AnalysisCache>;
+};
+
+export interface TargetPersistedV2 {
+  targetsByUser: Record<string, Record<string, JobTarget>>;
 }
 
 /**
- * 迁移与读写辅助统一用这个别名。
- *
- * 它曾经是一个交叉类型（`JobTarget & TargetScopedAnalysis`）—— 那时 `JobTarget`
- * 上还留着旧的单槽字段、读取方没切完，需要一个过渡缝。现在 `JobTarget` 本身就
- * 声明了 `analysesByUser` / `cachesByUser`，缝已经收掉，保留别名只是让上面那些
- * 签名不必逐个改。
+ * 只认最低限度的骨架（有个字符串 id）。字段级的补全交给下面两个收敛函数
+ * —— 它们必须自己站得住，因为手改过的 localStorage 会绕过 migrate。
  */
-export type ScopedJobTarget = JobTarget;
+const hasTargetId = (v: unknown): v is Record<string, unknown> & { id: string } =>
+  isRecord(v) && typeof v.id === "string";
 
 const looksLikeAnalysis = (v: unknown): v is MatchAnalysis =>
   isRecord(v) && isRecord(v.items) && Array.isArray(v.rankedIds) && isRecord(v.summary);
@@ -196,143 +198,70 @@ const looksLikeCache = (v: unknown): v is AnalysisCache =>
   isRecord(v) && typeof v.contentFingerprint === "string";
 
 /**
- * migrate 的返回值必须是**持久化切片的形状**，即 `{ targets }`，不是 targets 本身
- * —— persist 会把它直接交给 `merge` 的 `persistedState`，而 `partialize` 写出去的
- * 就是 `{ targets }`。返回裸 map 会让每个岗位凭空消失（而且不报错）。
- */
-export const migrateTargetState = (
-  persisted: unknown,
-  version: number
-): { targets: Record<string, ScopedJobTarget> } => {
-  if (version !== 0) {
-    throw new Error(`[userScope] 未知的 job target 持久化版本：${version}`);
-  }
-  return { targets: rewriteTargets(persisted) };
-};
-
-export const normalizeTargetState = (persisted: unknown): Record<string, ScopedJobTarget> => {
-  if (isRecord(persisted) && isRecord(persisted.targets)) {
-    // 已迁移过：逐条确认带上了 per-user 的分析字段
-    const out: Record<string, ScopedJobTarget> = {};
-    for (const [id, value] of Object.entries(persisted.targets)) {
-      if (looksLikeTarget(value)) out[id] = withScopedAnalysis(value);
-    }
-    return out;
-  }
-  return rewriteTargets(persisted);
-};
-
-/** 旧目标：单个 `matchAnalysis` / `analysisCache` → 归到 LEGACY_USER_ID 名下 */
-const rewriteTargets = (persisted: unknown): Record<string, ScopedJobTarget> => {
-  const raw = isRecord(persisted) && isRecord(persisted.targets) ? persisted.targets : {};
-  const out: Record<string, ScopedJobTarget> = {};
-  for (const [id, value] of Object.entries(raw)) {
-    if (looksLikeTarget(value)) out[id] = withScopedAnalysis(value);
-  }
-  return out;
-};
-
-/**
- * 把一条目标上的分析收敛成 per-user 形状。
+ * 把一条目标收敛成 v1 形状（分析按用户索引）。
  *
- * 幂等：已经有 `analysesByUser` 时原样返回（保留新形状），否则把旧的单槽
- * 挪进 `LEGACY_USER_ID`。不认识的输入回落到「这个岗位还没分析过」。
+ * 输入可能是 v0（单槽 `matchAnalysis` / `analysisCache`）或已经是 v1
+ * （`analysesByUser` / `cachesByUser`）—— 两种都在这里抹平，调用方不必先判版本。
+ * 幂等：已经是 v1 时原样保留；认不出的槽回落成空表（不是 undefined）。
  */
-const withScopedAnalysis = (target: JobTarget): ScopedJobTarget => {
-  const loose = target as unknown as Record<string, unknown>;
-
-  if (isRecord(loose.analysesByUser) || isRecord(loose.cachesByUser)) {
-    const analysesByUser: Record<string, MatchAnalysis> = {};
-    const cachesByUser: Record<string, AnalysisCache> = {};
-    if (isRecord(loose.analysesByUser)) {
-      for (const [uid, a] of Object.entries(loose.analysesByUser)) {
-        if (looksLikeAnalysis(a)) analysesByUser[uid] = a;
-      }
-    }
-    if (isRecord(loose.cachesByUser)) {
-      for (const [uid, c] of Object.entries(loose.cachesByUser)) {
-        if (looksLikeCache(c)) cachesByUser[uid] = c;
-      }
-    }
-    return { ...target, analysesByUser, cachesByUser };
-  }
+const asV1Target = (raw: Record<string, unknown>): V1Target => {
+  const {
+    analysesByUser: _a,
+    cachesByUser: _c,
+    matchAnalysis: _m,
+    analysisCache: _k,
+    ...rest
+  } = raw;
 
   const analysesByUser: Record<string, MatchAnalysis> = {};
   const cachesByUser: Record<string, AnalysisCache> = {};
-  if (looksLikeAnalysis(loose.matchAnalysis)) {
-    analysesByUser[LEGACY_USER_ID] = loose.matchAnalysis;
+
+  if (isRecord(raw.analysesByUser)) {
+    for (const [uid, a] of Object.entries(raw.analysesByUser)) {
+      if (looksLikeAnalysis(a)) analysesByUser[uid] = a;
+    }
+  } else if (looksLikeAnalysis(raw.matchAnalysis)) {
+    // v0 的单槽没有归属信息，只能归到迁移前那个隐式的「我」名下
+    analysesByUser[LEGACY_USER_ID] = raw.matchAnalysis;
   }
-  if (looksLikeCache(loose.analysisCache)) {
-    cachesByUser[LEGACY_USER_ID] = loose.analysisCache;
+
+  if (isRecord(raw.cachesByUser)) {
+    for (const [uid, c] of Object.entries(raw.cachesByUser)) {
+      if (looksLikeCache(c)) cachesByUser[uid] = c;
+    }
+  } else if (looksLikeCache(raw.analysisCache)) {
+    cachesByUser[LEGACY_USER_ID] = raw.analysisCache;
   }
-  return { ...target, analysesByUser, cachesByUser };
+
+  return {
+    ...(rest as unknown as Omit<JobTarget, "matchAnalysis" | "analysisCache">),
+    analysesByUser,
+    cachesByUser,
+  };
 };
 
-/** 读一条岗位对某个用户的当前分析（没有就是 null） */
-export const analysisFor = (
-  target: ScopedJobTarget | null | undefined,
-  userId: string | null
-): MatchAnalysis | null => (target && userId ? target.analysesByUser[userId] ?? null : null);
-
-/** 读一条岗位对某个用户的当前缓存 */
-export const cacheFor = (
-  target: ScopedJobTarget | null | undefined,
-  userId: string | null
-): AnalysisCache | null => (target && userId ? target.cachesByUser[userId] ?? null : null);
-
-/** 写一条岗位对某个用户的分析，返回新的 target（不就地改） */
-export const withAnalysisFor = (
-  target: ScopedJobTarget,
-  userId: string,
-  analysis: MatchAnalysis,
-  cache: AnalysisCache
-): ScopedJobTarget => ({
-  ...target,
-  analysesByUser: { ...target.analysesByUser, [userId]: analysis },
-  cachesByUser: { ...target.cachesByUser, [userId]: cache },
-});
-
-/** 删掉某个用户时，连带清掉他在每条岗位上留下的分析 */
-export const withoutUserAnalyses = (target: ScopedJobTarget, userId: string): ScopedJobTarget => {
-  const { [userId]: _a, ...analysesByUser } = target.analysesByUser;
-  const { [userId]: _c, ...cachesByUser } = target.cachesByUser;
-  return { ...target, analysesByUser, cachesByUser };
+/**
+ * 把一条 v2 的目标收敛干净：认不出的分析槽回落成 null，
+ * 顺带丢掉手改过的 blob 里可能残留的 v1 字段（那时两个槽就不该同时存在）。
+ */
+const asV2Target = (raw: Record<string, unknown>): JobTarget => {
+  const { analysesByUser: _a, cachesByUser: _c, ...rest } = raw;
+  return {
+    ...(rest as unknown as JobTarget),
+    matchAnalysis: looksLikeAnalysis(raw.matchAnalysis) ? raw.matchAnalysis : null,
+    analysisCache: looksLikeCache(raw.analysisCache) ? raw.analysisCache : null,
+  };
 };
 
-// ─────────────────────── 投递目标 v2：岗位本身也按用户隔离 ───────────────────────
-
-/**
- * v2 起，**岗位本身按用户隔离**（决策见 `plan/task_plan.md`）。
- *
- * v1 的模型是「岗位全局共享，只有分析按人分」（`analysesByUser`）。改成岗位也
- * 跟随用户之后，每个岗位副本只属于一个人、只需要一个分析槽 —— 于是
- * `analysesByUser` / `cachesByUser` 塌回 `matchAnalysis` / `analysisCache`。
- *
- * 这是**简化**而不是又加一层：v1 那层 `analysesByUser` 存在的唯一理由就是
- * 「岗位共享但分析不共享」，前提没了，层也就该没了。
- */
-export const TARGET_SCOPE_VERSION = 2;
-
-/** v2 的单个岗位：一个分析槽，因为这份岗位只属于一个人 */
-export interface TargetSingleSlot {
-  matchAnalysis: MatchAnalysis | null;
-  analysisCache: AnalysisCache | null;
-}
-
-/**
- * v2 的岗位形状。
- *
- * 用 `Omit` 排掉 v1 的 `analysesByUser` / `cachesByUser`：`JobTarget` 接口上
- * 目前仍声明着那两个字段（读取方还没全切到 v2），而 v2 的副本一个分析槽就够。
- * 等第 4 步把 `types/jobTarget.ts` 改成单槽之后，这个交叉类型即可收敛成
- * `JobTarget` 本身 —— 与上一轮 `ScopedJobTarget` 同样的过渡手法。
- */
-export type ScopedTargetV2 = Omit<JobTarget, "analysesByUser" | "cachesByUser"> &
-  TargetSingleSlot;
-
-export interface TargetPersistedV2 {
-  targetsByUser: Record<string, Record<string, ScopedTargetV2>>;
-}
+/** v0 / v1 的 blob → v1 的裸 map（不套壳，套壳由调用方决定） */
+const toV1Targets = (persisted: unknown): Record<string, V1Target> => {
+  const raw = isRecord(persisted) && isRecord(persisted.targets) ? persisted.targets : {};
+  const out: Record<string, V1Target> = {};
+  for (const [id, value] of Object.entries(raw)) {
+    if (hasTargetId(value)) out[id] = asV1Target(value);
+  }
+  return out;
+};
 
 /**
  * v1 → v2 是**扇出**，不是改名：v1 里一条岗位可能挂着多个用户的分析，
@@ -343,10 +272,7 @@ export interface TargetPersistedV2 {
  * 同时接受 v0（从未迁移过）与 v1。抛错规则与其它 migrate 一致：遇未知版本抛错，
  * 而不是返回空结构 —— 抛错不写盘，返回空结构会把空数据当成迁移结果提交。
  */
-export const migrateTargetStateV2 = (
-  persisted: unknown,
-  version: number
-): TargetPersistedV2 => {
+export const migrateTargetStateV2 = (persisted: unknown, version: number): TargetPersistedV2 => {
   if (version > TARGET_SCOPE_VERSION) {
     throw new Error(`[userScope] 未知的 job target 持久化版本：${version}`);
   }
@@ -355,21 +281,18 @@ export const migrateTargetStateV2 = (
   // 版本一致时 persist 根本不调 migrate；这里是防手改 storage 的兜底）
   if (version >= TARGET_SCOPE_VERSION) return normalizeTargetStateV2(persisted);
 
-  // 其余统一成 v1 的形状（Record<targetId, ScopedJobTarget>）：v0 先过一遍 v0→v1
-  const v1: Record<string, ScopedJobTarget> =
-    version === 0
-      ? migrateTargetState(persisted, 0).targets
-      : normalizeTargetState(persisted);
+  return { targetsByUser: fanOut(toV1Targets(persisted)) };
+};
 
-  const targetsByUser: Record<string, Record<string, ScopedTargetV2>> = {};
-  const put = (userId: string, id: string, target: ScopedTargetV2) => {
-    if (!targetsByUser[userId]) targetsByUser[userId] = {};
-    targetsByUser[userId][id] = target;
+const fanOut = (v1: Record<string, V1Target>): Record<string, Record<string, JobTarget>> => {
+  const targetsByUser: Record<string, Record<string, JobTarget>> = {};
+  const put = (userId: string, id: string, target: JobTarget) => {
+    (targetsByUser[userId] ||= {})[id] = target;
   };
 
   for (const [id, target] of Object.entries(v1)) {
     const { analysesByUser, cachesByUser, ...rest } = target;
-    const owners = Object.keys(analysesByUser ?? {});
+    const owners = Object.keys(analysesByUser);
 
     if (owners.length === 0) {
       put(LEGACY_USER_ID, id, { ...rest, matchAnalysis: null, analysisCache: null });
@@ -379,35 +302,29 @@ export const migrateTargetStateV2 = (
       put(owner, id, {
         ...rest,
         matchAnalysis: analysesByUser[owner] ?? null,
-        analysisCache: cachesByUser?.[owner] ?? null,
+        analysisCache: cachesByUser[owner] ?? null,
       });
     }
   }
-
-  return { targetsByUser };
+  return targetsByUser;
 };
 
-/** v2 的 merge 期归一化：版本字段缺失的 blob 根本不进 migrate，会落到这里 */
+/**
+ * v2 的 merge 期归一化：版本字段缺失的 blob 根本不进 migrate，会落到这里。
+ *
+ * 判据是 `typeof v.version === "number"`，所以「手改过 / 别的工具写出」的
+ * blob 绕过 migrate 是常态 —— 这一层必须自己站得住。
+ */
 export const normalizeTargetStateV2 = (persisted: unknown): TargetPersistedV2 => {
   if (!isRecord(persisted)) return { targetsByUser: {} };
 
   if (isRecord(persisted.targetsByUser)) {
-    const targetsByUser: Record<string, Record<string, ScopedTargetV2>> = {};
+    const targetsByUser: Record<string, Record<string, JobTarget>> = {};
     for (const [userId, bucket] of Object.entries(persisted.targetsByUser)) {
       if (!isRecord(bucket)) continue;
-      const clean: Record<string, ScopedTargetV2> = {};
-      for (const [id, target] of Object.entries(bucket)) {
-        if (looksLikeTarget(target)) {
-          clean[id] = {
-            ...(target as JobTarget),
-            matchAnalysis: looksLikeAnalysis((target as never as TargetSingleSlot).matchAnalysis)
-              ? (target as never as TargetSingleSlot).matchAnalysis
-              : null,
-            analysisCache: looksLikeCache((target as never as TargetSingleSlot).analysisCache)
-              ? (target as never as TargetSingleSlot).analysisCache
-              : null,
-          };
-        }
+      const clean: Record<string, JobTarget> = {};
+      for (const [id, raw] of Object.entries(bucket)) {
+        if (hasTargetId(raw)) clean[id] = asV2Target(raw);
       }
       targetsByUser[userId] = clean;
     }
@@ -418,8 +335,37 @@ export const normalizeTargetStateV2 = (persisted: unknown): TargetPersistedV2 =>
   return migrateTargetStateV2(persisted, 0);
 };
 
-/** 读某个用户名下的全部岗位 */
+/**
+ * 把**备份文件里**的一条目标收敛成 v2 形状，归属取指定的那个用户。
+ *
+ * 备份文件不带形状标记，可能来自三个时代：
+ * - v0：单槽 `matchAnalysis` / `analysisCache`
+ * - v1：`analysesByUser` / `cachesByUser`
+ * - v2：单槽（与 v0 同名，但已经是收敛过的）
+ *
+ * 三种都过一遍 `asV1Target` 抹平，再**只取该用户那一份**。v1 那条路上如果
+ * 这个用户没有分析，导进来就是「还没分析过」，而不是把别人的结论顶上来。
+ * 认不出形状的返回 null，由调用方丢弃。
+ */
+export const normalizeImportedTarget = (raw: unknown, userId: string): JobTarget | null => {
+  if (!hasTargetId(raw)) return null;
+
+  const rawRecord = raw as Record<string, unknown>;
+  // v1 才有按用户索引的那层；没有它就说明分析是单槽的（v0 或 v2），
+  // 而 `asV1Target` 会把单槽归到 LEGACY_USER_ID 名下
+  const perUser = isRecord(rawRecord.analysesByUser) || isRecord(rawRecord.cachesByUser);
+  const { analysesByUser, cachesByUser, ...rest } = asV1Target(rawRecord);
+  const owner = perUser ? userId : LEGACY_USER_ID;
+
+  return {
+    ...rest,
+    matchAnalysis: analysesByUser[owner] ?? null,
+    analysisCache: cachesByUser[owner] ?? null,
+  };
+};
+
+/** 读某个用户名下的全部岗位；没选用户时给空表 */
 export const targetsOf = (
   persisted: TargetPersistedV2,
   userId: string | null | undefined
-): Record<string, ScopedTargetV2> => (userId ? persisted.targetsByUser[userId] ?? {} : {});
+): Record<string, JobTarget> => (userId ? persisted.targetsByUser[userId] ?? {} : {});

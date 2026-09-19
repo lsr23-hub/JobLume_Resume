@@ -1,19 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   LEGACY_USER_ID,
-  analysisFor,
-  cacheFor,
   migrateProfileState,
   migrateResumeState,
-  migrateTargetState,
   migrateTargetStateV2,
+  normalizeImportedTarget,
   normalizeProfileState,
   normalizeResumeState,
-  normalizeTargetState,
   normalizeTargetStateV2,
   targetsOf,
-  withAnalysisFor,
-  withoutUserAnalyses,
 } from "./userScope";
 import type { CareerProfile } from "@/types/profile";
 import type { ResumeData } from "@/types/resume";
@@ -120,90 +115,6 @@ describe("简历迁移 0 → 1", () => {
   });
 });
 
-describe("投递目标迁移 0 → 1", () => {
-  it("单槽分析挪进 LEGACY_USER_ID 名下，岗位本身不动", () => {
-    const out = migrateTargetState(
-      { targets: { t1: target("t1", { matchAnalysis: analysis("m1"), analysisCache: cache("fp1") }) } },
-      0
-    ).targets;
-    expect(out.t1.company).toBe("示例");
-    expect(out.t1.analysesByUser[LEGACY_USER_ID].modelId).toBe("m1");
-    expect(out.t1.cachesByUser[LEGACY_USER_ID].contentFingerprint).toBe("fp1");
-  });
-
-  it("没分析过的岗位得到两个空表，不是 undefined", () => {
-    const out = migrateTargetState({ targets: { t1: target("t1") } }, 0).targets;
-    expect(out.t1.analysesByUser).toEqual({});
-    expect(out.t1.cachesByUser).toEqual({});
-  });
-
-  it("幂等：已迁移过的目标重复跑不丢分析", () => {
-    const once = migrateTargetState(
-      { targets: { t1: target("t1", { matchAnalysis: analysis("m1") }) } },
-      0
-    ).targets;
-    const twice = normalizeTargetState({ targets: once });
-    expect(twice.t1.analysesByUser[LEGACY_USER_ID].modelId).toBe("m1");
-  });
-
-  it("migrate 返回的是切片形状 { targets }，不是裸 map —— 返回裸 map 会让岗位全消失", () => {
-    const out = migrateTargetState({ targets: { t1: target("t1") } }, 0);
-    expect(Object.keys(out)).toEqual(["targets"]);
-    expect(out.targets.t1).toBeTruthy();
-  });
-
-  it("形状不认识的输入回落到空表而不是抛错", () => {
-    expect(normalizeTargetState({ targets: { t1: { id: "t1" } } }).t1.analysesByUser).toEqual({});
-    expect(normalizeTargetState("乱七八糟")).toEqual({});
-  });
-});
-
-describe("按用户读写分析", () => {
-  const base = migrateTargetState({ targets: { t1: target("t1") } }, 0).targets.t1;
-
-  it("analysisFor / cacheFor 取的是指定用户那一份", () => {
-    const withA = withAnalysisFor(base, "ua", analysis("ma"), cache("fa"));
-    expect(analysisFor(withA, "ua")?.modelId).toBe("ma");
-    expect(analysisFor(withA, "ub")).toBeNull();
-    expect(cacheFor(withA, "ua")?.contentFingerprint).toBe("fa");
-  });
-
-  it("未选用户时返回 null，不误读别人的分析", () => {
-    const withA = withAnalysisFor(base, "ua", analysis("ma"), cache("fa"));
-    expect(analysisFor(withA, null)).toBeNull();
-    expect(cacheFor(undefined, "ua")).toBeNull();
-  });
-
-  it("两个用户各存一份，互不覆盖 —— 这正是决策 2 要的效果", () => {
-    const both = withAnalysisFor(
-      withAnalysisFor(base, "ua", analysis("ma"), cache("fa")),
-      "ub",
-      analysis("mb"),
-      cache("fb")
-    );
-    expect(analysisFor(both, "ua")?.modelId).toBe("ma");
-    expect(analysisFor(both, "ub")?.modelId).toBe("mb");
-  });
-
-  it("写用户不就地改原对象", () => {
-    const next = withAnalysisFor(base, "ua", analysis("ma"), cache("fa"));
-    expect(base.analysesByUser).toEqual({});
-    expect(next).not.toBe(base);
-  });
-
-  it("删用户时连带清掉他在每一条岗位上的分析", () => {
-    const both = withAnalysisFor(
-      withAnalysisFor(base, "ua", analysis("ma"), cache("fa")),
-      "ub",
-      analysis("mb"),
-      cache("fb")
-    );
-    const after = withoutUserAnalyses(both, "ua");
-    expect(analysisFor(after, "ua")).toBeNull();
-    expect(analysisFor(after, "ub")?.modelId).toBe("mb");
-  });
-});
-
 describe("投递目标迁移 v1 → v2：岗位本身按用户隔离（扇出）", () => {
   const v1Targets = (over: Record<string, unknown> = {}) => ({
     targets: {
@@ -275,5 +186,63 @@ describe("投递目标迁移 v1 → v2：岗位本身按用户隔离（扇出）
     expect(Object.keys(targetsOf(persisted, "ua"))).toEqual(["t1"]);
     expect(targetsOf(persisted, "nobody")).toEqual({});
     expect(targetsOf(persisted, null)).toEqual({});
+  });
+});
+
+describe("归一化：坏输入不抛错", () => {
+  it("migrate 返回的是**切片形状** { targetsByUser }，不是裸 map —— 返回裸 map 会让岗位全消失", () => {
+    const out = migrateTargetStateV2({ targets: { t1: target("t1") } }, 0);
+    expect(Object.keys(out)).toEqual(["targetsByUser"]);
+  });
+
+  it("形状不认识的输入回落到空表而不是抛错", () => {
+    expect(normalizeTargetStateV2({ targetsByUser: { ua: { bad: 42 } } }).targetsByUser.ua).toEqual({});
+    expect(normalizeTargetStateV2("乱七八糟")).toEqual({ targetsByUser: {} });
+    expect(migrateTargetStateV2({ targets: { t1: 42 } }, 0).targetsByUser).toEqual({});
+  });
+
+  it("targetsByUser 里混进 v1 的残余字段也会被清掉，只留单槽", () => {
+    const out = normalizeTargetStateV2({
+      targetsByUser: {
+        ua: { t1: { ...target("t1"), analysesByUser: { ub: analysis("别人的") }, matchAnalysis: analysis("ma") } },
+      },
+    });
+    const got = out.targetsByUser.ua.t1;
+    expect("analysesByUser" in got).toBe(false);
+    expect(got.matchAnalysis?.modelId).toBe("ma");
+  });
+});
+
+describe("备份文件里的目标：三个时代的形状都要能导进来", () => {
+  it("v1（分析按用户索引）→ 只取指定用户那一份", () => {
+    const raw = {
+      ...target("t1"),
+      analysesByUser: { ua: analysis("ma"), ub: analysis("mb") },
+      cachesByUser: { ua: cache("fa"), ub: cache("fb") },
+    };
+    expect(normalizeImportedTarget(raw, "ua")?.matchAnalysis?.modelId).toBe("ma");
+    expect(normalizeImportedTarget(raw, "ua")?.analysisCache?.contentFingerprint).toBe("fa");
+    // 该用户没有分析时导进来就是「还没分析过」，不顶别人的结论上来
+    expect(normalizeImportedTarget(raw, "uc")?.matchAnalysis).toBeNull();
+  });
+
+  it("v0（单槽）→ 归属给导入的那个用户", () => {
+    const raw = target("t1", { matchAnalysis: analysis("m0"), analysisCache: cache("f0") });
+    expect(normalizeImportedTarget(raw, "ua")?.matchAnalysis?.modelId).toBe("m0");
+    expect(normalizeImportedTarget(raw, "ua")?.analysisCache?.contentFingerprint).toBe("f0");
+  });
+
+  it("v2（单槽）→ 原样，且不留 v1 字段", () => {
+    const raw = target("t1", { matchAnalysis: analysis("m2"), analysisCache: null });
+    const got = normalizeImportedTarget(raw, "ua")!;
+    expect(got.matchAnalysis?.modelId).toBe("m2");
+    expect(got.analysisCache).toBeNull();
+    expect("analysesByUser" in got).toBe(false);
+  });
+
+  it("认不出形状的返回 null，而不是造一条残废岗位", () => {
+    expect(normalizeImportedTarget({ company: "没有 id" }, "ua")).toBeNull();
+    expect(normalizeImportedTarget("乱七八糟", "ua")).toBeNull();
+    expect(normalizeImportedTarget(null, "ua")).toBeNull();
   });
 });

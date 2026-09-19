@@ -23,10 +23,10 @@ export interface GenerateResumeInput {
   target?: JobTarget | null;
 
   /**
-   * **当前用户**在这条岗位上的分析结果（岗位专用简历必传）。
+   * 这条岗位上的分析结果（岗位专用简历必传）。
    *
-   * 为什么要单独传：分析按「岗位 × 用户」存，而本函数是纯函数、不该去问
-   * 「现在是谁」。调用方用 `analysisFor(target, currentUserId)` 取好再传进来。
+   * 为什么要单独传：本函数是纯函数，不该去读 store。岗位 v2 起自带它那一份
+   * 分析，调用方 `target?.matchAnalysis ?? null` 取好再传进来。
    */
   targetAnalysis?: MatchAnalysis | null;
 
