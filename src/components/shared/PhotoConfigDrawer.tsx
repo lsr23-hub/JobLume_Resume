@@ -400,19 +400,6 @@ const PhotoConfigDrawer: React.FC<Props> = ({
             </span>
           </div>
           <div className="p-6 space-y-6">
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium">{t("upload.title")}</h3>
-              <Textarea
-                value={imageUrl}
-                onChange={(e) => handleUrlChange(e.target.value)}
-                placeholder={t("upload.urlPlaceholder")}
-                className={cn(
-                  "h-9",
-                  "dark:bg-neutral-800 dark:border-neutral-700"
-                )}
-              />
-            </div>
-
             <div className="space-y-4">
               <div className="space-y-3">
                 <h3 className="text-sm font-medium">{t("config.size")}</h3>
@@ -469,7 +456,7 @@ const PhotoConfigDrawer: React.FC<Props> = ({
                   {t("config.aspectRatio")}
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {(["1:1", "4:3", "3:4", "16:9", "custom"] as const).map(
+                  {(["1:1", "4:3", "3:4", "16:9"] as const).map(
                     (ratio) => (
                       <Button
                         key={ratio}
@@ -478,17 +465,13 @@ const PhotoConfigDrawer: React.FC<Props> = ({
                           config.aspectRatio === ratio ? "default" : "outline"
                         }
                         onClick={() => {
-                          if (ratio !== "custom") {
-                            const height = Math.round(
-                              config.width * getRatioMultiplier(ratio)
-                            );
-                            handleConfigChange({ aspectRatio: ratio, height });
-                          } else {
-                            handleConfigChange({ aspectRatio: ratio });
-                          }
+                          const height = Math.round(
+                            config.width * getRatioMultiplier(ratio)
+                          );
+                          handleConfigChange({ aspectRatio: ratio, height });
                         }}
                       >
-                        {ratio === "custom" ? t("config.ratios.custom") : ratio}
+                        {ratio}
                       </Button>
                     )
                   )}

@@ -368,7 +368,7 @@
     },
     "basicPanel": {
       "title": "Profile",
-      "avatar": "Avatar",
+      "avatar": "Photo",
       "basicField": "Basic",
       "customField": "Custom",
       "layout": "Align",

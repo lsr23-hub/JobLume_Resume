@@ -57,6 +57,9 @@ export const ResumeWorkbench = () => {
     const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     const jsonFileInputRef = useRef<HTMLInputElement>(null);
+    // ⚠️ PDF 导入的入口已移除（只保留 JSON 导入）。下面这套 pdfjs 抽图逻辑
+    // 现在**没有任何调用方** —— 留着是为了这轮不把改动摊得太大，
+    // 应连同 /api/resume-import 一起清掉。
     const pdfFileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -546,10 +549,8 @@ export const ResumeWorkbench = () => {
                     isImporting={isImporting}
                     onOpenChange={setIsImportDialogOpen}
                     jsonFileInputRef={jsonFileInputRef}
-                    pdfFileInputRef={pdfFileInputRef}
-                    onJsonFileChange={handleJsonFileChange}
-                    onPdfFileChange={handlePdfFileChange}
-                />
+                            onJsonFileChange={handleJsonFileChange}
+                        />
             </motion.div>
         </ScrollArea>
     );

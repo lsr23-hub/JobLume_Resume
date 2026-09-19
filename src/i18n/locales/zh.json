@@ -330,7 +330,7 @@
       "layoutLeft": "居左",
       "layoutCenter": "居中",
       "layoutRight": "居右",
-      "avatar": "头像",
+      "avatar": "照片",
       "customFields": {
         "placeholders": {
           "label": "标签",
@@ -631,8 +631,8 @@
     }
   },
   "photoConfig": {
-    "title": "头像设置",
-    "description": "自定义您的简历头像",
+    "title": "照片设置",
+    "description": "自定义您的简历照片",
     "upload": {
       "title": "在线链接",
       "dragHint": "拖拽或点击上传图片",
@@ -670,7 +670,7 @@
       "reset": "重置",
       "close": "关闭",
       "cancel": "取消",
-      "removePhoto": "删除头像"
+      "removePhoto": "删除照片"
     }
   },
   "previewDock": {
