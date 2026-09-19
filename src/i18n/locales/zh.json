@@ -1009,7 +1009,10 @@
       "replaceHint": "覆盖：清空当前全部数据后写入备份内容，不可撤销。",
       "cancel": "取消",
       "merge": "合并导入",
-      "replace": "覆盖导入"
+      "replace": "覆盖导入",
+      "owner": "这份备份来自「{name}」",
+      "importInto": "将导入到当前用户「{name}」名下",
+      "unnamed": "未命名"
     }
   }
 }

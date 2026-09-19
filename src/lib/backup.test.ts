@@ -1,13 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  BACKUP_APP_ID,
-  buildBackup,
-  estimateBackupSize,
-  mergeById,
-  parseBackup,
-  summarizeBackup,
-  type BackupPayload,
-} from "./backup";
+import { BACKUP_APP_ID, buildBackup, buildProfileArchive, estimateBackupSize, mergeById, ownerSlug, parseBackup, parseProfileArchive, summarizeBackup, type BackupPayload } from "./backup";
 
 const NOW = "2026-01-01T00:00:00.000Z";
 
@@ -140,5 +132,56 @@ describe("summarizeBackup", () => {
 describe("estimateBackupSize", () => {
   it("返回字节数", () => {
     expect(estimateBackupSize(makePayload())).toBeGreaterThan(0);
+  });
+});
+
+describe("备份的归属标记", () => {
+  const profile = {
+    version: 1,
+    basic: { name: "甲同学" },
+    entities: { e1: {} },
+    meta: { createdAt: "t", updatedAt: "t", lastBackupAt: null },
+  } as never;
+
+  it("姓名同时写进文件内容与文件名", () => {
+    const payload = buildBackup({
+      profile,
+      resumes: {},
+      targets: {},
+      now: "2026-09-19T00:00:00.000Z",
+      ownerName: "甲同学",
+    });
+    expect(payload.profileOwner).toBe("甲同学");
+    expect(summarizeBackup(payload).ownerName).toBe("甲同学");
+  });
+
+  it("没传姓名时不写这个字段（老备份就是这种，必须继续能读）", () => {
+    const payload = buildBackup({ profile, resumes: {}, targets: {}, now: "t" });
+    expect(payload.profileOwner).toBeUndefined();
+    expect(summarizeBackup(payload).ownerName).toBeUndefined();
+  });
+
+  it("profile 档案格式同样带上，且能读回来", () => {
+    const archive = buildProfileArchive(profile, "t", "甲同学");
+    expect(archive.profileOwner).toBe("甲同学");
+    const parsed = parseProfileArchive(JSON.stringify(archive));
+    expect(parsed.ok && parsed.ownerName).toBe("甲同学");
+  });
+
+  it("老文件没有 profileOwner 时解析不报错", () => {
+    const parsed = parseProfileArchive(
+      JSON.stringify({ app: BACKUP_APP_ID, kind: "profile", version: 1, exportedAt: "t", profile })
+    );
+    expect(parsed.ok).toBe(true);
+    expect(parsed.ok && parsed.ownerName).toBeUndefined();
+  });
+
+  it("文件名 slug 去掉路径分隔符等非法字符，中文原样保留", () => {
+    expect(ownerSlug("甲同学")).toBe("甲同学");
+    expect(ownerSlug("Zhang San")).toBe("ZhangSan");
+    expect(ownerSlug("a/b:c*d?e")).toBe("abcde");
+    expect(ownerSlug("")).toBe("unnamed");
+    expect(ownerSlug(undefined)).toBe("unnamed");
+    expect(ownerSlug("很长".repeat(20)).length).toBe(16);
   });
 });

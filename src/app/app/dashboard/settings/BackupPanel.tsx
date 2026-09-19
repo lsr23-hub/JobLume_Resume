@@ -8,6 +8,7 @@ import { useJobTargetStore } from "@/store/useJobTargetStore";
 import {
   buildBackup,
   estimateBackupSize,
+  ownerSlug,
   mergeById,
   parseBackup,
   summarizeBackup,
@@ -45,13 +46,19 @@ const BackupPanel = () => {
 
   const handleExport = () => {
     const now = new Date().toISOString();
-    const payload = buildBackup({ profile, resumes, targets, now });
+    const payload = buildBackup({
+      profile,
+      resumes,
+      targets,
+      now,
+      ownerName: profile?.basic.name,
+    });
     const size = estimateBackupSize(payload);
 
     const stamp = now.slice(0, 19).replace(/[:T]/g, "-");
     downloadBlob(
       new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }),
-      `joblume-backup-${stamp}.json`
+      `joblume-backup-${ownerSlug(profile?.basic.name)}-${stamp}.json`
     );
 
     if (profile) {
@@ -166,6 +173,19 @@ const BackupPanel = () => {
               </p>
               <p>{t("confirm.resumes", { count: summary.resumeCount })}</p>
               <p>{t("confirm.targets", { count: summary.targetCount })}</p>
+              {/*
+                多用户下最容易出事的一步：备份文件原本不带归属，在 B 名下导入
+                A 的备份会静默写进 B。这里把「备份是谁的」和「要写进谁名下」
+                并排说出来，用户才有机会发现自己导错了人。
+              */}
+              {summary.ownerName && (
+                <p className="font-medium text-foreground">
+                  {t("confirm.owner", { name: summary.ownerName })}
+                </p>
+              )}
+              <p className="font-medium text-foreground">
+                {t("confirm.importInto", { name: profile?.basic.name?.trim() || t("confirm.unnamed") })}
+              </p>
               {summary.exportedAt && (
                 <p className="text-xs text-muted-foreground">
                   {t("confirm.exportedAt", { time: new Date(summary.exportedAt).toLocaleString() })}

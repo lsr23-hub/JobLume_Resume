@@ -16,6 +16,14 @@ export interface BackupPayload {
   app: typeof BACKUP_APP_ID;
   version: number;
   exportedAt: string;
+  /**
+   * 导出时那个用户的姓名。
+   *
+   * **纯提示信息，不参与任何逻辑。** 存在的理由：多用户下「在 B 名下导入
+   * A 的备份」会静默写进 B，而文件里原本没有任何线索能告诉用户这件事。
+   * 可选（老备份没有），也绝不拿它做校验或匹配 —— 姓名会重复、会改。
+   */
+  profileOwner?: string;
   profile: CareerProfile | null;
   resumes: ResumeData[];
   targets: JobTarget[];
@@ -26,20 +34,36 @@ export interface BuildBackupInput {
   resumes: Record<string, ResumeData>;
   targets: Record<string, JobTarget>;
   now: string;
+  /** 导出时当前用户的姓名，只写进文件供导入侧提示用 */
+  ownerName?: string;
 }
 
 export const buildBackup = (input: BuildBackupInput): BackupPayload => ({
   app: BACKUP_APP_ID,
   version: BACKUP_VERSION,
   exportedAt: input.now,
+  profileOwner: input.ownerName?.trim() || undefined,
   profile: input.profile,
   resumes: Object.values(input.resumes),
   targets: Object.values(input.targets),
 });
 
+/**
+ * 把姓名收拾成能进文件名的样子：去掉路径分隔符等危险字符，限长。
+ * 中文名原样保留（`\p{L}` 覆盖汉字）。
+ */
+export const ownerSlug = (name: string | undefined): string => {
+  // 反向写法（剔除文件名非法字符）而不是正向匹配 \p{L}：后者需要 `u` 标志，
+  // 而本项目的 target 到不了 es6。汉字与字母天然会被保留下来。
+  const cleaned = (name ?? "").replace(/[\\/:*?"<>|\s]+/g, "").slice(0, 16);
+  return cleaned || "unnamed";
+};
+
 /** 备份内容的摘要，用于导入前告知用户将发生什么 */
 export interface BackupSummary {
   hasProfile: boolean;
+  /** 备份是谁导出的（老备份没有）。只用于提示 */
+  ownerName?: string;
   entityCount: number;
   resumeCount: number;
   targetCount: number;
@@ -48,6 +72,7 @@ export interface BackupSummary {
 
 export const summarizeBackup = (payload: BackupPayload): BackupSummary => ({
   hasProfile: payload.profile !== null,
+  ownerName: payload.profileOwner,
   entityCount: Object.keys(payload.profile?.entities ?? {}).length,
   resumeCount: payload.resumes.length,
   targetCount: payload.targets.length,
@@ -146,17 +171,21 @@ export interface ProfileArchive {
   kind: "profile";
   version: number;
   exportedAt: string;
+  /** 同 `BackupPayload.profileOwner` —— 纯提示，可选 */
+  profileOwner?: string;
   profile: CareerProfile;
 }
 
 export const buildProfileArchive = (
   profile: CareerProfile,
-  now: string
+  now: string,
+  ownerName?: string
 ): ProfileArchive => ({
   app: BACKUP_APP_ID,
   kind: "profile",
   version: BACKUP_VERSION,
   exportedAt: now,
+  profileOwner: ownerName?.trim() || undefined,
   profile,
 });
 
@@ -171,7 +200,12 @@ export const buildProfileArchive = (
  */
 export const parseProfileArchive = (
   text: string
-): { ok: true; profile: CareerProfile; source: "profile" | "backup" } | { ok: false; error: string } => {
+): {
+  ok: true;
+  profile: CareerProfile;
+  source: "profile" | "backup";
+  ownerName?: string;
+} | { ok: false; error: string } => {
   let raw: unknown;
   try {
     raw = JSON.parse(text);
@@ -192,5 +226,9 @@ export const parseProfileArchive = (
     ok: true,
     profile: raw.profile as unknown as CareerProfile,
     source: raw.kind === "profile" ? "profile" : "backup",
+    ownerName:
+      typeof raw.profileOwner === "string" && raw.profileOwner.trim()
+        ? raw.profileOwner.trim()
+        : undefined,
   };
 };

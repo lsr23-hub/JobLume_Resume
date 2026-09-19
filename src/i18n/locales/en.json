@@ -1008,7 +1008,10 @@
       "replaceHint": "Replace: wipes all current data and writes the backup contents. This cannot be undone.",
       "cancel": "Cancel",
       "merge": "Merge import",
-      "replace": "Replace import"
+      "replace": "Replace import",
+      "owner": "This backup was exported by “{name}”",
+      "importInto": "It will be imported into the current person, “{name}”",
+      "unnamed": "Unnamed"
     }
   }
 }

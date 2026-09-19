@@ -2,7 +2,7 @@ import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "@/i18n/compat/client";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
-import { buildProfileArchive } from "@/lib/backup";
+import { buildProfileArchive, ownerSlug } from "@/lib/backup";
 import { downloadBlob } from "@/utils/export";
 import { Button } from "@/components/ui/button";
 
@@ -20,10 +20,12 @@ export const ExportProfileButton = () => {
     if (!profile) return;
 
     const now = new Date().toISOString();
-    const archive = buildProfileArchive(profile, now);
+    // 姓名同时写进文件和文件名：多用户下只有时间戳的话，两个用户的导出
+    // 文件完全分不出来
+    const archive = buildProfileArchive(profile, now, profile.basic.name);
     downloadBlob(
       new Blob([JSON.stringify(archive, null, 2)], { type: "application/json" }),
-      `joblume-profile-${now.slice(0, 19).replace(/[:T]/g, "-")}.json`
+      `joblume-profile-${ownerSlug(profile.basic.name)}-${now.slice(0, 19).replace(/[:T]/g, "-")}.json`
     );
     toast.success(t("export.success"));
   };
