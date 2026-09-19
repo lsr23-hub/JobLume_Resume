@@ -6,9 +6,12 @@ import {
   migrateProfileState,
   migrateResumeState,
   migrateTargetState,
+  migrateTargetStateV2,
   normalizeProfileState,
   normalizeResumeState,
   normalizeTargetState,
+  normalizeTargetStateV2,
+  targetsOf,
   withAnalysisFor,
   withoutUserAnalyses,
 } from "./userScope";
@@ -198,5 +201,79 @@ describe("按用户读写分析", () => {
     const after = withoutUserAnalyses(both, "ua");
     expect(analysisFor(after, "ua")).toBeNull();
     expect(analysisFor(after, "ub")?.modelId).toBe("mb");
+  });
+});
+
+describe("投递目标迁移 v1 → v2：岗位本身按用户隔离（扇出）", () => {
+  const v1Targets = (over: Record<string, unknown> = {}) => ({
+    targets: {
+      t1: {
+        ...target("t1"),
+        analysesByUser: { ua: analysis("ma"), ub: analysis("mb") },
+        cachesByUser: { ua: cache("fa"), ub: cache("fb") },
+        ...over,
+      },
+    },
+  });
+
+  it("一条岗位挂多个用户的分析 → 拆成每人一份各自的副本", () => {
+    const out = migrateTargetStateV2(v1Targets(), 1).targetsByUser;
+    expect(Object.keys(out).sort()).toEqual(["ua", "ub"]);
+    expect(out.ua.t1.matchAnalysis?.modelId).toBe("ma");
+    expect(out.ub.t1.matchAnalysis?.modelId).toBe("mb");
+    // 岗位本身的字段每人一份，且公司名不丢
+    expect(out.ua.t1.company).toBe("示例");
+    expect(out.ub.t1.company).toBe("示例");
+  });
+
+  it("v2 的副本不再带 analysesByUser —— 单槽就够", () => {
+    const out = migrateTargetStateV2(v1Targets(), 1).targetsByUser;
+    expect("analysesByUser" in out.ua.t1).toBe(false);
+    expect("cachesByUser" in out.ua.t1).toBe(false);
+  });
+
+  it("**从没人分析过的岗位归到 LEGACY_USER_ID**，分析槽为空", () => {
+    const out = migrateTargetStateV2(
+      { targets: { t1: { ...target("t1"), analysesByUser: {}, cachesByUser: {} } } },
+      1
+    ).targetsByUser;
+    expect(Object.keys(out)).toEqual([LEGACY_USER_ID]);
+    expect(out[LEGACY_USER_ID].t1.matchAnalysis).toBeNull();
+    expect(out[LEGACY_USER_ID].t1.analysisCache).toBeNull();
+  });
+
+  it("v0（从未迁移过）走同一条路：先 v0→v1 再扇出", () => {
+    const out = migrateTargetStateV2(
+      { targets: { t1: target("t1", { matchAnalysis: analysis("m0"), analysisCache: cache("f0") }) } },
+      0
+    ).targetsByUser;
+    expect(out[LEGACY_USER_ID].t1.matchAnalysis?.modelId).toBe("m0");
+  });
+
+  it("未知版本抛错，而不是返回空结构", () => {
+    expect(() => migrateTargetStateV2({}, 9)).toThrow();
+  });
+
+  it("已经是 v2 时不重复扇出（保数据，不清空）", () => {
+    const once = migrateTargetStateV2(v1Targets(), 1);
+    const twice = migrateTargetStateV2(once, 2);
+    expect(Object.keys(twice.targetsByUser).sort()).toEqual(["ua", "ub"]);
+    expect(twice.targetsByUser.ua.t1.matchAnalysis?.modelId).toBe("ma");
+  });
+
+  it("normalize 对已是 v2 的形状做同样的裁剪，坏条目丢掉", () => {
+    const out = normalizeTargetStateV2({
+      targetsByUser: { ua: { t1: { ...target("t1"), matchAnalysis: analysis("ma") }, bad: 42 } },
+    });
+    expect(Object.keys(out.targetsByUser.ua)).toEqual(["t1"]);
+    // 形状不对的分析槽回落成 null，而不是把坏对象透传下去
+    expect(out.targetsByUser.ua.t1.analysisCache).toBeNull();
+  });
+
+  it("targetsOf 只取当前用户的岗位；没选用户时给空表", () => {
+    const persisted = migrateTargetStateV2(v1Targets(), 1);
+    expect(Object.keys(targetsOf(persisted, "ua"))).toEqual(["t1"]);
+    expect(targetsOf(persisted, "nobody")).toEqual({});
+    expect(targetsOf(persisted, null)).toEqual({});
   });
 });

@@ -298,3 +298,128 @@ export const withoutUserAnalyses = (target: ScopedJobTarget, userId: string): Sc
   const { [userId]: _c, ...cachesByUser } = target.cachesByUser;
   return { ...target, analysesByUser, cachesByUser };
 };
+
+// ─────────────────────── 投递目标 v2：岗位本身也按用户隔离 ───────────────────────
+
+/**
+ * v2 起，**岗位本身按用户隔离**（决策见 `plan/task_plan.md`）。
+ *
+ * v1 的模型是「岗位全局共享，只有分析按人分」（`analysesByUser`）。改成岗位也
+ * 跟随用户之后，每个岗位副本只属于一个人、只需要一个分析槽 —— 于是
+ * `analysesByUser` / `cachesByUser` 塌回 `matchAnalysis` / `analysisCache`。
+ *
+ * 这是**简化**而不是又加一层：v1 那层 `analysesByUser` 存在的唯一理由就是
+ * 「岗位共享但分析不共享」，前提没了，层也就该没了。
+ */
+export const TARGET_SCOPE_VERSION = 2;
+
+/** v2 的单个岗位：一个分析槽，因为这份岗位只属于一个人 */
+export interface TargetSingleSlot {
+  matchAnalysis: MatchAnalysis | null;
+  analysisCache: AnalysisCache | null;
+}
+
+/**
+ * v2 的岗位形状。
+ *
+ * 用 `Omit` 排掉 v1 的 `analysesByUser` / `cachesByUser`：`JobTarget` 接口上
+ * 目前仍声明着那两个字段（读取方还没全切到 v2），而 v2 的副本一个分析槽就够。
+ * 等第 4 步把 `types/jobTarget.ts` 改成单槽之后，这个交叉类型即可收敛成
+ * `JobTarget` 本身 —— 与上一轮 `ScopedJobTarget` 同样的过渡手法。
+ */
+export type ScopedTargetV2 = Omit<JobTarget, "analysesByUser" | "cachesByUser"> &
+  TargetSingleSlot;
+
+export interface TargetPersistedV2 {
+  targetsByUser: Record<string, Record<string, ScopedTargetV2>>;
+}
+
+/**
+ * v1 → v2 是**扇出**，不是改名：v1 里一条岗位可能挂着多个用户的分析，
+ * v2 要按分析的所有者拆成多份岗位副本，每人一份、各带自己的分析。
+ *
+ * 没被任何人分析过的岗位无法判断归属，归到 `LEGACY_USER_ID`。
+ *
+ * 同时接受 v0（从未迁移过）与 v1。抛错规则与其它 migrate 一致：遇未知版本抛错，
+ * 而不是返回空结构 —— 抛错不写盘，返回空结构会把空数据当成迁移结果提交。
+ */
+export const migrateTargetStateV2 = (
+  persisted: unknown,
+  version: number
+): TargetPersistedV2 => {
+  if (version > TARGET_SCOPE_VERSION) {
+    throw new Error(`[userScope] 未知的 job target 持久化版本：${version}`);
+  }
+
+  // 已经是 v2 就别再扇出一次（正常路径下 migrate 不会以 v2 被调用 ——
+  // 版本一致时 persist 根本不调 migrate；这里是防手改 storage 的兜底）
+  if (version >= TARGET_SCOPE_VERSION) return normalizeTargetStateV2(persisted);
+
+  // 其余统一成 v1 的形状（Record<targetId, ScopedJobTarget>）：v0 先过一遍 v0→v1
+  const v1: Record<string, ScopedJobTarget> =
+    version === 0
+      ? migrateTargetState(persisted, 0).targets
+      : normalizeTargetState(persisted);
+
+  const targetsByUser: Record<string, Record<string, ScopedTargetV2>> = {};
+  const put = (userId: string, id: string, target: ScopedTargetV2) => {
+    if (!targetsByUser[userId]) targetsByUser[userId] = {};
+    targetsByUser[userId][id] = target;
+  };
+
+  for (const [id, target] of Object.entries(v1)) {
+    const { analysesByUser, cachesByUser, ...rest } = target;
+    const owners = Object.keys(analysesByUser ?? {});
+
+    if (owners.length === 0) {
+      put(LEGACY_USER_ID, id, { ...rest, matchAnalysis: null, analysisCache: null });
+      continue;
+    }
+    for (const owner of owners) {
+      put(owner, id, {
+        ...rest,
+        matchAnalysis: analysesByUser[owner] ?? null,
+        analysisCache: cachesByUser?.[owner] ?? null,
+      });
+    }
+  }
+
+  return { targetsByUser };
+};
+
+/** v2 的 merge 期归一化：版本字段缺失的 blob 根本不进 migrate，会落到这里 */
+export const normalizeTargetStateV2 = (persisted: unknown): TargetPersistedV2 => {
+  if (!isRecord(persisted)) return { targetsByUser: {} };
+
+  if (isRecord(persisted.targetsByUser)) {
+    const targetsByUser: Record<string, Record<string, ScopedTargetV2>> = {};
+    for (const [userId, bucket] of Object.entries(persisted.targetsByUser)) {
+      if (!isRecord(bucket)) continue;
+      const clean: Record<string, ScopedTargetV2> = {};
+      for (const [id, target] of Object.entries(bucket)) {
+        if (looksLikeTarget(target)) {
+          clean[id] = {
+            ...(target as JobTarget),
+            matchAnalysis: looksLikeAnalysis((target as never as TargetSingleSlot).matchAnalysis)
+              ? (target as never as TargetSingleSlot).matchAnalysis
+              : null,
+            analysisCache: looksLikeCache((target as never as TargetSingleSlot).analysisCache)
+              ? (target as never as TargetSingleSlot).analysisCache
+              : null,
+          };
+        }
+      }
+      targetsByUser[userId] = clean;
+    }
+    return { targetsByUser };
+  }
+
+  // 绕过 migrate 的旧 blob（v0 / v1）—— 复用同一套扇出规则
+  return migrateTargetStateV2(persisted, 0);
+};
+
+/** 读某个用户名下的全部岗位 */
+export const targetsOf = (
+  persisted: TargetPersistedV2,
+  userId: string | null | undefined
+): Record<string, ScopedTargetV2> => (userId ? persisted.targetsByUser[userId] ?? {} : {});

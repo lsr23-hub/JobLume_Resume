@@ -245,7 +245,8 @@ saves/<userId>/jds/<targetId>.json
 | 1 | `lib/server/saves.ts`：路径解析 + 校验 + 写入 | ✅ 21 条单测 |
 | 2 | `routes/api/saves.ts`：写入端点 | ✅ 实测四种输入（正常 / 穿越 / 斜杠 id / 未知 kind） |
 | 3 | `.gitignore` 加 `saves/` —— 这是**用户数据**，绝不能入库 | ✅ |
-| 4 | 岗位按用户隔离（target store 再改一次，`analysesByUser` 塌回单槽） | ⬜ **下一步** |
+| 4a | 岗位 v1→v2 迁移（扇出）+ normalize + `targetsOf` | ✅ 8 条单测 |
+| 4b | target store 接 `version: 2`、改形状、切 13 处读取点、改 `types/jobTarget.ts` | ⬜ **下一步** |
 | 5 | 镜像接线：store 写入后防抖同步到 saves/ | ⬜ |
 | 6 | 文档：README 的「服务端不保存任何用户数据」必须改 | ⬜ |
 
