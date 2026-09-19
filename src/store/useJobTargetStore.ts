@@ -16,8 +16,6 @@ interface JobTargetStore {
   removeTarget: (id: string) => void;
   /** 写入分析结果与缓存 */
   setAnalysis: (id: string, analysis: MatchAnalysis, cache: AnalysisCache) => void;
-  /** 用户手动调整勾选状态后回写，用于「恢复 AI 建议」的差异识别 */
-  setItemAdjusted: (id: string, entityId: string, adjusted: boolean) => void;
 }
 
 const warnedKeys = new Set<string>();
@@ -89,28 +87,6 @@ export const useJobTargetStore = create<JobTargetStore>()(
           targets: {
             ...get().targets,
             [id]: touch({ ...current, matchAnalysis: analysis, analysisCache: cache }),
-          },
-        });
-      },
-
-      setItemAdjusted: (id, entityId, adjusted) => {
-        const current = get().targets[id];
-        const item = current?.matchAnalysis?.items[entityId];
-        if (!current?.matchAnalysis || !item) return;
-
-        set({
-          targets: {
-            ...get().targets,
-            [id]: {
-              ...current,
-              matchAnalysis: {
-                ...current.matchAnalysis,
-                items: {
-                  ...current.matchAnalysis.items,
-                  [entityId]: { ...item, manuallyAdjusted: adjusted },
-                },
-              },
-            },
           },
         });
       },

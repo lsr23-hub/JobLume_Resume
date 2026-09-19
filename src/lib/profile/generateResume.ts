@@ -51,13 +51,6 @@ export interface GenerateResumeInput {
    */
   certificateLabel: string;
 
-  /**
-   * 在投递目标页被手动改过勾选状态的条目 id。
-   *
-   * 由调用方给 —— 描述的是「用户在投递目标页的干预」，只有那条路径知道。
-   * 向导是全选，不产生这个语义，留空即可。
-   */
-  manuallyAdjustedIds?: string[];
 }
 
 /**
@@ -102,7 +95,6 @@ export const generateResume = (input: GenerateResumeInput): ResumeData => {
     disabledSections = new Set<string>(),
     tSection,
     certificateLabel,
-    manuallyAdjustedIds = [],
   } = input;
 
   // 必备板块锁定开启；但完全没有内容的板块不渲染 —— 否则模板会输出一个
@@ -165,7 +157,6 @@ export const generateResume = (input: GenerateResumeInput): ResumeData => {
             jdSnapshot: target.jdRaw,
             matchAnalysisSnapshot: target.matchAnalysis ?? undefined,
             selectedEntityIds: selection,
-            manuallyAdjustedIds,
             generatedAt: now,
           }
         : { mode: "generic", jobTargetId: null, generatedAt: now },

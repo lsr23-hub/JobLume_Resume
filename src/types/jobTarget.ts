@@ -53,9 +53,6 @@ export interface MatchItemResult {
   /** 建议突出的内容。模型会返回，但界面尚未消费 —— 改写类功能已按产品决策移除 */
   suggestedFocus?: string;
 
-  /** 用户是否手动改变过该条目的勾选状态 */
-  manuallyAdjusted?: boolean;
-
   /**
    * 该条目原判为「不推荐」，但因否定依据无法在原文中核对而被系统提升为推荐。
    *

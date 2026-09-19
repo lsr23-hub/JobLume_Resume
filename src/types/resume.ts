@@ -231,9 +231,6 @@ export interface ResumeSnapshot {
   /** 各板块选中的条目 id */
   selectedEntityIds?: Record<string, string[]>;
 
-  /** 用户手动改变过勾选状态的条目 id */
-  manuallyAdjustedIds?: string[];
-
   /** 生成时间 */
   generatedAt: string;
 }
