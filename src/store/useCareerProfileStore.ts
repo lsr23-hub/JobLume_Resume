@@ -90,6 +90,8 @@ interface ProfileStore {
 
   updateBasic: (patch: Partial<BasicInfo>) => void;
   setCertificateText: (certificateText: string) => void;
+  /** 语言能力（纯文本多行），原为独立板块，现并入专业技能 */
+  setLanguageText: (languageText: string) => void;
   setSelfEvaluationContent: (content: string) => void;
 
   /** 整库替换（导入备份时使用） */
@@ -170,6 +172,46 @@ const syncBasicPresets = (profile: CareerProfile): CareerProfile => {
  * 刻意**不删**旧的 `certificates` 数组：里面的 `idb:` 引用是那些图片在
  * IndexedDB 里唯一的线索，删了就再也找不回来了。
  */
+/**
+ * 把「语言能力」板块的存量条目迁进 `languageText`，并把条目删掉。
+ *
+ * 该板块已取消 —— 语言能力现在是「专业技能」板块下的一个纯文本小项，与证书同形态。
+ * 与 `syncCertificateText` 的区别：那条只是补一个空字段，这条要**搬内容**，
+ * 所以不能只在字段缺失时跑 —— 字段在了、旧条目还在，同样要迁。
+ *
+ * 内容不丢：条目的 title / subtitle / description 拼成一行文本。description 是
+ * 富文本，去标签后并入。宁可让用户事后清理，也不要静默丢掉他填过的东西。
+ */
+const syncLanguageText = (profile: CareerProfile): CareerProfile => {
+  const legacy = Object.values(profile.entities ?? {}).filter(
+    (e) => e.sectionId === "languages" || e.type === ("languages" as ProfileEntity["type"])
+  );
+  const hasField = typeof (profile as Partial<CareerProfile>).languageText === "string";
+  if (hasField && legacy.length === 0) return profile;
+
+  const lines = legacy
+    .sort((a, b) => a.order - b.order)
+    .map((e) =>
+      [e.title, e.subtitle, (e.description ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ")]
+        .map((s) => (s ?? "").trim())
+        .filter(Boolean)
+        .join(" · ")
+    )
+    .filter(Boolean);
+
+  const merged = [profile.languageText ?? "", ...lines].filter(Boolean).join("\n");
+
+  const entities = { ...profile.entities };
+  for (const e of legacy) delete entities[e.id];
+
+  return {
+    ...profile,
+    languageText: merged,
+    entities,
+    sectionOrder: (profile.sectionOrder ?? []).filter((id) => id !== "languages"),
+  };
+};
+
 const syncCertificateText = (profile: CareerProfile): CareerProfile =>
   typeof (profile as Partial<CareerProfile>).certificateText === "string"
     ? profile
@@ -188,7 +230,7 @@ export const useCareerProfileStore = create<ProfileStore>()(
       ensureProfile: () => {
         const existing = get().profile;
         if (existing) {
-          const synced = syncCertificateText(syncBasicPresets(existing));
+          const synced = syncLanguageText(syncCertificateText(syncBasicPresets(existing)));
           if (synced !== existing) set({ profile: synced });
           return synced;
         }
@@ -348,6 +390,11 @@ export const useCareerProfileStore = create<ProfileStore>()(
       setCertificateText: (certificateText) => {
         const profile = get().ensureProfile();
         set({ profile: touch({ ...profile, certificateText }) });
+      },
+
+      setLanguageText: (languageText) => {
+        const profile = get().ensureProfile();
+        set({ profile: touch({ ...profile, languageText }) });
       },
 
       setSelfEvaluationContent: (selfEvaluationContent) => {

@@ -62,6 +62,7 @@ const buildInput = (over: Partial<MaterializeInput> = {}): MaterializeInput => (
     sectionOrder: [],
     skillGroups: [],
     certificateText: "",
+  languageText: "",
     selfEvaluationContent: "",
     meta: { createdAt: NOW, updatedAt: NOW, lastBackupAt: null },
   },

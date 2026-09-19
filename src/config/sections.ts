@@ -33,10 +33,10 @@ export interface SectionDef {
  * 后者是「简历里可以添加哪些模块」，这里是「数据库有哪些板块」，
  * 两者共享同一套 id 字符串。
  *
- * 这里**没有** `certificates` —— 证书已下沉为「专业技能」板块下的纯文本
- * （`CareerProfile.certificateText`），生成简历时并进技能板块的一行，
- * 不再产出独立的证书板块。简历层自己的证书模块（`STANDARD_MODULES`）
- * 是另一回事，操作单份简历，不受影响。
+ * 这里**没有** `certificates`，也**没有** `languages` —— 两者都已下沉为
+ * 「专业技能」板块下的纯文本（`certificateText` / `languageText`），
+ * 生成简历时各并进技能板块的一行，不再产出独立板块。
+ * 简历层自己的证书模块（`STANDARD_MODULES`）是另一回事，操作单份简历，不受影响。
  */
 export const SECTION_DEFS: SectionDef[] = [
   { id: "basic", title: "基本信息", titleKey: "sections.basic", icon: "👤", required: true, preset: true, accepts: [] },
@@ -47,7 +47,6 @@ export const SECTION_DEFS: SectionDef[] = [
   { id: "selfEvaluation", title: "自我评价", titleKey: "sections.selfEvaluation", icon: "💬", required: false, preset: true, accepts: [] },
   { id: "campus", title: "校园经历", titleKey: "sections.campus", icon: "🏫", required: false, preset: true, accepts: ["campus"] },
   { id: "honors", title: "荣誉课程", titleKey: "sections.honors", icon: "🎖️", required: false, preset: true, accepts: ["honors"] },
-  { id: "languages", title: "语言能力", titleKey: "sections.languages", icon: "🌐", required: false, preset: true, accepts: ["languages"] },
 ];
 
 export const SECTION_IDS = SECTION_DEFS.map((s) => s.id);

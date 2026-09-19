@@ -78,6 +78,7 @@ export const useTemplateFit = ({
       selection,
       tSection,
       certificateLabel: tSection("certificatesLabel"),
+      languageLabel: tSection("languageLabel"),
     });
     return measure(draft, template, scaleFactor);
   }, [profile, targets, targetId, mode, measure, tSection]);

@@ -11,7 +11,6 @@ export type EntityType =
   | "project" // 项目经验
   | "campus" // 校园经历
   | "honors" // 荣誉课程
-  | "languages" // 语言能力
   | "custom"; // 用户自建
 
 export interface ProfileEntity {
@@ -103,6 +102,14 @@ export interface CareerProfile {
    */
   certificateText: string;
 
+  /**
+   * 语言能力，纯文本多行。
+   *
+   * 原为独立的「语言能力」板块（条目式），现与证书同形态：并入「专业技能」
+   * 板块，生成简历时并成一行。存量条目由 `syncLanguageText` 迁进来。
+   */
+  languageText: string;
+
   /** 自我评价 */
   selfEvaluationContent: string;
 
@@ -121,6 +128,7 @@ export const createEmptyProfile = (basic: BasicInfo, now: string): CareerProfile
   sectionOrder: [],
   skillGroups: [],
   certificateText: "",
+  languageText: "",
   selfEvaluationContent: "",
   meta: { createdAt: now, updatedAt: now, lastBackupAt: null },
 });

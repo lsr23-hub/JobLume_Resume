@@ -19,7 +19,6 @@ const ENTITY_SECTIONS = new Set([
   "projects",
   "campus",
   "honors",
-  "languages",
 ]);
 
 export const ProfileWorkbench = () => {

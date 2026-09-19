@@ -847,7 +847,10 @@
       "certificateLabel": "证书奖项",
       "certificatePlaceholder": "一行一条，如：\nCET-6（642 分）\nACM-ICPC 亚洲区域赛 银奖",
       "certificateNote": "一行一条。简历上会并进「专业技能」板块，显示成「证书奖项：第一条；第二条」。",
-      "importedGroupName": "技能"
+      "importedGroupName": "技能",
+      "languageLabel": "语言能力",
+      "languagePlaceholder": "一行一条，如：\n英语 CET-6（可流利沟通）\n日语 N2",
+      "languageNote": "原为独立板块，现并入本板块 —— 生成简历时并成「语言能力：…」一行"
     },
     "selfEvaluation": {
       "placeholder": "用几句话概括你的优势与定位",
@@ -872,8 +875,7 @@
       "projects": "项目经历",
       "selfEvaluation": "自我评价",
       "campus": "校园经历",
-      "honors": "荣誉课程",
-      "languages": "语言能力"
+      "honors": "荣誉课程"
     },
     "photo": {
       "none": "未上传",

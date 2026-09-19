@@ -10,8 +10,14 @@ import { Textarea } from "@/components/ui/textarea";
 
 export const SkillGroupPanel = () => {
   const t = useTranslations("profile");
-  const { profile, addSkillGroup, updateSkillGroup, removeSkillGroup, setCertificateText } =
-    useCareerProfileStore();
+  const {
+    profile,
+    addSkillGroup,
+    updateSkillGroup,
+    removeSkillGroup,
+    setCertificateText,
+    setLanguageText,
+  } = useCareerProfileStore();
   const [draftName, setDraftName] = useState("");
 
   if (!profile) return null;
@@ -93,6 +99,18 @@ export const SkillGroupPanel = () => {
           rows={3}
         />
         <p className="text-xs text-muted-foreground">{t("skills.certificateNote")}</p>
+      </div>
+
+      {/* 语言能力：原为独立板块，现并入本板块，形态与证书一致 */}
+      <div className="space-y-1.5 border-t border-border/40 pt-4">
+        <Label className="text-sm font-medium">{t("skills.languageLabel")}</Label>
+        <Textarea
+          value={profile.languageText ?? ""}
+          onChange={(e) => setLanguageText(e.target.value)}
+          placeholder={t("skills.languagePlaceholder")}
+          rows={3}
+        />
+        <p className="text-xs text-muted-foreground">{t("skills.languageNote")}</p>
       </div>
     </div>
   );

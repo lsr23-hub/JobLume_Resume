@@ -50,6 +50,8 @@ export interface GenerateResumeInput {
    * 必填而非可选 —— 漏传会让证书静默消失，这种失败方式太难排查。
    */
   certificateLabel: string;
+  /** 语言能力那一行的标签，如「语言能力」。必填而非可选 —— 漏传会让语言能力静默消失 */
+  languageLabel: string;
 
 }
 
@@ -66,6 +68,7 @@ export const hasUsableProfile = (profile: CareerProfile | null): boolean => {
       Object.keys(profile.entities ?? {}).length > 0 ||
       (profile.skillGroups ?? []).length > 0 ||
       (profile.certificateText ?? "").trim() ||
+      (profile.languageText ?? "").trim() ||
       (profile.selfEvaluationContent ?? "").trim()
   );
 };
@@ -95,6 +98,7 @@ export const generateResume = (input: GenerateResumeInput): ResumeData => {
     disabledSections = new Set<string>(),
     tSection,
     certificateLabel,
+    languageLabel,
   } = input;
 
   // 必备板块锁定开启；但完全没有内容的板块不渲染 —— 否则模板会输出一个
@@ -104,10 +108,11 @@ export const generateResume = (input: GenerateResumeInput): ResumeData => {
     if (sectionId === "skills") {
       // 必须与 renderSkillContent 的过滤条件一致 —— 它跳过的是 content 为空的组，
       // 只看 length 会让「有组名没内容」的组撑出一个空标题
-      // 证书现在住在技能板块里，所以也要算进来
+      // 证书与语言能力现在都住在技能板块里，所以也要算进来
       return (
         profile.skillGroups.some((g) => g.content.trim()) ||
-        (profile.certificateText ?? "").trim() !== ""
+        (profile.certificateText ?? "").trim() !== "" ||
+        (profile.languageText ?? "").trim() !== ""
       );
     }
     if (sectionId === "selfEvaluation") {
@@ -149,6 +154,7 @@ export const generateResume = (input: GenerateResumeInput): ResumeData => {
         : {}),
     },
     certificateLabel,
+    languageLabel,
     snapshot:
       mode === "targeted" && target
         ? {

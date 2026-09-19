@@ -846,7 +846,10 @@
       "certificateLabel": "Certificates & awards",
       "certificatePlaceholder": "One per line, e.g.\nCET-6 (642)\nACM-ICPC Asia Regional — Silver",
       "certificateNote": "One per line. These are folded into the Skills section on the resume as \"Certificates: first; second\".",
-      "importedGroupName": "Skills"
+      "importedGroupName": "Skills",
+      "languageLabel": "Languages",
+      "languagePlaceholder": "One per line, e.g.:\nEnglish CET-6 (fluent)\nJapanese N2",
+      "languageNote": "Previously its own section — now merged here and rendered as one \"Languages: …\" line"
     },
     "selfEvaluation": {
       "placeholder": "A few sentences on your strengths and positioning",
@@ -871,8 +874,7 @@
       "projects": "Projects",
       "selfEvaluation": "Summary",
       "campus": "Campus",
-      "honors": "Honors",
-      "languages": "Languages"
+      "honors": "Honors"
     },
     "photo": {
       "none": "No photo",

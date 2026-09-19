@@ -70,6 +70,8 @@ export interface MaterializeInput {
    * 不传则不产出证书行。
    */
   certificateLabel?: string;
+  /** 语言能力那一行的标签，如「语言能力」。与证书同理，必填 */
+  languageLabel?: string;
 }
 
 /**
@@ -82,7 +84,8 @@ export interface MaterializeInput {
  */
 export const renderSkillContent = (
   profile: CareerProfile,
-  certificateLabel?: string
+  certificateLabel?: string,
+  languageLabel?: string
 ): string => {
   const items = [...profile.skillGroups]
     .filter((g) => g.content.trim())
@@ -96,6 +99,15 @@ export const renderSkillContent = (
 
   if (certificates.length > 0 && certificateLabel) {
     items.push(`<li>${certificateLabel}：${certificates.join("；")}</li>`);
+  }
+
+  const languages = (profile.languageText ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (languages.length > 0 && languageLabel) {
+    items.push(`<li>${languageLabel}：${languages.join("；")}</li>`);
   }
 
   if (items.length === 0) return "";
@@ -148,6 +160,7 @@ export const materialize = (input: MaterializeInput): ResumeData => {
     globalSettings,
     snapshot,
     certificateLabel,
+    languageLabel,
     priorityOrder,
   } = input;
 
@@ -220,7 +233,7 @@ export const materialize = (input: MaterializeInput): ResumeData => {
     // 简历层自己的证书模块（编辑器里手动加）不受影响，那是另一个概念。
     certificates: [],
     customData,
-    skillContent: renderSkillContent(profile, certificateLabel),
+    skillContent: renderSkillContent(profile, certificateLabel, languageLabel),
     selfEvaluationContent: profile.selfEvaluationContent,
     activeSection: enabled[0]?.id ?? "basic",
     draggingProjectId: null,

@@ -161,6 +161,7 @@ export const ResumeWorkbench = () => {
             disabledSections: choice.disabledSections,
             tSection: tSection,
             certificateLabel: tSection("certificatesLabel"),
+      languageLabel: tSection("languageLabel"),
         });
 
         addResume(resume);

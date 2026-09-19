@@ -58,6 +58,7 @@ const profile = (over: Partial<CareerProfile> = {}): CareerProfile => ({
   sectionOrder: [],
   skillGroups: [],
   certificateText: "",
+  languageText: "",
   selfEvaluationContent: "",
   meta: { createdAt: NOW, updatedAt: NOW, lastBackupAt: null },
   ...over,
@@ -89,6 +90,7 @@ const run = (over: Partial<Parameters<typeof generateResume>[0]> = {}) =>
     selection: {},
     tSection,
     certificateLabel: "证书奖项",
+languageLabel: "语言能力",
     ...over,
   });
 
@@ -292,6 +294,7 @@ describe("generateResume — 纯函数", () => {
       selection: { experience: ["e1"], education: ["e2"] },
       tSection,
       certificateLabel: "证书奖项",
+languageLabel: "语言能力",
     };
 
     expect(JSON.stringify(generateResume(input))).toBe(
