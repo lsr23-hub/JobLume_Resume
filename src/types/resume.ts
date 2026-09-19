@@ -92,6 +92,17 @@ export interface Education {
   endDate: string;
   gpa?: string;
   description?: string;
+  /**
+   * 「简要模式」下被藏起来的学校简介。
+   *
+   * 简要模式由编辑器切换：开启时把 `description` 挪到这里、把 `description` 清空，
+   * 关闭时挪回来。**模板一行都不用改** —— 它们本来就用
+   * `hasMeaningfulRichTextContent(description)` 门控简介，清空即不渲染。
+   * 这是为了守住 C2「不修改 4 套模板的 section 组件」。
+   *
+   * 值不是字符串就是不存在；`undefined` 表示当前没藏东西。
+   */
+  hiddenDescription?: string;
   visible?: boolean;
 }
 

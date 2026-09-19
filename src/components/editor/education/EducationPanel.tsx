@@ -8,6 +8,7 @@ import { generateUUID } from "@/utils/uuid";
 import { SectionItemsPicker } from "@/components/editor/shared/SectionItemsPicker";
 import { useAddSectionEntities } from "@/components/editor/shared/useAddSectionEntities";
 import { useEnsureSectionEnabled } from "@/components/editor/shared/useEnsureSectionEnabled";
+import { Switch } from "@/components/ui/switch";
 
 const EducationPanel = () => {
   const t = useTranslations('workbench.educationPanel');
@@ -16,6 +17,22 @@ const EducationPanel = () => {
   const addFromProfile = useAddSectionEntities();
   const ensureEnabled = useEnsureSectionEnabled();
   const { education = [] } = activeResume || {};
+
+  // 开关状态从数据推出来 —— 不另存一个标志，就不会出现「标志说开着、数据其实没藏」
+  const briefMode = education.some((e) => e.hiddenDescription !== undefined);
+
+  /** 开：把简介挪进影子字段并清空；关：挪回来。没有简介的条目原样不动 */
+  const toggleBrief = (on: boolean): Education[] =>
+    education.map((e) => {
+      if (on) {
+        return (e.description ?? "").trim()
+          ? { ...e, hiddenDescription: e.description, description: "" }
+          : e;
+      }
+      return e.hiddenDescription !== undefined
+        ? { ...e, description: e.hiddenDescription, hiddenDescription: undefined }
+        : e;
+    });
   const handleCreateProject = () => {
     const newEducation: Education = {
       id: generateUUID(),
@@ -38,6 +55,26 @@ const EducationPanel = () => {
         "dark:bg-neutral-900/30",
       )}
     >
+      {/*
+        「简要模式」：只留学校 / 专业 / 学历 / 时间，隐藏学校简介。
+        实现是**把 description 挪到 hiddenDescription**，而不是让模板读一个标志位 ——
+        模板本就用 hasMeaningfulRichTextContent 门控简介，清空即不渲染，
+        因此 4 套模板一行都不用改（守住 C2）。
+        开关状态由「有没有条目藏着简介」推出来，不另存一个会与数据脱节的标志。
+      */}
+      {education.length > 0 && (
+        <label className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2">
+          <span className="min-w-0">
+            <span className="block text-sm font-medium">{t("briefMode")}</span>
+            <span className="block text-xs text-muted-foreground">{t("briefModeHint")}</span>
+          </span>
+          <Switch
+            checked={briefMode}
+            onCheckedChange={(on) => updateEducationBatch(toggleBrief(on))}
+          />
+        </label>
+      )}
+
       <Reorder.Group
         axis="y"
         values={education}

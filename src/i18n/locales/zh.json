@@ -472,7 +472,9 @@
         "degree": "请选择学历",
         "major": "请输入专业名称",
         "date": "请输入就读时间范围"
-      }
+      },
+      "briefMode": "简要模式",
+      "briefModeHint": "只显示学校、专业、学历与时间，隐藏学校简介"
     },
     "educationItem": {
       "labels": {
