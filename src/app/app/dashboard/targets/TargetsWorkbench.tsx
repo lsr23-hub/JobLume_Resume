@@ -8,6 +8,7 @@ import { useAIConfigStore } from "@/store/useAIConfigStore";
 import { analyzeMatch } from "@/lib/match/analyzeMatch";
 import { buildEntityFingerprints, checkCache } from "@/lib/match/analysisCache";
 import type { JobTarget } from "@/types/jobTarget";
+import { analysisFor, cacheFor } from "@/store/userScope";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +27,15 @@ export const TargetsWorkbench = () => {
   const list = useMemo(() => selectSortedTargets(targets), [targets]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const current = selectedId ? targets[selectedId] : null;
+  /**
+   * 当前用户在这条岗位上的分析。
+   *
+   * 分析按「岗位 × 用户」存（岗位全局共享，分析各人一份），所以读的时候必须
+   * 显式带上当前用户 —— 否则会把别人的结论当成自己的展示出来。
+   */
+  const currentUserId = useCareerProfileStore((s) => s.currentUserId);
+  const currentAnalysis = analysisFor(current, currentUserId);
+  const currentCache = cacheFor(current, currentUserId);
 
   const [isCreating, setIsCreating] = useState(false);
   const [running, setRunning] = useState(false);
@@ -51,14 +61,16 @@ export const TargetsWorkbench = () => {
    * 此前它算出来只用于一句 toast，用户看不到「你现在看的是旧结果」。
    */
   const staleAnalysis = useMemo(() => {
-    if (!current?.matchAnalysis || !current.analysisCache) return null;
-    const verdict = checkCache(current.analysisCache, {
+    // 三个都要判：currentAnalysis / currentCache 是从 current 派生的，
+    // 判了它们并不会让 TS 收窄 current
+    if (!current || !currentAnalysis || !currentCache) return null;
+    const verdict = checkCache(currentCache, {
       entityFingerprints: buildEntityFingerprints(entities),
       jdRaw: current.jdRaw,
-      modelId: current.matchAnalysis.modelId,
+      modelId: currentAnalysis.modelId,
     });
     return verdict.reusable ? null : verdict;
-  }, [current?.analysisCache, current?.matchAnalysis, current?.jdRaw, entities]);
+  }, [currentCache, currentAnalysis, current?.jdRaw, entities]);
 
   const buildConfig = () => ({
     apiKey: ai.deepseekApiKey,
@@ -87,8 +99,8 @@ export const TargetsWorkbench = () => {
       entities,
       config: buildConfig(),
       now: new Date().toISOString(),
-      cache: current.analysisCache,
-      cachedAnalysis: current.matchAnalysis,
+      cache: currentCache,
+      cachedAnalysis: currentAnalysis,
       force,
     });
 
@@ -135,7 +147,7 @@ export const TargetsWorkbench = () => {
           )}
           {list.map((target) => {
             const active = target.id === selectedId;
-            const recommended = target.matchAnalysis?.summary.recommendedCount;
+            const recommended = analysisFor(target, currentUserId)?.summary.recommendedCount;
             return (
               <button
                 key={target.id}
@@ -199,12 +211,12 @@ export const TargetsWorkbench = () => {
                     ) : (
                       <>
                         <Sparkles className="mr-2 h-4 w-4" />
-                        {current.matchAnalysis ? t("reanalyze") : t("analyze")}
+                        {currentAnalysis ? t("reanalyze") : t("analyze")}
                       </>
                     )}
                   </Button>
 
-                  {current.matchAnalysis && !running && (
+                  {currentAnalysis && !running && (
                     <>
                       <Button variant="outline" onClick={() => handleAnalyze(true)}>
                         <RefreshCw className="mr-2 h-4 w-4" />
@@ -212,8 +224,8 @@ export const TargetsWorkbench = () => {
                       </Button>
                       <span className="text-xs text-muted-foreground">
                         {t("analyzedAt", {
-                          model: current.matchAnalysis.modelId,
-                          time: new Date(current.matchAnalysis.analyzedAt).toLocaleString(),
+                          model: currentAnalysis.modelId,
+                          time: new Date(currentAnalysis.analyzedAt).toLocaleString(),
                         })}
                       </span>
                     </>
@@ -248,11 +260,11 @@ export const TargetsWorkbench = () => {
                   </div>
                 )}
 
-                {current.matchAnalysis && (
+                {currentAnalysis && (
                   <>
-                    <FitLevelPanel analysis={current.matchAnalysis} />
+                    <FitLevelPanel analysis={currentAnalysis} />
                     <RequirementList
-                      analysis={current.matchAnalysis}
+                      analysis={currentAnalysis}
                       entities={entities}
                     />
                   </>

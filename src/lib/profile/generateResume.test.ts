@@ -68,8 +68,8 @@ const target = (over: Partial<JobTarget> = {}): JobTarget => ({
   company: "星图智能",
   position: "高级前端工程师",
   jdRaw: "岗位职责：……\n任职要求：……",
-  matchAnalysis: null,
-  analysisCache: null,
+  analysesByUser: {},
+  cachesByUser: {},
   createdAt: NOW,
   updatedAt: NOW,
   ...over,
@@ -254,7 +254,8 @@ describe("generateResume — AI 优先级进入简历", () => {
     const resume = run({
       profile: twoExperiences(),
       mode: "targeted",
-      target: target({ matchAnalysis: analysis(["b", "a"]) as never }),
+      target: target(),
+      targetAnalysis: analysis(["b", "a"]) as never,
       selection: { experience: ["a", "b"] },
     });
     expect(resume.experience.map((e) => e.company)).toEqual(["乙", "甲"]);

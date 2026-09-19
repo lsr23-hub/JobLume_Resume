@@ -180,15 +180,14 @@ export interface TargetScopedAnalysis {
 }
 
 /**
- * **过渡期的类型缝**：迁移产出的对象一定带 per-user 分析字段，但
- * `JobTarget` 接口上现在仍然声明着旧的单槽 `matchAnalysis` / `analysisCache`
- * （读取方还没切过来）。
+ * 迁移与读写辅助统一用这个别名。
  *
- * 等第 4 步把全部读取方切到 `analysisFor` / `cacheFor` 之后，就把旧的两个字段
- * 从 `JobTarget` 上删掉，这个交叉类型也随之收敛成 `JobTarget` 本身。
- * 在那之前，凡是「已经过迁移」的目标都用这个类型标注，不要用裸 `JobTarget`。
+ * 它曾经是一个交叉类型（`JobTarget & TargetScopedAnalysis`）—— 那时 `JobTarget`
+ * 上还留着旧的单槽字段、读取方没切完，需要一个过渡缝。现在 `JobTarget` 本身就
+ * 声明了 `analysesByUser` / `cachesByUser`，缝已经收掉，保留别名只是让上面那些
+ * 签名不必逐个改。
  */
-export type ScopedJobTarget = JobTarget & TargetScopedAnalysis;
+export type ScopedJobTarget = JobTarget;
 
 const looksLikeAnalysis = (v: unknown): v is MatchAnalysis =>
   isRecord(v) && isRecord(v.items) && Array.isArray(v.rankedIds) && isRecord(v.summary);
@@ -196,11 +195,19 @@ const looksLikeAnalysis = (v: unknown): v is MatchAnalysis =>
 const looksLikeCache = (v: unknown): v is AnalysisCache =>
   isRecord(v) && typeof v.contentFingerprint === "string";
 
-export const migrateTargetState = (persisted: unknown, version: number): Record<string, ScopedJobTarget> => {
+/**
+ * migrate 的返回值必须是**持久化切片的形状**，即 `{ targets }`，不是 targets 本身
+ * —— persist 会把它直接交给 `merge` 的 `persistedState`，而 `partialize` 写出去的
+ * 就是 `{ targets }`。返回裸 map 会让每个岗位凭空消失（而且不报错）。
+ */
+export const migrateTargetState = (
+  persisted: unknown,
+  version: number
+): { targets: Record<string, ScopedJobTarget> } => {
   if (version !== 0) {
     throw new Error(`[userScope] 未知的 job target 持久化版本：${version}`);
   }
-  return rewriteTargets(persisted);
+  return { targets: rewriteTargets(persisted) };
 };
 
 export const normalizeTargetState = (persisted: unknown): Record<string, ScopedJobTarget> => {

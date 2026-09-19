@@ -1,5 +1,5 @@
 import type { CareerProfile } from "@/types/profile";
-import type { JobTarget } from "@/types/jobTarget";
+import type { JobTarget, MatchAnalysis } from "@/types/jobTarget";
 import type { MenuSection, ResumeData } from "@/types/resume";
 import { DEFAULT_TEMPLATES } from "@/config";
 import { SECTION_DEFS } from "@/config/sections";
@@ -21,6 +21,14 @@ export interface GenerateResumeInput {
 
   /** 岗位专用简历必传；通用简历为 null */
   target?: JobTarget | null;
+
+  /**
+   * **当前用户**在这条岗位上的分析结果（岗位专用简历必传）。
+   *
+   * 为什么要单独传：分析按「岗位 × 用户」存，而本函数是纯函数、不该去问
+   * 「现在是谁」。调用方用 `analysisFor(target, currentUserId)` 取好再传进来。
+   */
+  targetAnalysis?: MatchAnalysis | null;
 
   templateId: string;
 
@@ -81,6 +89,7 @@ export const generateResume = (input: GenerateResumeInput): ResumeData => {
     profile,
     mode,
     target,
+    targetAnalysis,
     templateId,
     id,
     title,
@@ -129,7 +138,7 @@ export const generateResume = (input: GenerateResumeInput): ResumeData => {
     meta: { id, title, now, templateId },
     // AI 的优先级序列 —— 板块内部按「与岗位的相关度」排，最相关的在最前。
     // 通用简历没有投递目标，也就没有序列，`materialize` 会退回数据库里的排列顺序
-    priorityOrder: target?.matchAnalysis?.rankedIds,
+    priorityOrder: targetAnalysis?.rankedIds,
     globalSettings: {
       // 「一页为最佳」是需求本身，所以默认开启自动缩放。
       // 上游默认是关的（`DEFAULT_GLOBAL_SETTINGS` 里根本没有这个键），
@@ -152,7 +161,7 @@ export const generateResume = (input: GenerateResumeInput): ResumeData => {
             mode: "targeted",
             jobTargetId: target.id,
             jdSnapshot: target.jdRaw,
-            matchAnalysisSnapshot: target.matchAnalysis ?? undefined,
+            matchAnalysisSnapshot: targetAnalysis ?? undefined,
             selectedEntityIds: selection,
             generatedAt: now,
           }

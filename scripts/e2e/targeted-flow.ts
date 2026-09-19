@@ -97,17 +97,21 @@ await ensureCurrentUser(page);
       p.basic = { ...p.basic, name: "林可", title: "前端工程师" };
       p.entities = Object.fromEntries(entities.map((e) => [e.id, e]));
       localStorage.setItem("career-profile-storage", JSON.stringify(raw));
+      // 分析按「岗位 × 用户」存 —— 必须种在**当前用户**名下。
+      // 用旧的单槽形状种下去的话，迁移会把它归到 LEGACY_USER_ID，
+      // 而 ensureCurrentUser 建的是另一个 id，于是界面上一片空白。
+      const uid = raw.state.currentUserId;
       localStorage.setItem(
         "job-target-storage",
         JSON.stringify({
           state: {
             targets: {
               t1: { id: "t1", company: "华泰证券", position: "高级前端工程师", jdRaw: jd,
-                    note: "", matchAnalysis: analysis, analysisCache: null,
+                    note: "", analysesByUser: { [uid]: analysis }, cachesByUser: {},
                     createdAt: now, updatedAt: now },
             },
           },
-          version: 0,
+          version: 1,
         })
       );
     },

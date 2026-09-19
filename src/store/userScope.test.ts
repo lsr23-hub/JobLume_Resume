@@ -122,14 +122,14 @@ describe("投递目标迁移 0 → 1", () => {
     const out = migrateTargetState(
       { targets: { t1: target("t1", { matchAnalysis: analysis("m1"), analysisCache: cache("fp1") }) } },
       0
-    );
+    ).targets;
     expect(out.t1.company).toBe("示例");
     expect(out.t1.analysesByUser[LEGACY_USER_ID].modelId).toBe("m1");
     expect(out.t1.cachesByUser[LEGACY_USER_ID].contentFingerprint).toBe("fp1");
   });
 
   it("没分析过的岗位得到两个空表，不是 undefined", () => {
-    const out = migrateTargetState({ targets: { t1: target("t1") } }, 0);
+    const out = migrateTargetState({ targets: { t1: target("t1") } }, 0).targets;
     expect(out.t1.analysesByUser).toEqual({});
     expect(out.t1.cachesByUser).toEqual({});
   });
@@ -138,9 +138,15 @@ describe("投递目标迁移 0 → 1", () => {
     const once = migrateTargetState(
       { targets: { t1: target("t1", { matchAnalysis: analysis("m1") }) } },
       0
-    );
+    ).targets;
     const twice = normalizeTargetState({ targets: once });
     expect(twice.t1.analysesByUser[LEGACY_USER_ID].modelId).toBe("m1");
+  });
+
+  it("migrate 返回的是切片形状 { targets }，不是裸 map —— 返回裸 map 会让岗位全消失", () => {
+    const out = migrateTargetState({ targets: { t1: target("t1") } }, 0);
+    expect(Object.keys(out)).toEqual(["targets"]);
+    expect(out.targets.t1).toBeTruthy();
   });
 
   it("形状不认识的输入回落到空表而不是抛错", () => {
@@ -150,7 +156,7 @@ describe("投递目标迁移 0 → 1", () => {
 });
 
 describe("按用户读写分析", () => {
-  const base = migrateTargetState({ targets: { t1: target("t1") } }, 0).t1;
+  const base = migrateTargetState({ targets: { t1: target("t1") } }, 0).targets.t1;
 
   it("analysisFor / cacheFor 取的是指定用户那一份", () => {
     const withA = withAnalysisFor(base, "ua", analysis("ma"), cache("fa"));

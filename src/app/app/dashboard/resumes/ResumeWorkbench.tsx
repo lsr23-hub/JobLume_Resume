@@ -18,6 +18,7 @@ import { getConfig, getFileHandle } from "@/utils/fileSystem";
 import { preloadFontFamily } from "@/utils/fonts";
 import { useResumeStore } from "@/store/useResumeStore";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
+import { analysisFor } from "@/store/userScope";
 import { useJobTargetStore } from "@/store/useJobTargetStore";
 import { generateResume } from "@/lib/profile/generateResume";
 import { generateUUID } from "@/utils/uuid";
@@ -40,6 +41,7 @@ const ResumeWorkbenchInner = () => {
     } = useResumeStore();
     const router = useRouter();
     const { profile } = useCareerProfileStore();
+    const currentUserId = useCareerProfileStore((s) => s.currentUserId);
     const { targets } = useJobTargetStore();
     const [hasConfiguredFolder, setHasConfiguredFolder] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -137,6 +139,8 @@ const ResumeWorkbenchInner = () => {
             profile,
             mode: choice.mode,
             target,
+            // 分析按「岗位 × 用户」存，取当前用户那一份
+            targetAnalysis: analysisFor(target, currentUserId),
             templateId: choice.templateId,
             id,
             title,

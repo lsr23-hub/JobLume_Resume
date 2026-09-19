@@ -23,6 +23,14 @@ const picker = (page: Page) => page.locator('[role="dialog"]').filter({ hasText:
 const chip = (page: Page) => page.getByRole("button", { name: /切换用户/ });
 const chipText = async (page: Page) => (await chip(page).first().innerText()).replace(/\n/g, " / ");
 
+/** 按名字切到某个用户（依赖侧边栏入口） */
+const switchTo = async (page: Page, name: string) => {
+  await chip(page).first().click();
+  await page.waitForTimeout(900);
+  await page.locator('[role="dialog"] [role="button"]').filter({ hasText: name }).first().click();
+  await page.waitForTimeout(1800);
+};
+
 const readState = (page: Page) =>
   page.evaluate((key) => {
     const raw = JSON.parse(localStorage.getItem(key) ?? "null");
@@ -200,6 +208,57 @@ const buckets = await page.evaluate((aId) => {
 }, bucketA);
 step(buckets.aCount === 1, `切走之后甲的简历仍在自己桶里，没被动过（${buckets.aCount} 份）`);
 step(buckets.total === 1, `乙没有简历 → 不产生空桶（桶数 ${buckets.total}）`);
+
+// ════════════════ 4c. 投递目标：岗位共享，分析各人一份 ════════════════
+// 给甲种一条带分析的岗位，切到乙应该看不到那份分析。
+// 注意先把当前用户切回甲 —— 上一步结束时停在乙，直接种会种到乙名下。
+await page.goto(`${BASE}/app/dashboard/targets`, { waitUntil: "networkidle" });
+await page.waitForTimeout(1500);
+await switchTo(page, "甲同学");
+await page.goto(`${BASE}/app/dashboard/targets`, { waitUntil: "networkidle" });
+await page.waitForTimeout(1500);
+const targetSeed = await page.evaluate(() => {
+  const NOW = new Date().toISOString();
+  const uid = JSON.parse(localStorage.getItem("career-profile-storage")!).state.currentUserId;
+  localStorage.setItem("job-target-storage", JSON.stringify({
+    version: 1,
+    state: { targets: { t1: {
+      id: "t1", company: "共享岗位", position: "前端", jdRaw: "任职要求：\n1. 三年经验",
+      note: "", cachesByUser: {},
+      analysesByUser: { [uid]: {
+        items: {}, rankedIds: [], topN: 5,
+        requirements: [{ id: "r1", text: "三年经验", keys: ["经验"], kind: "must",
+                         status: "missing", entityIds: [], sourceQuote: "三年经验" }],
+        summary: { recommendedCount: 0, coverage: { covered: [], missing: ["经验"], weak: [] }, advice: "x" },
+        modelId: "e2e", promptVersion: "v5", analyzedAt: NOW,
+      } },
+      createdAt: NOW, updatedAt: NOW,
+    } } },
+  }));
+  return uid;
+});
+await page.reload({ waitUntil: "networkidle" });
+await page.waitForTimeout(1800);
+await page.getByText("共享岗位", { exact: false }).first().click();
+await page.waitForTimeout(1500);
+let body = await page.locator("body").innerText();
+step(/不建议投|差距/.test(body), "甲：能看到自己那份分析（等级已渲染）");
+
+// 切到乙 —— 同一个岗位，但分析是甲的
+await switchTo(page, "乙同学");
+await page.getByText("共享岗位", { exact: false }).first().click();
+await page.waitForTimeout(1500);
+body = await page.locator("body").innerText();
+step(body.includes("共享岗位"), "乙：岗位本身仍然可见（岗位全局共享）");
+step(!/不建议投|差距较大/.test(body), "乙：看不到甲的分析结论 —— 这正是「分析按岗位×用户」要防的误导");
+step(!body.includes("r1"), "乙：不会渲染出指向别人经历的裸要求项");
+
+const analysisBuckets = await page.evaluate((aId) => {
+  const t = JSON.parse(localStorage.getItem("job-target-storage")!).state.targets.t1;
+  return { users: Object.keys(t.analysesByUser), aId };
+}, targetSeed);
+step(analysisBuckets.users.length === 1 && analysisBuckets.users[0] === analysisBuckets.aId,
+  `分析只挂在甲名下（${analysisBuckets.users.length} 份）`);
 
 // ════════════════ 5. 老数据迁移（放最后：它会整体覆盖存储） ════════════════
 await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });

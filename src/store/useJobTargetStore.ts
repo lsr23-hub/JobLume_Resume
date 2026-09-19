@@ -5,6 +5,13 @@ import type { StateStorage } from "zustand/middleware";
 import type { AnalysisCache, JobTarget, MatchAnalysis } from "@/types/jobTarget";
 import { generateUUID } from "@/utils/uuid";
 import { reportHydrationFailure } from "@/store/persistGuard";
+import { useCareerProfileStore } from "@/store/useCareerProfileStore";
+import {
+  USER_SCOPE_VERSION,
+  migrateTargetState,
+  normalizeTargetState,
+  withAnalysisFor,
+} from "@/store/userScope";
 
 export const JOB_TARGET_STORAGE_KEY = "job-target-storage";
 
@@ -54,8 +61,8 @@ export const useJobTargetStore = create<JobTargetStore>()(
           position: input.position,
           jdRaw: input.jdRaw,
           note: input.note,
-          matchAnalysis: null,
-          analysisCache: null,
+          analysesByUser: {},
+          cachesByUser: {},
           createdAt: now,
           updatedAt: now,
         };
@@ -83,10 +90,14 @@ export const useJobTargetStore = create<JobTargetStore>()(
         const current = get().targets[id];
         if (!current) return;
 
+        // 分析写在**当前用户**名下：同一个岗位，两个人各有一份自己的结论
+        const userId = useCareerProfileStore.getState().currentUserId;
+        if (!userId) return;
+
         set({
           targets: {
             ...get().targets,
-            [id]: touch({ ...current, matchAnalysis: analysis, analysisCache: cache }),
+            [id]: touch(withAnalysisFor(current, userId, analysis, cache)),
           },
         });
       },
@@ -97,7 +108,15 @@ export const useJobTargetStore = create<JobTargetStore>()(
         reportHydrationFailure("job-target", error),
       name: JOB_TARGET_STORAGE_KEY,
       storage: createJSONStorage(() => safeLocalStorage),
+      // version 与 migrate 必须一起加，理由见 persistGuard 的头注释
+      version: USER_SCOPE_VERSION,
+      migrate: (persisted, version) => migrateTargetState(persisted, version),
       partialize: (state) => ({ targets: state.targets }),
+      // 第二道防线：版本字段缺失的 blob 根本不进 migrate，会原样落到这里
+      merge: (persisted, current) => ({
+        ...current,
+        targets: normalizeTargetState(persisted ?? {}),
+      }),
     }
   )
 );

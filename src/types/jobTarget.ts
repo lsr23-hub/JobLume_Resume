@@ -164,11 +164,19 @@ export interface JobTarget {
   /** 用户备注 */
   note?: string;
 
-  /** 最近一次分析结果；未分析过为 null */
-  matchAnalysis: MatchAnalysis | null;
+  /**
+   * 各用户的最近一次分析结果，key 为 userId。
+   *
+   * 为什么岗位共享而分析不共享：「这条要求由哪几段经历支撑」只对某一个人成立。
+   * 岗位（公司/职位/JD）多个用户可以共用，分析不能。
+   *
+   * 字段留在 `JobTarget` 上而不是提到 store 根：store 的 `targets` 已经按
+   * targetId 索引了，提到根上会丢掉 target 这一维。
+   */
+  analysesByUser: Record<string, MatchAnalysis>;
 
-  /** 分析缓存信息；未分析过为 null */
-  analysisCache: AnalysisCache | null;
+  /** 各用户的分析缓存信息，key 为 userId */
+  cachesByUser: Record<string, AnalysisCache>;
 
   createdAt: string;
   updatedAt: string;
