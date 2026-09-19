@@ -163,7 +163,8 @@
         "selectedCount": "已选 {count} 条",
         "startGenerate": "开始生成",
         "noAnalysisHint": "该投递目标还没做过分析，因此没有推荐标注与理由；勾选与生成照常。",
-        "plainNoDefaultHint": "初始不预勾选 —— 放进简历的必须是你自己选的"
+        "plainNoDefaultHint": "初始不预勾选 —— 放进简历的必须是你自己选的",
+        "selectAll": "全选"
       },
       "generatedGenericTitle": "通用简历",
       "needProfile": "职业数据库还是空的。先去「职业数据库」填一些内容，再回来生成简历。",

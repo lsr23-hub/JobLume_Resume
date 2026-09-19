@@ -67,6 +67,14 @@ export const ContentSelection = ({
     }
   };
 
+  // 与「清空」对称。默认全不勾是为了让用户自己过一遍，但条目多时逐个点太累，
+  // 给一个一键全选作为起步 —— 先全上再取消不要的，与从零勾起是两种同样合理的用法
+  const selectAll = () => {
+    for (const e of entities) {
+      if (!checked.has(e.id)) onToggle(e.id);
+    }
+  };
+
   const clearAll = () => {
     for (const id of Array.from(checked)) onToggle(id);
   };
@@ -104,6 +112,9 @@ export const ContentSelection = ({
             {t("checkRecommended")}
           </Button>
         )}
+        <Button variant="outline" size="sm" onClick={selectAll}>
+          {t("selectAll")}
+        </Button>
         <Button variant="ghost" size="sm" onClick={clearAll}>
           {t("clearAll")}
         </Button>

@@ -76,12 +76,10 @@ await page.getByText("经典模板", { exact: true }).first().click();
 await page.waitForTimeout(1300);
 await page.getByRole("button", { name: /就用这个模板开始|用这个模板/ }).first().click();
 await page.waitForTimeout(3000);
-// 通用简历现在也要过「内容选择」步：默认全不勾，这里全勾上再生成
-const genBoxes = page.locator('input[type=checkbox]');
-const genBoxCount = await genBoxes.count();
-for (let i = 0; i < genBoxCount; i++) await genBoxes.nth(i).check();
+// 通用简历现在也要过「内容选择」步：默认全不勾，用「全选」起步再生成
+await page.getByRole("button", { name: "全选" }).click();
 await page.waitForTimeout(600);
-await page.getByRole('button', { name: "开始生成" }).click();
+await page.getByRole("button", { name: "开始生成" }).click();
 await page.waitForTimeout(4000);
 step(/\/app\/workbench\//.test(page.url()), "生成简历并进入工作台");
 

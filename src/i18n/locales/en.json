@@ -163,7 +163,8 @@
         "selectedCount": "{count} selected",
         "startGenerate": "Start generating",
         "noAnalysisHint": "This job target has not been analyzed, so there are no recommendations or reasons; selection and generation work as usual.",
-        "plainNoDefaultHint": "Nothing is pre-checked — what goes in the resume is your call"
+        "plainNoDefaultHint": "Nothing is pre-checked — what goes in the resume is your call",
+        "selectAll": "Select all"
       },
       "generatedGenericTitle": "General Resume",
       "needProfile": "Your career database is empty. Add some content under Career Database, then come back.",
