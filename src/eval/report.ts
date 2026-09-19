@@ -119,6 +119,24 @@ export const buildReport = (input: ReportInput): string => {
     lines.push("");
   }
 
+  // 覆盖类指标的比率必须和**分母**一起读 —— 全数据集只有十几条标注时，
+  // 单看百分比会把一把粗尺子读成精确结论。
+  const ann = aggregate.annotatedCases;
+  const diluted = [
+    ann.missing < ann.total ? `「缺失项召回」${ann.missing}/${ann.total}` : null,
+    ann.unsupported < ann.total ? `「覆盖虚报率」${ann.unsupported}/${ann.total}` : null,
+    ann.mustHave < ann.total ? `「关键经历召回」${ann.mustHave}/${ann.total}` : null,
+  ].filter(Boolean);
+  if (diluted.length > 0) {
+    lines.push(
+      `> **需要标注的指标，分母见括号**：${diluted.join("、")}。` +
+        `没标注的案例**不参与平均** —— 它们在计算函数里返回的是「满分」` +
+        `（召回返 1、虚报返 0），摊进平均会让标注越少、指标越好看。` +
+        `分母小于案例总数时，这些数的置信度低于其余指标；分母为 0 的指标显示为「未采集」。`
+    );
+    lines.push("");
+  }
+
   // 覆盖度这两项的标注量必须和比率一起看 —— 全数据集只有十来条标注，
   // 一条就能让分案例的比率动几十个百分点，单看比率是过度解读
   const missingTotal = aggregate.perCase.reduce((s, c) => s + c.metrics.coverage.missingTotal, 0);

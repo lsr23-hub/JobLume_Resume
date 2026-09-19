@@ -15,6 +15,8 @@ export interface AggregateMetrics {
   /** 每个指标的分案例明细，用于看方差 */
   perCase: Array<{ caseId: string; metrics: CaseMetrics }>;
   stability: StabilityMetrics | null;
+  /** 覆盖类指标的分母：有标注的案例数 / 总案例数 */
+  annotatedCases: { missing: number; unsupported: number; mustHave: number; total: number };
 }
 
 const mean = (values: number[]): number =>
@@ -65,10 +67,36 @@ export const aggregateMetrics = (
   // ── 其余：按案例平均 ──
   const avg = (pick: (c: CaseMetrics) => number) => mean(cases.map(pick));
 
+  /**
+   * 只在**有标注的案例**上平均。
+   *
+   * 覆盖类指标原先跟其他指标一样对全部案例取平均，但没标注的案例在
+   * `computeCoverageMetrics` 里返回的是「满分」—— `missingRecall` 返 1、
+   * `coverageFalsePositive` 返 0（越低越好）。于是**标注越少、指标越好看**：
+   * 全数据集只有十几条标注时，这个稀释足以把结论带反。
+   *
+   * `mustHaveRecall` 有同一个毛病（`selection.ts` 在 `mustHaveIds.length === 0`
+   * 时返 1）。实测 8 个案例里 `jun-02` 一条 must-have 都没标，
+   * 它给 89.6% 这个数字贡献了一个假的满分。
+   *
+   * 没有任何合格案例时返回 `undefined` 而不是满分 —— 报告会把它渲染成
+   * 「未采集」。「没测」和「测了满分」必须能分开，否则尺子会撒谎。
+   */
+  const avgAnnotated = (
+    hasAnnotation: (c: CaseMetrics) => boolean,
+    pick: (c: CaseMetrics) => number
+  ): number | undefined => {
+    const annotated = cases.filter(hasAnnotation);
+    return annotated.length === 0 ? undefined : mean(annotated.map(pick));
+  };
+
   const values: Partial<Record<MetricKey, number>> = {
     requirementRecall: avg((c) => c.requirements.requirementRecall),
-    missingRecall: avg((c) => c.coverage.missingRecall),
-    coverageFalsePositive: avg((c) => c.coverage.coverageFalsePositive),
+    missingRecall: avgAnnotated((c) => c.coverage.missingTotal > 0, (c) => c.coverage.missingRecall),
+    coverageFalsePositive: avgAnnotated(
+      (c) => c.coverage.unsupportedTotal > 0,
+      (c) => c.coverage.coverageFalsePositive
+    ),
 
     // 下面三项**不再采集**：v4 起模型只输出排序，不再输出「推荐/不推荐」
     // 这个二分标签（划线取决于用户这份简历放得下几条，模型无从知道）。
@@ -82,7 +110,7 @@ export const aggregateMetrics = (
     spearman: avg((c) => c.ranking.spearman),
     top5HitRate: avg((c) => c.ranking.top5HitRate),
 
-    mustHaveRecall: avg((c) => c.selection.mustHaveRecall),
+    mustHaveRecall: avgAnnotated((c) => c.selection.mustHaveTotal > 0, (c) => c.selection.mustHaveRecall),
     idealJaccard: avg((c) => c.selection.idealJaccard),
     selectionQuality: avg((c) => c.selection.selectionQuality),
   };
@@ -95,7 +123,19 @@ export const aggregateMetrics = (
   }
   if (stability?.perturbationChecked) values.perturbationFlipRate = stability.perturbationFlipRate;
 
-  return { values, perCase: cases.map((metrics) => ({ caseId: metrics.caseId, metrics })), stability };
+  return {
+    values,
+    perCase: cases.map((metrics) => ({ caseId: metrics.caseId, metrics })),
+    stability,
+    // 覆盖类指标的**分母**：多少案例真有标注。比率必须和它一起读 ——
+    // 全数据集只有十几条标注时，单看百分比会把一把粗尺子读成精确结论。
+    annotatedCases: {
+      missing: cases.filter((c) => c.coverage.missingTotal > 0).length,
+      unsupported: cases.filter((c) => c.coverage.unsupportedTotal > 0).length,
+      mustHave: cases.filter((c) => c.selection.mustHaveTotal > 0).length,
+      total: cases.length,
+    },
+  };
 };
 
 export { computeStabilityMetrics };

@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { MatchAnalysis } from "@/types/jobTarget";
 import type { ProfileEntity } from "@/types/profile";
 import { computeCoverageMetrics } from "./coverage";
+import { aggregateMetrics } from "./index";
+import type { CaseMetrics } from "../types";
+import type { CoverageMetrics } from "./coverage";
 import { computeRequirementMetrics } from "./requirements";
 import { computeJudgmentMetrics } from "./judgment";
 import { computeRankingMetrics } from "./ranking";
@@ -390,5 +393,105 @@ describe("computeRequirementMetrics —— 要求项召回", () => {
       goldReqs
     );
     expect(m.extracted).toBe(2);
+  });
+});
+
+
+// ─────────────────────────────────────────────────────────────
+// 覆盖类指标的聚合口径
+//
+// 背景：没标注的案例在 computeCoverageMetrics 里返回的是「满分」
+// （missingRecall 返 1、coverageFalsePositive 返 0）。原先聚合时对所有案例
+// 一律平均，于是**标注越少、指标越好看** —— 全数据集只有十几条标注时，
+// 这个稀释足以把结论带反。下面把「不许稀释」钉死。
+// ─────────────────────────────────────────────────────────────
+describe("aggregateMetrics —— 覆盖类指标只在有标注的案例上平均", () => {
+  const COVERAGE_DEFAULTS: CoverageMetrics = {
+    missingRecall: 1,
+    missingFound: [],
+    missingMissed: [],
+    coverageFalsePositive: 0,
+    unsupportedClaimed: [],
+    missingTotal: 0,
+    unsupportedTotal: 0,
+    coveredCount: 0,
+    weakCount: 0,
+    missingCount: 0,
+  };
+
+  // 只关心 coverage，其余维度给空壳 —— 本组测试不读它们
+  const mkCase = (caseId: string, coverage: Partial<CoverageMetrics>): CaseMetrics =>
+    ({
+      caseId,
+      dimensions: [],
+      judgment: {
+        hallucinations: [],
+        truePositive: 0,
+        falseNegative: 0,
+        falsePositive: 0,
+        trueNegative: 0,
+      },
+      requirements: { requirementRecall: 0 },
+      ranking: { ndcgAt5: 0, spearman: 0, top5HitRate: 0 },
+      selection: { mustHaveRecall: 0, mustHaveTotal: 0, idealJaccard: 0, selectionQuality: 0 },
+      coverage: { ...COVERAGE_DEFAULTS, ...coverage },
+    }) as unknown as CaseMetrics;
+
+  it("没有标注的案例不参与平均，不许把它当满分摊进去", () => {
+    const cases = [
+      // 有标注：2 条里命中 1 条 → 0.5
+      mkCase("annotated", { missingTotal: 2, missingRecall: 0.5 }),
+      // 没标注：函数返回 1（满分）。旧口径下它会把均值从 0.5 抬到 0.75
+      mkCase("unannotated", { missingTotal: 0, missingRecall: 1 }),
+    ];
+
+    const { values, annotatedCases } = aggregateMetrics(cases, null);
+
+    expect(values.missingRecall).toBeCloseTo(0.5);
+    expect(values.missingRecall).not.toBeCloseTo(0.75);
+    expect(annotatedCases).toEqual({ missing: 1, unsupported: 0, mustHave: 0, total: 2 });
+  });
+
+  it("虚报率同理：没标注的案例返 0（越低越好＝满分），不能摊进平均", () => {
+    const cases = [
+      mkCase("annotated", { unsupportedTotal: 4, coverageFalsePositive: 0.5 }),
+      mkCase("unannotated", { unsupportedTotal: 0, coverageFalsePositive: 0 }),
+    ];
+
+    const { values } = aggregateMetrics(cases, null);
+
+    expect(values.coverageFalsePositive).toBeCloseTo(0.5);
+    expect(values.coverageFalsePositive).not.toBeCloseTo(0.25);
+  });
+
+  it("一个合格案例都没有时留 undefined，而不是伪装成满分", () => {
+    const cases = [
+      mkCase("a", { missingTotal: 0 }),
+      mkCase("b", { missingTotal: 0 }),
+    ];
+
+    const { values, annotatedCases } = aggregateMetrics(cases, null);
+
+    // undefined 会被报告渲染成「未采集」。「没测」与「测了满分」必须能分开。
+    expect(values.missingRecall).toBeUndefined();
+    expect(values.coverageFalsePositive).toBeUndefined();
+    expect(annotatedCases.missing).toBe(0);
+    expect(annotatedCases.unsupported).toBe(0);
+  });
+
+  it("关键经历召回同样不许被「一条 must-have 都没标」的案例稀释", () => {
+    // 实测依据：8 个案例里 jun-02 一条 must-have 都没标，它给 89.6% 这个数字
+    // 贡献了一个假的 1.0（selection.ts 在 mustHaveIds.length === 0 时返 1）
+    const withMust = mkCase("withMust", {});
+    withMust.selection = { mustHaveRecall: 0.8, mustHaveTotal: 3, idealJaccard: 0, selectionQuality: 0 };
+    const withoutMust = mkCase("withoutMust", {});
+    withoutMust.selection = { mustHaveRecall: 1, mustHaveTotal: 0, idealJaccard: 0, selectionQuality: 0 };
+
+    const { values, annotatedCases } = aggregateMetrics([withMust, withoutMust], null);
+
+    // 旧口径：(0.8 + 1) / 2 = 0.9，被抬高
+    expect(values.mustHaveRecall).toBeCloseTo(0.8);
+    expect(values.mustHaveRecall).not.toBeCloseTo(0.9);
+    expect(annotatedCases.mustHave).toBe(1);
   });
 });
