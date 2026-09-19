@@ -105,3 +105,43 @@ npm run e2e:core                 # 需先起服务端；22 项，含 PDF 文字�
 ```
 
 **注意**：`e2e:core` 连的是 `E2E_BASE ?? http://localhost:3000`，且需要 playwright chromium（`npm run install:playwright`）。**要验静态文件与路由的优先级，必须用 `pnpm start` 而不是 `pnpm dev`** —— dev 不走 `server.mjs`。
+
+---
+
+## 七、2026-09-19 · B2 spike：自绘 PDF 可行性（**结论：通，但有条件**）
+
+### 问题
+`docs/04:407` 判「文字层康熙部首**非本项目可修**」（CMap 由 Chromium 打印引擎写出）。
+该判断对**当前实现**成立，但项目已有 `jspdf` 这条自绘路径 —— 它能不能写出正确的 ToUnicode？
+
+### 方法（A/B，同一段文字）
+`页立大工心面目手 — 沈亦舟 高级前端工程师`
+
+| 路径 | 文字层结果 |
+|---|---|
+| Chromium 打印（`page.pdf()`，与 `print.ts` 同引擎） | **11/20 个汉字是康熙部首** —— `页→⻚`(U+2EDA)、`立→⽴`、`大→⼤`、`工→⼯`、`心→⼼`、`面→⾯`、`目→⽬`、`手→⼿`、`舟→⾈`、`高→⾼` |
+| jsPDF 自绘（`MiSans-Medium.ttf`） | **0 个**，码位全部正确（`页` 提取回来仍是 U+9875） |
+
+提取用 `pdfjs-dist` 5.4.624（项目已有依赖）；脚本在 `/tmp/jl-b2/{make,chromium,read}.mjs`。
+
+### 结论
+1. **文字层正确性是通的** —— jsPDF 按输入码位写 ToUnicode，不做「按字形反查」那一步，
+   所以不会踩到 Chromium 那个坑。**「非本项目可修」这个判断可以推翻。**
+2. **但字体覆盖只有一半**：jsPDF **只支持 TrueType（glyf）**，不支持 CFF/OTF。
+   实测 `addFont` 一个 OTF 直接抛 `Cannot use 'in' operator to search for '0' in undefined`。
+
+   | 格式 | 文件 | jsPDF |
+   |---|---|---|
+   | TTF ✅ | `AlibabaPuHuiTi-3-{55,85}.ttf`、`MiSans-{Normal,Medium}.ttf` | 可用 |
+   | OTF ❌ | `NotoSansSC-{Regular,Medium,Bold}.otf`、`SourceHanSerifSC-{Regular,Medium,Bold}.otf` | **不可用** |
+
+   即：选 TTF 那 4 款的用户可以走自绘；选 Noto / 思源宋体那 6 款的**不行** ——
+   除非补 TTF 版的同款字体（思源宋体有 TTF 发行版，Noto Sans SC 也有）。
+3. **版面复刻是未验证的大头。** 本次只证明「文字层能对」，没证明「4 套模板的排版能在
+   jsPDF 里复刻」。那才是真正的工作量，也是决定这条路的成本的主要因素。
+
+### 待你决策（已记入 task_plan U3）
+三条路的取舍：
+- 自绘 PDF（文字层正确 + 字体要补 TTF + 版面要复刻）
+- 改导出文案说实话（几行，零风险）
+- 两条并存：TTF 字体走自绘、其余走打印并提示 —— 但两套渲染要维护，不推荐
