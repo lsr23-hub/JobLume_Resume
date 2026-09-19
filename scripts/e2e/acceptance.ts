@@ -12,6 +12,7 @@
  *   npx tsx scripts/e2e/acceptance.ts
  */
 import { chromium } from "playwright";
+import { ensureCurrentUser } from "./userScope.mjs";
 import fs from "node:fs";
 import { fingerprintEntity, fingerprintContent } from "../../src/lib/match/analysisCache";
 import { PROMPT_VERSION } from "../../src/lib/match/buildMatchPrompt";
@@ -91,11 +92,12 @@ const ENTITIES = (): Record<string, Partial<ProfileEntity>> => ({
 
 const seedProfile = async () => {
   await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
+  await ensureCurrentUser(page);
   await page.waitForTimeout(1200);
   await page.evaluate(({ now, ents }) => {
     const raw = JSON.parse(localStorage.getItem("career-profile-storage") ?? "null");
     if (!raw) throw new Error("career-profile-storage 未初始化");
-    const p = raw.state.profile;
+    const p = raw.state.profiles[raw.state.currentUserId];
     p.basic = { ...p.basic, name: "林可", title: "前端工程师", email: "linke@example.com", phone: "13800000000" };
     const base = { tags: [], skills: [], metrics: [], hidden: false, order: 0, createdAt: now, updatedAt: now };
     p.entities = Object.fromEntries(Object.entries(ents).map(([k, v]) => [k, { ...base, ...v }]));
@@ -121,7 +123,9 @@ step(!hasKeyAfterClear, "① 已确认处于「未配置 API Key」状态");
 
 const profileUsable = await page.evaluate(() => {
   const raw = JSON.parse(localStorage.getItem("career-profile-storage") ?? "null");
-  return !!raw?.state?.profile?.entities?.exp1;
+  const st = raw?.state ?? {};
+  const p = st.currentUserId ? st.profiles?.[st.currentUserId] : null;
+  return !!p?.entities?.exp1;
 });
 step(profileUsable, "② 无 Key：职业数据库可读（条目在库）");
 
@@ -321,14 +325,16 @@ try {
   const file = `${OUT}/accept-backup.json`;
   await download.saveAs(file);
   const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
-  const entityCount = Object.keys(parsed?.profile?.entities ?? parsed?.state?.profile?.entities ?? {}).length;
+  // 备份文件自身的形状没变（app/version/exportedAt/profile/…），读 parsed.profile 即可
+  const entityCount = Object.keys(parsed?.profile?.entities ?? {}).length;
 
   // 清空后重新导入
   await page.evaluate(() => {
     localStorage.removeItem("career-profile-storage");
-    localStorage.removeItem("resume-store");
+    localStorage.removeItem("resume-storage");
   });
   await page.reload({ waitUntil: "networkidle" });
+  await ensureCurrentUser(page);
   await page.waitForTimeout(1500);
   await page.getByRole("button", { name: /导入数据/ }).first().click();
   await page.waitForTimeout(900);
@@ -340,7 +346,9 @@ try {
   await page.waitForTimeout(2000);
   const restored = await page.evaluate(() => {
     const raw = JSON.parse(localStorage.getItem("career-profile-storage") ?? "null");
-    return Object.keys(raw?.state?.profile?.entities ?? {}).length;
+    const st = raw?.state ?? {};
+    const p = st.currentUserId ? st.profiles?.[st.currentUserId] : null;
+    return Object.keys(p?.entities ?? {}).length;
   });
   backupOk = entityCount > 0 && restored === entityCount;
   step(backupOk, `⑫ 备份往返：导出 ${entityCount} 条 → 清空 → 导入后 ${restored} 条`);

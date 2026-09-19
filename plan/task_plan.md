@@ -211,7 +211,7 @@
 | 3 | `UserSelectDialog` + `RequireUser` + 侧边栏 chip | ◐ 弹窗与门禁已接；**侧边栏 chip 未做**（暂时只能刷新后靠持久化记忆切人） |
 | 4 | 分析读写点切到"当前用户那一份"；删掉 `JobTarget` 上的旧单槽字段 | ⬜ |
 | 5 | 备份调用点按用户收口（`lib/backup.ts` 本身不用改） | ⬜ |
-| 6 | 6 个既有 e2e 脚本改 localStorage 路径 + 新增 `e2e:users` | ⬜ **当前 4 个既有套件因路径没改而失败** |
+| 6 | 6 个既有 e2e 脚本改 localStorage 路径 | ✅ 新增 `scripts/e2e/userScope.mjs`；6 套全绿（86 项） |
 | 7 | 文档同步（含已有的 `resume-store` 笔误等存量错误） | ⬜ |
 
 **第 1a 步留下的过渡缝**：`userScope.ts` 导出了 `ScopedJobTarget = JobTarget & TargetScopedAnalysis`。

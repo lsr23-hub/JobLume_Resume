@@ -11,6 +11,7 @@
  *   pnpm e2e:photo
  */
 import { chromium, type Page } from "playwright";
+import { ensureCurrentUser } from "./userScope.mjs";
 
 const BASE = process.env.E2E_BASE ?? "http://localhost:3000";
 
@@ -51,12 +52,13 @@ page.on("pageerror", (e) => pageErrors.push(e.message));
 
 // ─────────── 职业数据库 ───────────
 await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
+await ensureCurrentUser(page);
 await page.waitForTimeout(1500);
 // 种一条经历：编辑器那条路要能「全选」，没有条目「开始生成」是禁用的
 await page.evaluate(() => {
   const NOW = new Date().toISOString();
   const raw = JSON.parse(localStorage.getItem("career-profile-storage")!);
-  raw.state.profile.entities = {
+  raw.state.profiles[raw.state.currentUserId].entities = {
     exp1: {
       id: "exp1", type: "experience", sectionId: "experience",
       title: "示例科技", subtitle: "前端工程师", dateRange: "2020.07 - 2024.03",
@@ -129,7 +131,10 @@ step(new Set(samples).size > 1, `命中带边缘按下也能拖动（${samples[0
 await cropper(page).getByRole("button", { name: "确认裁剪" }).click();
 await page.waitForTimeout(1200);
 const profilePhoto = await page.evaluate(() =>
-  (JSON.parse(localStorage.getItem("career-profile-storage")!).state.profile.basic.photo ?? "").slice(0, 8)
+  (() => {
+    const st = JSON.parse(localStorage.getItem("career-profile-storage")!).state;
+    return (st.profiles[st.currentUserId].basic.photo ?? "").slice(0, 8);
+  })()
 );
 step(profilePhoto === "idb:img_", `裁剪结果写进档案（${profilePhoto}…，档案层走 IndexedDB 引用）`);
 

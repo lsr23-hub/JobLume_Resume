@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import { ensureCurrentUser } from "./userScope.mjs";
 import fs from "node:fs";
 
 const BASE = process.env.E2E_BASE ?? "http://localhost:3000";
@@ -38,11 +39,12 @@ await page.addInitScript(() => {
 
 // ── 灌档案 ──
 await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
+await ensureCurrentUser(page);
 await page.waitForTimeout(1200);
 const now = new Date().toISOString();
 await page.evaluate(({ now }) => {
   const raw = JSON.parse(localStorage.getItem("career-profile-storage"));
-  const p = raw.state.profile;
+  const p = raw.state.profiles[raw.state.currentUserId];
   p.basic = { ...p.basic, name: "林可", title: "前端工程师", email: "linke@example.com",
               phone: "13800000000", location: "上海", employementStatus: "在职" };
   const base = { tags: [], skills: [], metrics: [], hidden: false, order: 0, createdAt: now, updatedAt: now };
@@ -75,10 +77,10 @@ await page.getByText("经典模板", { exact: true }).first().click();
 await page.waitForTimeout(1300);
 await page.getByRole("button", { name: /就用这个模板开始|用这个模板/ }).first().click();
 await page.waitForTimeout(3000);
-for (const label of ["保留全部并生成", "应用并生成"]) {
-  const b = page.getByRole("button", { name: label });
-  if (await b.count() && await b.first().isVisible().catch(() => false)) { await b.first().click(); break; }
-}
+// 通用简历也要过「内容选择」步：默认全不勾，用「全选」起步再生成
+await page.getByRole("button", { name: "全选" }).click();
+await page.waitForTimeout(600);
+await page.getByRole("button", { name: "开始生成" }).click();
 await page.waitForTimeout(4000);
 step(/\/app\/workbench\//.test(page.url()), "生成简历并进入工作台");
 

@@ -12,6 +12,7 @@
  *   pnpm e2e:targeted
  */
 import { chromium, type Page } from "playwright";
+import { ensureCurrentUser } from "./userScope.mjs";
 import fs from "node:fs";
 import { validateMatchResult } from "../../src/lib/match/validateMatchResult";
 import { PROMPT_VERSION } from "../../src/lib/match/buildMatchPrompt";
@@ -86,12 +87,13 @@ page.on("console", (m) => { if (m.type() === "error") errors.push("console: " + 
 
 const seed = async () => {
   await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
+await ensureCurrentUser(page);
   await page.waitForTimeout(1200);
   await page.evaluate(
     ({ now, entities, jd, analysis }) => {
       const raw = JSON.parse(localStorage.getItem("career-profile-storage") ?? "null");
       if (!raw) throw new Error("career-profile-storage 未初始化");
-      const p = raw.state.profile;
+      const p = raw.state.profiles[raw.state.currentUserId];
       p.basic = { ...p.basic, name: "林可", title: "前端工程师" };
       p.entities = Object.fromEntries(entities.map((e) => [e.id, e]));
       localStorage.setItem("career-profile-storage", JSON.stringify(raw));
