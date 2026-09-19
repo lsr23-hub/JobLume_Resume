@@ -189,7 +189,7 @@ const EducationItem = ({ education }: { education: Education }) => {
                     className={cn(
                       "text-sm truncate",
                       "dark:text-neutral-400",
-                      "text-gray-500"
+                      "text-muted-foreground"
                     )}
                   >
                     {[education.major, education.degree]

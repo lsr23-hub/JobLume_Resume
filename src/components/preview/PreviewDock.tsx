@@ -110,7 +110,7 @@ const PreviewDock = ({
                     <div
                       className={cn(
                         "flex cursor-pointer h-7 w-7 items-center justify-center rounded-lg",
-                        "hover:bg-gray-100/50 dark:hover:bg-neutral-800/50"
+                        "hover:bg-accent/50 dark:hover:bg-neutral-800/50"
                       )}
                     >
                       <TemplateSheet />
@@ -127,7 +127,7 @@ const PreviewDock = ({
                     <div
                       className={cn(
                         "flex cursor-pointer h-7 w-7 items-center justify-center rounded-lg",
-                        "hover:bg-gray-100/50 dark:hover:bg-neutral-800/50",
+                        "hover:bg-accent/50 dark:hover:bg-neutral-800/50",
                         "transition-all duration-200",
                         globalSettings?.autoOnePage && [
                           "bg-primary text-primary-foreground",
@@ -158,7 +158,7 @@ const PreviewDock = ({
                     <div
                       className={cn(
                         "flex cursor-pointer h-7 w-7 items-center justify-center rounded-lg",
-                        "hover:bg-gray-100/50 dark:hover:bg-neutral-800/50",
+                        "hover:bg-accent/50 dark:hover:bg-neutral-800/50",
                         "transition-all duration-200",
                         !pageBreakLinesVisible && [
                           "bg-primary text-primary-foreground",
@@ -192,7 +192,7 @@ const PreviewDock = ({
                       <button
                         className={cn(
                           "flex cursor-pointer h-7 w-7 items-center justify-center rounded-lg",
-                          "hover:bg-gray-100/50 dark:hover:bg-neutral-800/50",
+                          "hover:bg-accent/50 dark:hover:bg-neutral-800/50",
                           "transition-all duration-200"
                         )}
                       >
@@ -211,7 +211,7 @@ const PreviewDock = ({
                     <div
                       className={cn(
                         "flex cursor-pointer h-7 w-7 items-center justify-center rounded-lg",
-                        "hover:bg-gray-100/50 dark:hover:bg-neutral-800/50"
+                        "hover:bg-accent/50 dark:hover:bg-neutral-800/50"
                       )}
                       onClick={handleCopyResume}
                     >
@@ -223,7 +223,7 @@ const PreviewDock = ({
                   </TooltipContent>
                 </Tooltip>
               </DockIcon>
-              <div className="w-full h-[1px] bg-gray-200" />
+              <div className="w-full h-[1px] bg-secondary" />
               <DockIcon>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -231,7 +231,7 @@ const PreviewDock = ({
                       onClick={toggleSidePanel}
                        className={cn(
                         "flex h-[30px] w-[30px] items-center justify-center rounded-sm transition-all",
-                        "hover:bg-gray-100/50 dark:hover:bg-neutral-800/50",
+                        "hover:bg-accent/50 dark:hover:bg-neutral-800/50",
                         "active:scale-95",
                         !sidePanelCollapsed && [
                           "bg-primary text-primary-foreground",
@@ -260,7 +260,7 @@ const PreviewDock = ({
                       onClick={toggleEditPanel}
                       className={cn(
                         "flex h-[30px] w-[30px] items-center justify-center rounded-sm transition-all",
-                        "hover:bg-gray-100/50 dark:hover:bg-neutral-800/50",
+                        "hover:bg-accent/50 dark:hover:bg-neutral-800/50",
                         "active:scale-95",
                         !editPanelCollapsed && [
                           "bg-primary text-primary-foreground",
@@ -286,7 +286,7 @@ const PreviewDock = ({
                       onClick={togglePreviewPanel}
                       className={cn(
                         "flex h-[30px] w-[30px] items-center justify-center rounded-sm transition-all",
-                        "hover:bg-gray-100/50 dark:hover:bg-neutral-800/50",
+                        "hover:bg-accent/50 dark:hover:bg-neutral-800/50",
                         "active:scale-95",
                         !previewPanelCollapsed && [
                           "bg-primary text-primary-foreground",
@@ -305,7 +305,7 @@ const PreviewDock = ({
                   </TooltipContent>
                 </Tooltip>
               </DockIcon>
-              <div className="w-full h-[1px] bg-gray-200" />
+              <div className="w-full h-[1px] bg-secondary" />
  
               <DockIcon>
                 <Tooltip>
@@ -313,7 +313,7 @@ const PreviewDock = ({
                     <div
                       className={cn(
                         "flex cursor-pointer h-7 w-7 items-center justify-center rounded-lg",
-                        "hover:bg-gray-100/50 dark:hover:bg-neutral-800/50"
+                        "hover:bg-accent/50 dark:hover:bg-neutral-800/50"
                       )}
                       onClick={() => router.push("/app/dashboard")}
                     >

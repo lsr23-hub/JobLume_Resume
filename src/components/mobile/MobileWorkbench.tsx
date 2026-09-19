@@ -122,7 +122,7 @@ export function MobileWorkbench() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.05 }}
               transition={{ duration: 0.2 }}
-              className="h-full overflow-y-auto bg-gray-100"
+              className="h-full overflow-y-auto bg-muted"
               data-preview-scroll-container="true"
             >
               <PreviewPanel

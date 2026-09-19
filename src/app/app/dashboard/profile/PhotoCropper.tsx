@@ -181,10 +181,10 @@ export const PhotoCropper = ({ file, onCancel, onConfirm }: Props) => {
             )}
             {/* 三分线参考 */}
             <div className="pointer-events-none absolute inset-0">
-              <div className="absolute left-1/3 top-0 h-full w-px bg-white/40" />
-              <div className="absolute left-2/3 top-0 h-full w-px bg-white/40" />
-              <div className="absolute left-0 top-1/3 h-px w-full bg-white/40" />
-              <div className="absolute left-0 top-2/3 h-px w-full bg-white/40" />
+              <div className="absolute left-1/3 top-0 h-full w-px bg-card/40" />
+              <div className="absolute left-2/3 top-0 h-full w-px bg-card/40" />
+              <div className="absolute left-0 top-1/3 h-px w-full bg-card/40" />
+              <div className="absolute left-0 top-2/3 h-px w-full bg-card/40" />
             </div>
           </div>
 

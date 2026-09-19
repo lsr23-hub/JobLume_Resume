@@ -325,7 +325,7 @@ const PhotoConfigDrawer: React.FC<Props> = ({
       <DrawerContent
         ref={drawerContentRef}
         className={cn(
-          "dark:bg-neutral-900 dark:text-white bg-white",
+          "dark:bg-neutral-900 dark:text-white bg-card",
           "md:fixed md:border-none md:flex md:bottom-0 md:left-0 md:right-0 md:h-[93%] md:max-w-[360px] md:mx-[-1px] md:z-10 md:outline-none shadow shadow-blue-500/40"
         )}
       >
@@ -365,7 +365,7 @@ const PhotoConfigDrawer: React.FC<Props> = ({
                 >
                   <Button
                     onClick={handleRemovePhoto}
-                    className="p-1.5 rounded-full bg-white/10 hover:bg-white/20"
+                    className="p-1.5 rounded-full bg-card/10 hover:bg-card/20"
                   >
                     <X className="w-4 h-4 text-white" />
                   </Button>
@@ -380,7 +380,7 @@ const PhotoConfigDrawer: React.FC<Props> = ({
                 <Upload
                   className={cn(
                     "w-6 h-6 mb-2",
-                    "dark:text-neutral-400 text-neutral-500"
+                    "dark:text-neutral-400 text-muted-foreground"
                   )}
                 />
               </Button>
@@ -395,7 +395,7 @@ const PhotoConfigDrawer: React.FC<Props> = ({
           </div>
           <div className="p-6 space-y-6">
             <span className="text-sm">{t("upload.dragHint")}</span>
-            <span className="ml-2 text-xs text-neutral-500 mt-1">
+            <span className="ml-2 text-xs text-muted-foreground mt-1">
               ({t("upload.sizeLimit")})
             </span>
           </div>
@@ -433,7 +433,7 @@ const PhotoConfigDrawer: React.FC<Props> = ({
                     <div
                       className={cn(
                         "absolute right-3 top-1/2 -translate-y-1/2 text-sm",
-                        "dark:text-neutral-400 text-neutral-500"
+                        "dark:text-neutral-400 text-muted-foreground"
                       )}
                     >
                       W
@@ -455,7 +455,7 @@ const PhotoConfigDrawer: React.FC<Props> = ({
                     <div
                       className={cn(
                         "absolute right-3 top-1/2 -translate-y-1/2 text-sm",
-                        "dark:text-neutral-400 text-neutral-500"
+                        "dark:text-neutral-400 text-muted-foreground"
                       )}
                     >
                       H

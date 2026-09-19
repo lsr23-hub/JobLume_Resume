@@ -164,8 +164,8 @@ const ExperienceItem = ({ experience }: { experience: Experience }) => {
               className={cn(
                 "text-sm",
                 experience.visible
-                  ? "hover:bg-gray-100 text-gray-500 dark:hover:bg-neutral-800 dark:text-neutral-400"
-                  : "hover:bg-gray-100 text-gray-400 dark:hover:bg-neutral-800 dark:text-neutral-600"
+                  ? "hover:bg-accent text-muted-foreground dark:hover:bg-neutral-800 dark:text-neutral-400"
+                  : "hover:bg-accent text-muted-foreground dark:hover:bg-neutral-800 dark:text-neutral-600"
               )}
               onClick={handleVisibilityToggle}
             >

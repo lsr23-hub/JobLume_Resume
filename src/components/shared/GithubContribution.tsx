@@ -182,7 +182,7 @@ const GithubContributions: React.FC<GithubContributionsProps> = ({
   }, [githubKey, username, year]);
 
   if (loading) {
-    return <div className="animate-pulse bg-gray-200 h-32 rounded-md"></div>;
+    return <div className="animate-pulse bg-secondary h-32 rounded-md"></div>;
   }
 
   if (error) {

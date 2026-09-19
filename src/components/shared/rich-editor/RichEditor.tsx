@@ -494,7 +494,7 @@ const RichTextEditor = ({
       attributes: {
         class: cn(
           "tiptap max-w-none focus:outline-none min-h-[150px] px-4 py-3",
-          "text-neutral-900 dark:text-neutral-200"
+          "text-foreground"
         ),
       },
     }),
@@ -548,7 +548,7 @@ const RichTextEditor = ({
     <div
       className={cn(
         "rounded-lg overflow-hidden border shadow-sm",
-        "bg-card border-gray-100 dark:bg-neutral-900/30 dark:border-neutral-800"
+        "bg-card border-border dark:bg-neutral-900/30 dark:border-neutral-800"
       )}
       onClick={(e) => e.stopPropagation()}
     >
@@ -674,7 +674,7 @@ const RichTextEditor = ({
             "flex items-center gap-0.5 p-1 rounded-md backdrop-blur border shadow-lg",
             theme === "dark"
               ? "bg-neutral-900/80 border-neutral-800"
-              : "bg-background/80 border-gray-100"
+              : "bg-background/80 border-border"
           )}
           tippyOptions={{ duration: 100 }}
           editor={editor}

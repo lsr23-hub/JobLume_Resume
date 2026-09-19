@@ -48,12 +48,12 @@ export const FitProposal = ({
           {plan.removed.map((item) => (
             <li
               key={item.id}
-              className="rounded-xl border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-4"
+              className="rounded-xl border border-border/60 dark:border-gray-800/60 bg-muted/50 dark:bg-gray-900/50 p-4"
             >
-              <div className="font-medium text-gray-900 dark:text-white">
+              <div className="font-medium text-foreground">
                 {item.title}
                 {item.subtitle ? (
-                  <span className="text-gray-400 font-normal"> · {item.subtitle}</span>
+                  <span className="text-muted-foreground font-normal"> · {item.subtitle}</span>
                 ) : null}
               </div>
               <div className="text-xs text-muted-foreground mt-1">

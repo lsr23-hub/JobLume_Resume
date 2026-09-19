@@ -120,7 +120,7 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         hideClose
-        className="max-w-[1100px] w-[95vw] h-[90vh] sm:h-[85vh] p-0 overflow-hidden bg-white/95 dark:bg-gray-950/95 backdrop-blur-2xl border-white/20 dark:border-white/10 shadow-2xl rounded-[2rem] flex flex-col"
+        className="max-w-[1100px] w-[95vw] h-[90vh] sm:h-[85vh] p-0 overflow-hidden bg-card/95 dark:bg-gray-950/95 backdrop-blur-2xl border-white/20 dark:border-white/10 shadow-2xl rounded-[2rem] flex flex-col"
       >
         <DialogTitle className="sr-only">{title}</DialogTitle>
 
@@ -131,13 +131,13 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
                 type="button"
                 onClick={goBack}
                 aria-label={t("dashboard.resumes.createDialog.back")}
-                className="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="p-2 -ml-2 rounded-full hover:bg-accent transition-colors"
               >
-                <ChevronLeft className="w-6 h-6 text-gray-400" />
+                <ChevronLeft className="w-6 h-6 text-muted-foreground" />
               </button>
             )}
 
-            <div className="flex-1 text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400">
+            <div className="flex-1 text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-gray-500 dark:from-white dark:to-gray-400">
               {currentStep === "mode" && t("dashboard.resumes.createDialog.modeTitle")}
               {currentStep === "target" && t("dashboard.resumes.createDialog.selectTargetTitle")}
               {currentStep === "template" && t("dashboard.resumes.createDialog.selectTemplateTitle")}
@@ -148,9 +148,9 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
               type="button"
               onClick={() => onOpenChange(false)}
               aria-label={t("common.cancel")}
-              className="p-2 -mr-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2 -mr-2 rounded-full hover:bg-accent transition-colors"
             >
-              <X className="w-6 h-6 text-gray-400" />
+              <X className="w-6 h-6 text-muted-foreground" />
             </button>
           </div>
 
@@ -225,15 +225,15 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
                           whileTap={{ scale: 0.99 }}
                           onClick={() => pickTarget(target.id)}
                           className={cn(
-                            "w-full text-left rounded-2xl border border-gray-200/60 dark:border-gray-800/60",
-                            "bg-gray-50/50 dark:bg-gray-900/50 p-5 transition-all",
-                            "hover:bg-white dark:hover:bg-gray-900 hover:shadow-lg hover:border-primary/50"
+                            "w-full text-left rounded-2xl border border-border/60 dark:border-gray-800/60",
+                            "bg-muted/50 dark:bg-gray-900/50 p-5 transition-all",
+                            "hover:bg-card hover:shadow-lg hover:border-primary/50"
                           )}
                         >
-                          <div className="font-semibold text-gray-900 dark:text-white">
+                          <div className="font-semibold text-foreground">
                             {target.company}
                           </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                          <div className="text-sm text-muted-foreground mt-0.5">
                             {target.position}
                           </div>
                           <p className="text-xs text-muted-foreground mt-2 line-clamp-1">
@@ -278,8 +278,8 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
           {measureHost}
 
           {measuring && (
-            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-white/70 dark:bg-gray-950/70 backdrop-blur-sm">
-              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-card/70 dark:bg-gray-950/70 backdrop-blur-sm">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
                 {t("dashboard.resumes.createDialog.fitMeasuring")}
               </p>
@@ -308,18 +308,18 @@ const ModeCard = ({
     whileTap={{ scale: 0.99 }}
     onClick={onClick}
     className={cn(
-      "group text-left rounded-2xl border border-gray-200/60 dark:border-gray-800/60",
-      "bg-gray-50/50 dark:bg-gray-900/50 p-8 transition-all",
-      "hover:bg-white dark:hover:bg-gray-900 hover:shadow-xl hover:border-primary/50"
+      "group text-left rounded-2xl border border-border/60 dark:border-gray-800/60",
+      "bg-muted/50 dark:bg-gray-900/50 p-8 transition-all",
+      "hover:bg-card hover:shadow-xl hover:border-primary/50"
     )}
   >
-    <div className="w-16 h-16 rounded-2xl bg-white dark:bg-gray-800 shadow-inner flex items-center justify-center border border-gray-100 dark:border-gray-700 text-gray-400 group-hover:text-primary transition-colors">
+    <div className="w-16 h-16 rounded-2xl bg-card dark:bg-gray-800 shadow-inner flex items-center justify-center border border-border dark:border-gray-700 text-muted-foreground group-hover:text-primary transition-colors">
       {icon}
     </div>
-    <h5 className="mt-5 text-xl font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">
+    <h5 className="mt-5 text-xl font-bold text-foreground group-hover:text-primary transition-colors">
       {title}
     </h5>
-    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+    <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
       {description}
     </p>
   </motion.button>

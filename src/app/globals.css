@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -19,40 +19,81 @@
 
 @layer base {
   :root {
-    --background: 48 20% 97%; /* #F9F9F7 */
-    --foreground: 60 5% 10%; /* #1B1B18 */
-    --card: 48 20% 97%;
-    --card-foreground: 60 5% 10%;
-    --popover: 48 20% 97%;
-    --popover-foreground: 60 5% 10%;
-    --primary: 60 5% 10%; /* #1B1B18 - Claude Dark Charcoal */
-    --primary-foreground: 48 20% 97%;
-    --secondary: 48 18% 90%; /* #F2F0E9 */
-    --secondary-foreground: 60 5% 10%;
-    --muted: 60 2% 56%; /* #91918E */
-    --muted-foreground: 60 2% 40%;
-    --accent: 48 10% 92%; /* Neutral/Parchment Accent */
-    --accent-foreground: 60 5% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 48 10% 89%; /* #E6E6E3 */
-    --input: 48 10% 89%;
-    --ring: 60 5% 10%;
+    /* ───────────────────────────────────────────────────────────────
+    设计 token —— 名字与取值都对齐设计规格。
+    下面那组 shadcn 变量是它们的**别名**，所以现有组件一行都不用改，
+    换这里的值就能全局生效。
+    ─────────────────────────────────────────────────────────────── */
+    --canvas: 48 33% 97%;                  /* #faf9f5 页面底色 */
+    --ink: 60 3% 8%;                       /* #141413 标题与主文字 */
+    --body: 60 3% 23%;                     /* #3d3d3a 正文 */
+    --body-strong: 60 3% 14%;              /* #252523 强调段落 */
+    --muted-ink: 45 4% 41%;                /* #6c6a64 次级文字 */
+    --muted-soft: 45 5% 53%;               /* #8e8b82 说明与版权 */
+
+    --coral: 15 52% 58%;                   /* #cc785c 主色 */
+    --coral-active: 15 46% 45%;            /* #a9583e 按下态 */
+    --coral-disabled: 30 22% 87%;          /* #e6dfd8 禁用态 */
+
+    --hairline: 30 22% 87%;                /* #e6dfd8 边框 */
+    --hairline-soft: 35 23% 90%;           /* #ebe6df 同色带内分隔 */
+
+    --surface-soft: 37 39% 94%;            /* #f5f0e8 分区带 */
+    --surface-card: 39 35% 90%;            /* #efe9de 卡片 */
+    --surface-cream-strong: 38 32% 87%;    /* #e8e0d2 选中态 */
+
+    --surface-dark: 40 7% 9%;              /* #181715 深色产品面 */
+    --surface-dark-soft: 45 7% 11%;        /* #1f1e1b */
+    --surface-dark-elevated: 36 7% 14%;    /* #252320 */
+
+    --on-primary: 0 0% 100%;               /* #ffffff 珊瑚面上的文字 */
+    --on-dark: 48 33% 97%;                 /* #faf9f5 深色面上的文字 */
+    --on-dark-soft: 42 5% 61%;             /* #a09d96 深色面上的次级文字 */
+
+    --accent-teal: 168 39% 54%;            /* #5db8a6 */
+    --accent-amber: 32 76% 63%;            /* #e8a55a */
+    --success: 134 39% 54%;                /* #5db872 */
+    --warning: 43 80% 46%;                 /* #d4a017 */
+    --error: 0 53% 52%;                    /* #c64545 */
+
+    /* ── shadcn 变量 = 上面 token 的别名 ── */
+    --background: var(--canvas);
+    --foreground: var(--ink);
+    --card: var(--surface-soft);
+    --card-foreground: var(--ink);
+    --popover: var(--surface-soft);
+    --popover-foreground: var(--ink);
+    --primary: var(--coral);
+    --primary-foreground: var(--on-primary);
+    --secondary: var(--surface-card);
+    --secondary-foreground: var(--ink);
+    --muted: var(--surface-soft);
+    --muted-foreground: var(--muted-ink);
+    --accent: var(--surface-cream-strong);
+    --accent-foreground: var(--ink);
+    --destructive: var(--error);
+    --destructive-foreground: var(--on-primary);
+    --border: var(--hairline);
+    --input: var(--hairline);
+    --ring: var(--coral);
     --radius: 0.75rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --sidebar-background: 48 20% 96%;
-    --sidebar-foreground: 60 5% 25%;
-    --sidebar-primary: 260 45% 52%;
-    --sidebar-primary-foreground: 48 20% 97%;
-    --sidebar-accent: 48 10% 92%;
-    --sidebar-accent-foreground: 260 45% 52%;
-    --sidebar-border: 48 10% 89%;
-    --sidebar-ring: 260 45% 52%;
+
+    --chart-1: 15 52% 58%;
+    --chart-2: 168 39% 54%;
+    --chart-3: 32 76% 63%;
+    --chart-4: 134 39% 54%;
+    --chart-5: 43 80% 46%;
+
+    --sidebar-background: var(--surface-soft);
+    --sidebar-foreground: var(--ink);
+    --sidebar-primary: var(--coral);
+    --sidebar-primary-foreground: var(--on-primary);
+    --sidebar-accent: var(--surface-card);
+    --sidebar-accent-foreground: var(--ink);
+    --sidebar-border: var(--hairline);
+    --sidebar-ring: var(--coral);
   }
+
   /* 通用滚动条样式 */
   ::-webkit-scrollbar {
     width: 8px;
@@ -89,40 +130,35 @@
     background: rgba(193, 193, 193, 0.8);
   }
 
+  /* 暖色暗面 —— 取自规格里的 surface-dark 家族。
+     珊瑚色在暖暗面上同样成立，所以主色不换。
+     shadcn 那组别名是惰性求值，这里只重定义 token 就够了。 */
   .dark {
-    --background: 60 5% 10%; /* Dark Charcoal */
-    --foreground: 48 20% 97%; /* Off White text */
-    --card: 60 5% 12%;
-    --card-foreground: 48 20% 97%;
-    --popover: 60 5% 12%;
-    --popover-foreground: 48 20% 97%;
-    --primary: 48 20% 97%; /* Off White for primary buttons in dark mode or a light tint */
-    --primary-foreground: 60 5% 10%;
-    --secondary: 60 5% 15%;
-    --secondary-foreground: 48 20% 97%;
-    --muted: 60 2% 40%;
-    --muted-foreground: 60 2% 60%;
-    --accent: 60 5% 15%; /* Dark accent */
-    --accent-foreground: 48 20% 97%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 60 5% 20%;
-    --input: 60 5% 20%;
-    --ring: 48 20% 97%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --canvas: 40 7% 9%;                  /* #181715 */
+    --ink: 48 33% 97%;                   /* #faf9f5 */
+    --body: 42 8% 84%;
+    --body-strong: 45 15% 92%;
+    --muted-ink: 42 5% 61%;              /* #a09d96 */
+    --muted-soft: 40 5% 45%;
 
-    --sidebar-background: 60 5% 8%;
-    --sidebar-foreground: 48 20% 90%;
-    --sidebar-primary: 260 60% 70%;
-    --sidebar-primary-foreground: 60 5% 10%;
-    --sidebar-accent: 60 5% 15%;
-    --sidebar-accent-foreground: 60 5% 90%;
-    --sidebar-border: 60 5% 15%;
-    --sidebar-ring: 260 60% 70%;
+    --coral: 15 52% 58%;
+    --coral-active: 15 46% 45%;
+    --coral-disabled: 38 6% 22%;
+
+    --hairline: 38 6% 20%;
+    --hairline-soft: 38 6% 16%;
+
+    --surface-soft: 45 7% 11%;           /* #1f1e1b */
+    --surface-card: 36 7% 14%;           /* #252320 */
+    --surface-cream-strong: 36 7% 19%;
+
+    --surface-dark: 40 7% 9%;
+    --surface-dark-soft: 45 7% 11%;
+    --surface-dark-elevated: 36 7% 14%;
+
+    --on-primary: 0 0% 100%;
+    --on-dark: 48 33% 97%;
+    --on-dark-soft: 42 5% 61%;
   }
 }
 
@@ -238,3 +274,5 @@
   padding: 0;
   box-sizing: border-box;
 }
+
+

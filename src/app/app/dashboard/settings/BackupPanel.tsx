@@ -103,15 +103,15 @@ const BackupPanel = () => {
   const lastBackup = profile?.meta.lastBackupAt;
 
   return (
-    <Card className="overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-900/50">
-      <CardHeader className="border-b border-gray-100 dark:border-gray-800/50 pb-6">
+    <Card className="overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-300 bg-card/50">
+      <CardHeader className="border-b border-border/50 pb-6">
         <div className="flex items-center gap-3">
           <HardDriveDownload className="h-5 w-5 text-muted-foreground" />
           <div className="space-y-1">
-            <CardTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            <CardTitle className="text-xl font-semibold text-foreground">
               {t("title")}
             </CardTitle>
-            <CardDescription className="text-base text-gray-500 dark:text-gray-400 leading-relaxed">
+            <CardDescription className="text-base text-muted-foreground leading-relaxed">
               {t("description")}
             </CardDescription>
           </div>

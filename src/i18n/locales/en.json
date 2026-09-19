@@ -1,8 +1,8 @@
 {
   "common": {
     "title": "JobLume",
-    "subtitle": "AI Driven Resume Editor",
-    "description": "JobLume is an open source resume editor, free, privacy-first. No registration required, all data stored locally, support data backup and export, ensuring your resume data is always available.",
+    "subtitle": "A career database with job-description matching",
+    "description": "JobLume keeps your experience in a reusable career database, then checks every requirement in a job description against it, with a rank and a coverage verdict. The AI judges but never writes your content. No account, all data stays in your browser, export to PDF or back up as JSON.",
     "dashboard": "Dashboard",
     "edit": "Edit",
     "delete": "Delete",
@@ -16,89 +16,77 @@
     "notConfigured": "Not configured"
   },
   "home": {
-    "header": {
-      "title": "JobLume",
-      "startButton": "Get Started",
+    "brand": "JobLume",
+    "nav": {
       "features": "Features",
-      "pricing": "Pricing",
-      "about": "About",
-      "login": "Login",
-      "register": "Register",
-      "dashboard": "Dashboard"
+      "judgement": "Boundaries",
+      "templates": "Templates",
+      "enter": "Open workspace"
     },
     "hero": {
-      "badge": "Smart Resume Creation",
-      "title": "Make Resume Creation Simple and Smart",
-      "subtitle": "JobLume uses AI technology to help you quickly create professional resumes. No registration required, free to use, with secure data storage.",
-      "cta": "Get Started",
-      "secondary": "Browse Templates"
+      "badge": "Local-first · No sign-up",
+      "title": "Build your experience once, tailor it to every job",
+      "subtitle": "Your career database is the single source of truth. Paste a job description and every requirement is checked against your experience, with a rank and a coverage verdict you can open and inspect.",
+      "cta": "Get started",
+      "secondary": "See templates"
+    },
+    "mockup": {
+      "target": "Target · Senior Frontend Engineer",
+      "analyzed": "ANALYZED",
+      "item1": "5+ years of frontend development",
+      "item1Evidence": "Backed by \"Frontend Engineer · Acme Tech\"",
+      "covered": "Covered",
+      "item2": "Experience optimising large-table performance",
+      "item2Evidence": "Thin evidence — no quantified result found",
+      "weak": "Thin",
+      "item3": "Familiar with Node.js server-side work",
+      "item3Evidence": "No matching entry in your experience library",
+      "missing": "Missing",
+      "note": "Missing items are a hint, not a verdict on your eligibility. The AI writes none of your content."
     },
     "features": {
-      "title": "Why Choose JobLume?",
-      "subtitle": "We provide an all-in-one resume solution to make your job search journey smoother",
-      "ai": {
-        "badge": "AI Judgement",
-        "title": "AI judges, never rewrites",
-        "description": "Breaks a job description into individual requirements, checks each one against your experience, and ranks what fits. Every judgement opens to the evidence behind it.",
-        "item1": "Requirement by requirement",
-        "item1_description": "Hard, nice-to-have and duties, each pointing at the experience behind it",
-        "item2": "Automatic categorisation",
-        "item2_description": "Tags your experience so the generic resume ranks it sensibly"
+      "title": "Three things, each closer to the application",
+      "subtitle": "From tidying your experience to cutting it down for a specific role — all inside your own browser.",
+      "card1": {
+        "title": "Career database",
+        "desc": "Maintain it once, reuse it everywhere. Education, work, projects and skills each in their place, picked per resume."
       },
-      "storage": {
-        "badge": "Local Storage",
-        "title": "Data Security, Privacy First",
-        "description": "All resume data is fully stored locally, no need to worry about privacy leaks. Support data export backup, ensure your resume data is always available.",
-        "item1": "Local file storage",
-        "item1_description": "Resume data securely stored on your computer's hard drive",
-        "item2": "Multiple export formats",
-        "item2_description": "Support PDF and JSON format export",
-        "item3": "Support data export backup"
+      "card2": {
+        "title": "Requirement by requirement",
+        "desc": "A job description is broken into hard requirements, nice-to-haves and duties — each one pointing at the experience behind it, instead of an unexplainable score."
       },
-      "preview": {
-        "badge": "Real-time Preview",
-        "title": "What You See Is What You Get",
-        "item1": "Real-time preview of editing effects",
-        "item2": "Multiple export format support"
+      "card3": {
+        "title": "The AI only judges",
+        "desc": "No rewriting, no ghostwriting. The model classifies and matches; there is no code path that edits your words."
       }
     },
-    "news": {
-      "label": "News",
-      "content": "New: AI matching against a job description is live"
+    "templates": {
+      "title": "Four templates, and that is enough",
+      "subtitle": "Every one exports a real, ATS-parseable text layer — not an image."
+    },
+    "judgement": {
+      "eyebrow": "Boundaries",
+      "title": "The AI recommends, you decide",
+      "point1": {
+        "title": "You do the selecting",
+        "desc": "Nothing is pre-checked. Every line that reaches your resume is one you ticked yourself."
+      },
+      "point2": {
+        "title": "Works without an API key",
+        "desc": "Without a key, the database, templates and exports all still work — you just lose the match annotations."
+      },
+      "point3": {
+        "title": "Every judgement is checkable",
+        "desc": "A verdict must name the experience behind it, or it is downgraded; a quoted JD line that cannot be found is cleared."
+      }
+    },
+    "cta": {
+      "title": "Start building your resume",
+      "description": "Your data lives in your own browser. Export to PDF, PNG, JSON or Markdown whenever you like.",
+      "button": "Get started"
     },
     "footer": {
-      "copyright": " 2025 JobLume. All rights reserved."
-    },
-    "changelog": "Changelog",
-    "cta": {
-      "title": "Start Your New Career Chapter",
-      "description": "Start using JobLume now to create an impressive resume",
-      "button": "Start Using for Free"
-    },
-    "faq": {
-      "title": "Frequently Asked Questions",
-      "items": [
-        {
-          "question": "Is JobLume free to use?",
-          "answer": "JobLume is currently free, meeting basic resume creation needs. The open-source version's features will remain unchanged"
-        },
-        {
-          "question": "Is my resume data secure?",
-          "answer": "Yes, very secure. JobLume uses local storage, meaning all your data is stored on your own device with no cloud storage, ensuring complete privacy protection."
-        },
-        {
-          "question": "What export formats are supported?",
-          "answer": "We currently support PDF export, PNG long image export, browser print, JSON config export, and Markdown export. PDF is best for formal applications and archiving, while PNG long image is useful for mobile previews, portfolio display, or image-upload workflows."
-        },
-        {
-          "question": "How can I sync across devices?",
-          "answer": "We provide JSON configuration export, allowing you to save your resume settings in JSON format, accessible anytime, anywhere, on any device."
-        },
-        {
-          "question": "How customizable is it?",
-          "answer": "We offer rich customization options, including colors, layouts, and more, allowing you to adjust your resume style according to personal preferences and industry requirements."
-        }
-      ]
+      "tagline": "A personal job-hunting tool. Nothing is uploaded, no account needed."
     }
   },
   "dashboard": {

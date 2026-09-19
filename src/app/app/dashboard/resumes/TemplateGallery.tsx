@@ -48,8 +48,8 @@ const TemplateCardThumbnail = ({
     }
 
     return (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/50">
-            <span className="text-lg font-semibold text-gray-700 dark:text-gray-200">
+        <div className="w-full h-full flex flex-col items-center justify-center bg-muted dark:bg-gray-800/50">
+            <span className="text-lg font-semibold text-foreground">
                 {t(`dashboard.templates.${template.nameKey}.name`)}
             </span>
         </div>
@@ -121,13 +121,13 @@ const TemplatePreview = ({
     };
 
     return (
-        <div className="w-full h-full overflow-hidden bg-white flex items-center justify-center" ref={containerRef}>
+        <div className="w-full h-full overflow-hidden bg-card flex items-center justify-center" ref={containerRef}>
             <div
                 style={{ width: scale * A4_WIDTH_PX, height: scale * A4_HEIGHT_PX }}
                 className="flex-shrink-0"
             >
                 <div
-                    className="bg-white origin-top-left pointer-events-none"
+                    className="bg-card origin-top-left pointer-events-none"
                     style={{
                         width: "210mm",
                         height: "297mm",
@@ -178,7 +178,7 @@ export const TemplateGallery = ({ onPick }: Props) => {
                         >
                             <motion.div
                                 layoutId={`card-image-${template.id}`}
-                                className="aspect-[210/297] rounded-2xl overflow-hidden border border-gray-200/60 dark:border-gray-800/60 shadow-sm transition-all duration-300 group-hover:shadow-xl group-hover:border-primary/50 dark:group-hover:border-primary/50 bg-white dark:bg-gray-900 relative"
+                                className="aspect-[210/297] rounded-2xl overflow-hidden border border-border/60 dark:border-gray-800/60 shadow-sm transition-all duration-300 group-hover:shadow-xl group-hover:border-primary/50 dark:group-hover:border-primary/50 bg-card relative"
                             >
                                 <TemplateCardThumbnail
                                     template={template}
@@ -186,14 +186,14 @@ export const TemplateGallery = ({ onPick }: Props) => {
                                     snapshotSrc={snapshotMap[template.id]}
                                 />
                                 <div className="absolute inset-0 ring-1 ring-inset ring-black/5 dark:ring-white/5 rounded-2xl pointer-events-none" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-foreground/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                             </motion.div>
 
                             <motion.div
                                 layoutId={`card-title-${template.id}`}
                                 className="mt-4 flex items-center justify-center"
                             >
-                                <span className="text-[15px] font-semibold text-gray-700 dark:text-gray-200 group-hover:text-primary transition-colors">
+                                <span className="text-[15px] font-semibold text-foreground group-hover:text-primary transition-colors">
                                     {templateName}
                                 </span>
                             </motion.div>
@@ -210,17 +210,17 @@ export const TemplateGallery = ({ onPick }: Props) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="fixed inset-0 z-50 bg-white dark:bg-gray-950 flex flex-col sm:flex-row overflow-hidden rounded-[2rem]"
+                        className="fixed inset-0 z-50 bg-card flex flex-col sm:flex-row overflow-hidden rounded-[2rem]"
                     >
-                        <div className="flex-1 relative bg-gray-50 dark:bg-gray-900/50 flex flex-col items-center justify-center p-8 sm:p-12 h-full overflow-hidden">
+                        <div className="flex-1 relative bg-muted/50 flex flex-col items-center justify-center p-8 sm:p-12 h-full overflow-hidden">
                             <div className="p-6 flex justify-start w-full absolute top-0 left-0 z-20">
                                 <button
                                     type="button"
                                     onClick={() => setPreviewTarget(null)}
-                                    className="rounded-full p-2 hover:bg-white/80 dark:hover:bg-gray-800/80 transition-colors"
+                                    className="rounded-full p-2 hover:bg-card/80 dark:hover:bg-gray-800/80 transition-colors"
                                     aria-label={t("dashboard.resumes.createDialog.backToGrid")}
                                 >
-                                    <ChevronLeft className="w-5 h-5 text-gray-500 hover:text-primary dark:text-gray-400" />
+                                    <ChevronLeft className="w-5 h-5 text-muted-foreground hover:text-primary dark:text-muted-foreground" />
                                 </button>
                             </div>
 
@@ -230,7 +230,7 @@ export const TemplateGallery = ({ onPick }: Props) => {
                             >
                                 <motion.div
                                     layoutId={`card-image-${previewTarget.id}`}
-                                    className="aspect-[210/297] rounded-xl overflow-hidden shadow-2xl shadow-black/10 dark:shadow-black/40 ring-1 ring-black/5 dark:ring-white/10 bg-white"
+                                    className="aspect-[210/297] rounded-xl overflow-hidden shadow-2xl shadow-black/10 dark:shadow-black/40 ring-1 ring-black/5 dark:ring-white/10 bg-card"
                                     style={{ maxHeight: "100%", maxWidth: "100%", height: "100%", width: "auto" }}
                                 >
                                     <TemplatePreview template={previewTarget} t={t} quality="high" />
@@ -238,20 +238,20 @@ export const TemplateGallery = ({ onPick }: Props) => {
                             </motion.div>
                         </div>
 
-                        <div className="w-full sm:w-[400px] bg-white dark:bg-gray-950 border-l border-gray-100 dark:border-gray-800 flex flex-col h-full shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.05)] relative z-10">
+                        <div className="w-full sm:w-[400px] bg-card border-l border-border flex flex-col h-full shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.05)] relative z-10">
                             <div className="flex-1 p-10 flex flex-col justify-center">
                                 <motion.div
                                     layoutId={`card-title-${previewTarget.id}`}
                                     className="inline-block"
                                 >
-                                    <h3 className="text-4xl font-black tracking-tight text-gray-900 dark:text-white mb-4">
+                                    <h3 className="text-4xl font-black tracking-tight text-foreground mb-4">
                                         {t(`dashboard.templates.${previewTarget.nameKey}.name`)}
                                     </h3>
                                 </motion.div>
 
                                 <div className="w-12 h-1.5 bg-primary rounded-full mb-6" />
 
-                                <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed mb-10 font-medium">
+                                <p className="text-muted-foreground text-lg leading-relaxed mb-10 font-medium">
                                     {t(`dashboard.templates.${previewTarget.nameKey}.description`)}
                                 </p>
 

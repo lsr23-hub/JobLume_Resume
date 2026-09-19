@@ -445,7 +445,7 @@ export const ResumeWorkbench = () => {
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 0.3 }}
                 >
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground">
                         {t("dashboard.resumes.myResume")}
                     </h1>
                     <div className="flex items-center space-x-2">
@@ -458,7 +458,7 @@ export const ResumeWorkbench = () => {
                             <Button
                                 onClick={() => setIsCreateModalOpen(true)}
                                 variant="default"
-                                className="bg-gray-900 text-white hover:bg-gray-800 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
+                                className="bg-primary text-primary-foreground hover:bg-coral-active"
                             >
                                 <Plus className="mr-2 h-4 w-4" />
                                 {t("dashboard.resumes.create")}
@@ -483,22 +483,22 @@ export const ResumeWorkbench = () => {
                             <Card
                                 className={cn(
                                     "relative border border-dashed cursor-pointer transition-all duration-200 aspect-[210/297] flex flex-col",
-                                    "hover:border-gray-400 hover:bg-gray-50",
+                                    "hover:border-gray-400 hover:bg-muted",
                                     "dark:hover:border-primary dark:hover:bg-primary/10"
                                 )}
                             >
                                 <CardContent className="flex-1 p-0 text-center flex flex-col items-center justify-center">
                                     <motion.div
-                                        className="mb-4 p-4 rounded-full bg-gray-100 dark:bg-primary/10"
+                                        className="mb-4 p-4 rounded-full bg-muted dark:bg-primary/10"
                                         whileHover={{ rotate: 90 }}
                                         transition={{ duration: 0.2 }}
                                     >
                                         <Plus className="h-8 w-8 text-gray-600 dark:text-primary" />
                                     </motion.div>
-                                    <CardTitle className="text-xl text-gray-900 dark:text-gray-100 px-4">
+                                    <CardTitle className="text-xl text-foreground px-4">
                                         {t("dashboard.resumes.newResume")}
                                     </CardTitle>
-                                    <CardDescription className="mt-2 text-gray-600 dark:text-gray-400 px-4">
+                                    <CardDescription className="mt-2 text-muted-foreground px-4">
                                         {t("dashboard.resumes.newResumeDescription")}
                                     </CardDescription>
                                 </CardContent>

@@ -48,14 +48,14 @@ const IframeTemplateViewer = () => {
   return (
     <div
       className={cn(
-        "w-full min-h-screen overflow-hidden bg-white",
+        "w-full min-h-screen overflow-hidden bg-card",
         isSnapshotMode ? "flex items-start justify-start p-0" : "flex items-start justify-center"
       )}
     >
       <div
         {...{ [TEMPLATE_SNAPSHOT_ROOT_ATTRIBUTE]: "" }}
         className={cn(
-          "bg-white relative origin-top-left",
+          "bg-card relative origin-top-left",
           isSnapshotMode ? "" : "mx-auto"
         )}
         style={{

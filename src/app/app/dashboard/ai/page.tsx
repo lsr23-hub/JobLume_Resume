@@ -15,8 +15,8 @@ import { cn } from "@/lib/utils";
 
 const INPUT_CLASS = cn(
   "h-11",
-  "bg-white dark:bg-gray-900",
-  "border-gray-200 dark:border-gray-800",
+  "bg-card",
+  "border-border",
   "focus:ring-2 focus:ring-primary/20"
 );
 
