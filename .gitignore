@@ -1,6 +1,3 @@
-# 只读参考的上游项目，不纳入版本管理
-/rawproject/
-
 # 依赖与构建产物
 node_modules/
 dist/

@@ -1,0 +1,24 @@
+JobLume Resume
+Copyright 2026 the JobLume Resume contributors
+
+--------------------------------------------------------------------------
+本产品是 Magic Resume 的衍生作品 / This product is a derivative work of
+Magic Resume.
+--------------------------------------------------------------------------
+
+上游 / Upstream:
+    Magic Resume v2.0.8
+    https://github.com/JOYCEQL/magic-resume
+    许可证 / License: Apache License 2.0，附加商业使用限制条款
+
+许可证全文见本仓库根目录的 LICENSE（与上游一致，未做修改）。
+
+依据 Apache License 2.0 第 4(b) 条 —— 对被修改过的上游文件作出显著声明：
+
+    本仓库 src/ 下有 59 个文件直接来源于 Magic Resume v2.0.8 并已被修改。
+    另有 128 个文件逐字节等同于上游、114 个为本项目新增。
+    完整的逐文件清单见 docs/upstream-derivation.md。
+
+说明：开发期曾以上游源码的只读副本（rawproject/）作为比对基线，
+该副本已移除。上面这份清单是在移除前生成的，是「哪些文件源自上游、
+哪些被改过」唯一留存的可核查记录。
