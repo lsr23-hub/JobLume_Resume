@@ -17,8 +17,8 @@ import { cn } from "@/lib/utils";
  * 具体经历，用户无从核对，也无从知道模型把 JD 读成了什么。
  *
  * 三条设计取舍：
- * - **每条判定都要指出支撑它的经历**，并且能点过去看。指不出的判定在
- *   校验阶段就已经降级了，所以这里不会出现「凭空断言你缺什么」。
+ * - **每条判定都要指出支撑它的经历**。指不出的判定在校验阶段就已经降级了，
+ *   所以这里不会出现「凭空断言你缺什么」。
  * - **职责（duty）不显示 ✓/✗**：没做过 JD 里写的某段职责不是缺陷，是换工作的常态。
  * - **没有原文依据的要求照常显示**，只标一句「无原文依据」——
  *   隐含要求本来就引不出原文，丢掉它等于丢掉最有价值的那部分。
@@ -50,11 +50,9 @@ const STATUS: Record<
 interface Props {
   analysis: MatchAnalysis;
   entities: ProfileEntity[];
-  checked: Set<string>;
-  onToggle: (entityId: string) => void;
 }
 
-export const RequirementList = ({ analysis, entities, checked, onToggle }: Props) => {
+export const RequirementList = ({ analysis, entities }: Props) => {
   const t = useTranslations("targets");
   const [openQuote, setOpenQuote] = useState<Set<string>>(new Set());
   const requirements = requirementsOf(analysis);
@@ -76,11 +74,6 @@ export const RequirementList = ({ analysis, entities, checked, onToggle }: Props
   const missingCount = requirements.filter(
     (r) => r.kind !== "duty" && r.status === "missing"
   ).length;
-
-  const scrollToCandidate = (entityId: string) => {
-    const row = document.getElementById(`candidate-${entityId}`);
-    row?.scrollIntoView({ block: "center", behavior: "smooth" });
-  };
 
   const toggleQuote = (id: string) =>
     setOpenQuote((prev) => {
@@ -113,11 +106,8 @@ export const RequirementList = ({ analysis, entities, checked, onToggle }: Props
                   requirement={requirement}
                   titles={titles}
                   knownIds={byId}
-                  checked={checked}
                   quoteOpen={openQuote.has(requirement.id)}
                   onToggleQuote={() => toggleQuote(requirement.id)}
-                  onToggleEntity={onToggle}
-                  onLocate={scrollToCandidate}
                 />
               ))}
             </ul>
@@ -144,34 +134,23 @@ const RequirementRow = ({
   requirement,
   titles,
   knownIds,
-  checked,
   quoteOpen,
   onToggleQuote,
-  onToggleEntity,
-  onLocate,
 }: {
   requirement: Requirement;
   titles: Map<string, string>;
   knownIds: Set<string>;
-  checked: Set<string>;
   quoteOpen: boolean;
   onToggleQuote: () => void;
-  onToggleEntity: (entityId: string) => void;
-  onLocate: (entityId: string) => void;
 }) => {
   const t = useTranslations("targets");
   const status = STATUS[requirement.status];
   // 职责不判断缺不缺，因此不给状态徽章
   const showStatus = requirement.kind !== "duty";
 
-  // 支撑这条要求的经历一条都没勾时给个提示 —— 这是「你其实有，只是没放进去」，
-  // 也是有了 entityIds 之后才算得出来的东西
+  // 支撑这条要求的经历。只作**证据**展示 —— 它回答「这条要求凭什么算 covered」，
+  // 与 sourceQuote 同一性质。勾选状态是另一件事，不在这里体现。
   const supporting = requirement.entityIds.filter((id) => knownIds.has(id));
-  const uncheckedSupport =
-    showStatus && requirement.status !== "missing" && supporting.length > 0
-      ? supporting.filter((id) => !checked.has(id))
-      : [];
-  const suggestAdd = uncheckedSupport.length === supporting.length ? supporting[0] : null;
 
   return (
     <li className="flex items-start gap-2 text-xs">
@@ -198,14 +177,12 @@ const RequirementRow = ({
         {(supporting.length > 0 || requirement.sourceQuote) && (
           <div className="flex flex-wrap items-center gap-1">
             {supporting.map((entityId) => (
-              <button
+              <span
                 key={entityId}
-                type="button"
-                onClick={() => onLocate(entityId)}
-                className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary hover:bg-primary/20"
+                className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary"
               >
                 {titles.get(entityId) ?? entityId}
-              </button>
+              </span>
             ))}
             {requirement.sourceQuote && (
               <button
@@ -222,21 +199,6 @@ const RequirementRow = ({
         {quoteOpen && requirement.sourceQuote && (
           <p className="border-l-2 border-muted-foreground/30 pl-2 italic text-muted-foreground">
             {requirement.sourceQuote}
-          </p>
-        )}
-
-        {suggestAdd && (
-          <p className="text-muted-foreground">
-            {t("requirements.supportNotChecked", {
-              title: titles.get(suggestAdd) ?? suggestAdd,
-            })}
-            <button
-              type="button"
-              onClick={() => onToggleEntity(suggestAdd)}
-              className="ml-1 text-primary underline decoration-dotted hover:no-underline"
-            >
-              {t("requirements.addIt")}
-            </button>
           </p>
         )}
       </div>

@@ -962,8 +962,6 @@
       "duty": "Responsibilities",
       "noQuote": "no JD source",
       "quote": "Source",
-      "supportNotChecked": "{title} supports this requirement but is not selected.",
-      "addIt": "Add",
       "emptyTitle": "Could not extract any requirements from this JD",
       "emptyHint": "Most likely the model returned an unexpected shape (or the JD is very short). Try “Ignore cache and re-run”."
     },

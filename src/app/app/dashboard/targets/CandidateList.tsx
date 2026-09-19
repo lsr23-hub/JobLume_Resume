@@ -64,12 +64,7 @@ export const CandidateList = ({
   return (
     <div className="space-y-5">
       {analysis && (
-        <RequirementList
-          analysis={analysis}
-          entities={entities}
-          checked={checked}
-          onToggle={onToggle}
-        />
+        <RequirementList analysis={analysis} entities={entities} />
       )}
 
       <div className="flex flex-wrap items-center gap-2">

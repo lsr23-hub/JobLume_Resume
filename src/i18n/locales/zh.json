@@ -963,8 +963,6 @@
       "duty": "岗位职责",
       "noQuote": "无原文依据",
       "quote": "原文",
-      "supportNotChecked": "{title} 支撑这条要求，但本次未勾选。",
-      "addIt": "加入",
       "emptyTitle": "没能从这份 JD 提取到要求项",
       "emptyHint": "多半是模型返回的结构不对（也可能是 JD 太短）。可以点「忽略缓存重跑」再试一次。"
     },
