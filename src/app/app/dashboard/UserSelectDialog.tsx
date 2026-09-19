@@ -70,13 +70,22 @@ const UserCard = ({
   );
 };
 
+interface UserSelectDialogProps {
+  /**
+   * 受控开关。
+   *
+   * **不传**＝阻塞模式：`RequireUser` 在没有当前用户时渲染它，永远开着、
+   * 不给关闭按钮，必须选一个才能进板块。
+   * **传了**＝可关闭：侧边栏的「当前用户」入口用它来切人。
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
 /**
- * 用户选择弹窗。
- *
- * 只在 `currentUserId` 为空时由 `RequireUser` 渲染，所以它是**阻塞**的：
- * 不给关闭按钮，必须选一个（或新建一个）才能进入板块。
+ * 用户选择弹窗。两种用法见 `UserSelectDialogProps` 的注释。
  */
-export const UserSelectDialog = () => {
+export const UserSelectDialog = ({ open, onOpenChange }: UserSelectDialogProps = {}) => {
   const t = useTranslations("userSelect");
   const userIds = useCareerProfileStore((s) => Object.keys(s.profiles));
   const currentUserId = useCareerProfileStore((s) => s.currentUserId);
@@ -84,18 +93,26 @@ export const UserSelectDialog = () => {
   const setCurrentUser = useCareerProfileStore((s) => s.setCurrentUser);
   const [busy, setBusy] = useState(false);
 
+  const dismissible = onOpenChange !== undefined;
+
   const handleCreate = () => {
     if (busy) return;
     setBusy(true);
     // 新建即选中：用户接下来会去职业数据库填名字和证件照，卡片随之更新
     createUser();
     setBusy(false);
+    if (dismissible) onOpenChange?.(false);
+  };
+
+  const handlePick = (userId: string) => {
+    setCurrentUser(userId);
+    if (dismissible) onOpenChange?.(false);
   };
 
   return (
-    <Dialog open>
+    <Dialog open={dismissible ? open : true} onOpenChange={dismissible ? onOpenChange : undefined}>
       <DialogContent
-        hideClose
+        hideClose={!dismissible}
         className={cn(
           "max-w-[900px] w-[95vw] max-h-[85vh] overflow-y-auto p-0",
           "bg-card/95 dark:bg-gray-950/95 backdrop-blur-2xl border-white/20 dark:border-white/10 shadow-2xl rounded-[2rem]"
@@ -123,7 +140,7 @@ export const UserSelectDialog = () => {
                   userId={id}
                   index={index}
                   active={id === currentUserId}
-                  onPick={() => setCurrentUser(id)}
+                  onPick={() => handlePick(id)}
                 />
               ))}
             </AnimatePresence>

@@ -978,7 +978,8 @@
     "create": "新建用户",
     "empty": "还没有用户。新建一个开始吧。",
     "unnamed": "未命名",
-    "noTitle": "尚未填写信息"
+    "noTitle": "尚未填写信息",
+    "switchHint": "切换用户"
   },
   "backup": {
     "title": "数据备份",

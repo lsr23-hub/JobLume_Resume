@@ -977,7 +977,8 @@
     "create": "New person",
     "empty": "No one here yet. Create one to start.",
     "unnamed": "Unnamed",
-    "noTitle": "No details yet"
+    "noTitle": "No details yet",
+    "switchHint": "Switch person"
   },
   "backup": {
     "title": "Backup",
