@@ -24,15 +24,15 @@
 
 | 分类 | 数量 |
 |---|---|
-| `src/` 与上游共有 | 187 |
+| `src/` 与上游共有 | 182 |
 | ├─ 逐字节相同（原样继承） | **128** |
-| └─ **被修改过** | **59** |
+| └─ **被修改过** | **54** |
 | 仅本项目新增 | 114 |
 | 仅上游有、本项目未采用 | 113 |
 
 ---
 
-## 一、被修改过的上游文件（59）
+## 一、被修改过的上游文件（54）
 
 Apache 2.0 §4(b) 针对的就是这一组。
 
@@ -89,13 +89,10 @@ Apache 2.0 §4(b) 针对的就是这一组。
 - `routeTree.gen.ts`
 - `routes/$locale.tsx`
 - `routes/__root.tsx`
-- `routes/api/proxy/image.ts`
-- `routes/api/resume-import.ts`
 - `store/useAIConfigStore.ts`
 - `store/useResumeStore.ts`
 - `types/resume.ts`
 - `utils/export.ts`
-- `utils/fileSystem.ts`
 - `utils/print.ts`
 
 ---
@@ -199,7 +196,6 @@ Apache 2.0 §4(b) 针对的就是这一组。
 - `config/initialResumeData.ts`
 - `config/modules.ts`
 - `hooks/use-mobile.tsx`
-- `hooks/useResumeDirectorySync.ts`
 - `hooks/useTemplateSnapshots.ts`
 - `i18n/compat/client.tsx`
 - `i18n/compat/utils.ts`
@@ -231,7 +227,6 @@ Apache 2.0 §4(b) 针对的就是这一组。
 - `utils/fonts.ts`
 - `utils/imageUtils.ts`
 - `utils/markdown.ts`
-- `utils/resumeFileSync.ts`
 - `utils/uuid.ts`
 - `vite-env.d.ts`
 

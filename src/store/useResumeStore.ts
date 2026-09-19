@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { StateStorage } from "zustand/middleware";
-import { getFileHandle, verifyPermission } from "@/utils/fileSystem";
 import {
   BasicInfo,
   Education,
@@ -39,11 +38,6 @@ import {
   normalizeResumeState,
   type ResumePersisted,
 } from "@/store/userScope";
-
-interface PendingSync {
-  timer: ReturnType<typeof setTimeout>;
-  prevResume?: ResumeData;
-}
 
 interface ResumeStore {
   // ── 持久化切片 ──
@@ -88,10 +82,6 @@ interface ResumeStore {
    * 于是导入的简历在界面上一应俱全、刷新之后全部消失。
    */
   replaceResumes: (resumes: Record<string, ResumeData>) => void;
-  updateResumeFromFile: (
-    resume: ResumeData,
-    sourceModifiedAt?: number
-  ) => boolean;
   undo: () => void;
   redo: () => void;
   canUndo: () => boolean;
@@ -172,152 +162,6 @@ const createSafeLocalStorage = (): StateStorage => ({
   },
   removeItem: (name) => localStorage.removeItem(name),
 });
-
-const parseTimestamp = (value?: string): number | null => {
-  if (!value) {
-    return null;
-  }
-
-  const timestamp = new Date(value).getTime();
-  return Number.isFinite(timestamp) ? timestamp : null;
-};
-
-const shouldImportResumeFromFile = (
-  fileResume: ResumeData,
-  localResume?: ResumeData,
-  sourceModifiedAt?: number
-) => {
-  if (!localResume) {
-    return true;
-  }
-
-  const fileUpdatedAt = parseTimestamp(fileResume.updatedAt);
-  const localUpdatedAt = parseTimestamp(localResume.updatedAt);
-  const fileModifiedAt =
-    typeof sourceModifiedAt === "number" && Number.isFinite(sourceModifiedAt)
-      ? sourceModifiedAt
-      : null;
-
-  if (fileUpdatedAt !== null && localUpdatedAt !== null) {
-    if (fileUpdatedAt !== localUpdatedAt) {
-      return fileUpdatedAt > localUpdatedAt;
-    }
-
-    return fileModifiedAt !== null && fileModifiedAt > localUpdatedAt + 1000;
-  }
-
-  if (fileUpdatedAt !== null && localUpdatedAt === null) {
-    return true;
-  }
-
-  if (fileUpdatedAt === null && localUpdatedAt !== null) {
-    return fileModifiedAt !== null && fileModifiedAt > localUpdatedAt + 1000;
-  }
-
-  return fileModifiedAt !== null;
-};
-
-const normalizeImportedResume = (
-  resume: ResumeData,
-  sourceModifiedAt?: number
-) => {
-  if (
-    typeof sourceModifiedAt !== "number" ||
-    !Number.isFinite(sourceModifiedAt)
-  ) {
-    return resume;
-  }
-
-  const fileUpdatedAt = parseTimestamp(resume.updatedAt);
-  if (fileUpdatedAt !== null && fileUpdatedAt >= sourceModifiedAt) {
-    return resume;
-  }
-
-  return {
-    ...resume,
-    updatedAt: new Date(sourceModifiedAt).toISOString(),
-  };
-};
-
-// 同步简历到文件系统
-const syncResumeToFile = async (
-  resumeData: ResumeData,
-  prevResume?: ResumeData
-) => {
-  if (typeof window === "undefined" || typeof indexedDB === "undefined") {
-    return;
-  }
-
-  try {
-    const handle = await getFileHandle("syncDirectory");
-    if (!handle) {
-      return;
-    }
-
-    const hasPermission = await verifyPermission(handle);
-    if (!hasPermission) {
-      return;
-    }
-
-    const dirHandle = handle as FileSystemDirectoryHandle;
-
-    if (
-      prevResume &&
-      prevResume.id === resumeData.id &&
-      prevResume.title !== resumeData.title
-    ) {
-      try {
-        await dirHandle.removeEntry(`${prevResume.title}.json`);
-      } catch (error) {
-        console.warn("Error deleting old file:", error);
-      }
-    }
-
-    const fileName = `${resumeData.title}.json`;
-    const fileHandle = await dirHandle.getFileHandle(fileName, {
-      create: true,
-    });
-    const writable = await fileHandle.createWritable();
-    await writable.write(JSON.stringify(resumeData, null, 2));
-    await writable.close();
-  } catch (error) {
-    console.error("Error syncing resume to file:", error);
-  }
-};
-
-// 防抖同步：按简历合并高频写入，避免不同简历之间互相取消文件同步
-const pendingSyncs = new Map<string, PendingSync>();
-
-const clearPendingSync = (resumeId: string) => {
-  const pendingSync = pendingSyncs.get(resumeId);
-  if (!pendingSync) {
-    return;
-  }
-
-  clearTimeout(pendingSync.timer);
-  pendingSyncs.delete(resumeId);
-};
-
-const debouncedSyncToFile = (
-  resumeData: ResumeData,
-  prevResume?: ResumeData
-) => {
-  const pendingSync = pendingSyncs.get(resumeData.id);
-  if (pendingSync) {
-    clearTimeout(pendingSync.timer);
-  }
-
-  const prevResumeForSync = pendingSync?.prevResume ?? prevResume;
-  const timer = setTimeout(() => {
-    syncResumeToFile(resumeData, prevResumeForSync);
-    pendingSyncs.delete(resumeData.id);
-  }, 1500);
-
-  pendingSyncs.set(resumeData.id, {
-    timer,
-    prevResume: prevResumeForSync,
-  });
-};
 
 export const useResumeStore = create(
   persist<ResumeStore, [], [], PersistedResumeStore>(
@@ -418,7 +262,6 @@ export const useResumeStore = create(
           },
         }));
 
-        syncResumeToFile(newResume);
 
         return id;
       },
@@ -437,8 +280,6 @@ export const useResumeStore = create(
             ...data,
             updatedAt: new Date().toISOString(),
           };
-
-          debouncedSyncToFile(updatedResume, resume);
 
           return {
             resumes: {
@@ -462,39 +303,6 @@ export const useResumeStore = create(
         });
       },
 
-      // 从文件更新，直接更新resumes
-      updateResumeFromFile: (resume, sourceModifiedAt) => {
-        const localResume = get().resumes[resume.id];
-        if (!shouldImportResumeFromFile(resume, localResume, sourceModifiedAt)) {
-          return false;
-        }
-
-        const importedResume = normalizeImportedResume(resume, sourceModifiedAt);
-        clearHistoryGroup(importedResume.id);
-        clearPendingSync(importedResume.id);
-
-        set((state) => ({
-          resumes: {
-            ...state.resumes,
-            [importedResume.id]: importedResume,
-          },
-          activeResume:
-            state.activeResumeId === importedResume.id
-              ? importedResume
-              : state.activeResume,
-          history: {
-            ...state.history,
-            [importedResume.id]: [],
-          },
-          future: {
-            ...state.future,
-            [importedResume.id]: [],
-          },
-        }));
-
-        return true;
-      },
-
       undo: () => {
         const { activeResumeId } = get();
         if (!activeResumeId) return;
@@ -510,8 +318,6 @@ export const useResumeStore = create(
             currentResume
           );
           clearHistoryGroup(activeResumeId);
-
-          debouncedSyncToFile(restoredResume, currentResume);
 
           return {
             resumes: {
@@ -550,8 +356,6 @@ export const useResumeStore = create(
           );
           clearHistoryGroup(activeResumeId);
 
-          debouncedSyncToFile(restoredResume, currentResume);
-
           return {
             resumes: {
               ...state.resumes,
@@ -587,7 +391,6 @@ export const useResumeStore = create(
       deleteResume: (resume) => {
         const resumeId = resume.id;
         clearHistoryGroup(resumeId);
-        clearPendingSync(resumeId);
         set((state) => {
           const { [resumeId]: _, activeResume, ...rest } = state.resumes;
           const { [resumeId]: __, ...historyRest } = state.history;
@@ -600,23 +403,6 @@ export const useResumeStore = create(
             future: futureRest,
           };
         });
-
-        (async () => {
-          try {
-            const handle = await getFileHandle("syncDirectory");
-            if (!handle) return;
-
-            const hasPermission = await verifyPermission(handle);
-            if (!hasPermission) return;
-
-            const dirHandle = handle as FileSystemDirectoryHandle;
-            try {
-              await dirHandle.removeEntry(`${resume.title}.json`);
-            } catch (error) {}
-          } catch (error) {
-            console.error("Error deleting resume file:", error);
-          }
-        })();
       },
 
       duplicateResume: (resumeId) => {
@@ -1053,8 +839,6 @@ export const useResumeStore = create(
             [resume.id]: [],
           },
         }));
-
-        syncResumeToFile(resume);
         return resume.id;
       },
 

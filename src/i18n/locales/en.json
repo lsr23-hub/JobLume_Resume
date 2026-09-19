@@ -101,8 +101,6 @@
     },
     "resumes": {
       "created": "Created At",
-      "synced": "Synced Files",
-      "view": "View",
       "myResume": "My Resumes",
       "create": "Create Resume",
       "newResume": "New Resume",
@@ -123,11 +121,6 @@
         "pdfSuccess": "Imported {count} entries into your career database",
         "pdfError": "PDF import failed. Check the PDF content or your AI configuration",
         "pdfNothingExtracted": "Nothing usable was recognised in this PDF"
-      },
-      "notice": {
-        "title": "Attention",
-        "description": "It is recommended to configure a resume backup folder in the settings to prevent your data from being lost when the browser cache is cleared",
-        "goToSettings": "Go to Settings"
       },
       "deleteConfirmTitle": "Confirm Delete Resume?",
       "deleteConfirmDescription": "This action cannot be undone. This will permanently delete this resume and remove the data from your device.",
@@ -172,19 +165,6 @@
     },
     "settings": {
       "title": "Settings",
-      "syncDirectory": {
-        "title": "Sync Directory",
-        "description": "Choose a folder to sync and backup your resumes.",
-        "currentSyncFolder": "Current Sync Folder",
-        "noFolderConfigured": "No folder configured",
-        "changeFolder": "Change Folder",
-        "selectFolder": "Select Folder"
-      },
-      "sync": {
-        "title": "Sync Directory",
-        "description": "Choose a folder to sync and backup your resumes.",
-        "select": "Select Folder"
-      },
       "ai": {
         "getApiKey": "Get API Key",
         "deepseek": {
@@ -290,11 +270,6 @@
       "tooltip": "Page Break Line",
       "visible": "Page break line shown",
       "hidden": "Page break line hidden"
-    },
-    "backup": {
-      "configured": "Backed up",
-      "notConfigured": "Not backed up",
-      "clickToConfigure": "Click to configure"
     }
   },
   "workbench": {

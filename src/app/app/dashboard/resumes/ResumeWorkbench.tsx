@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations, useLocale } from "@/i18n/compat/client";
 import { useRouter } from "@/lib/navigation";
-import { Plus, Settings, AlertCircle } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,10 +11,8 @@ import {
     CardDescription,
     CardTitle,
 } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { getConfig, getFileHandle } from "@/utils/fileSystem";
 import { preloadFontFamily } from "@/utils/fonts";
 import { useResumeStore } from "@/store/useResumeStore";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
@@ -42,27 +40,10 @@ const ResumeWorkbenchInner = () => {
     const { profile } = useCareerProfileStore();
     const currentUserId = useCareerProfileStore((s) => s.currentUserId);
     const { targets } = useJobTargetStore();
-    const [hasConfiguredFolder, setHasConfiguredFolder] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     const jsonFileInputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        const loadSavedConfig = async () => {
-            try {
-                const handle = await getFileHandle("syncDirectory");
-                const path = await getConfig("syncDirectoryPath");
-                if (handle && path) {
-                    setHasConfiguredFolder(true);
-                }
-            } catch (error) {
-                console.error("Error loading saved config:", error);
-            }
-        };
-
-        loadSavedConfig();
-    }, []);
 
     useEffect(() => {
         const fontFamilies = Array.from(
@@ -246,57 +227,6 @@ const ResumeWorkbenchInner = () => {
                 transition={{ duration: 0.3 }}
                 className="flex-1 space-y-6 py-8"
             >
-                <motion.div
-                    className="flex w-full items-center justify-center px-4"
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.3, delay: 0.1 }}
-                >
-                    {hasConfiguredFolder ? (
-                        <Alert className="mb-6 bg-green-50/50 dark:bg-green-950/30 border-green-200 dark:border-green-900">
-                            <AlertDescription className="flex items-center justify-between">
-                                <span className="text-green-700 dark:text-green-400">
-                                    {t("dashboard.resumes.synced")}
-                                </span>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="ml-4 hover:bg-green-100 dark:hover:bg-green-900"
-                                    onClick={() => {
-                                        router.push("/app/dashboard/settings");
-                                    }}
-                                >
-                                    <Settings className="w-4 h-4 mr-2" />
-                                    {t("dashboard.resumes.view")}
-                                </Button>
-                            </AlertDescription>
-                        </Alert>
-                    ) : (
-                        <Alert
-                            variant="destructive"
-                            className="mb-6 bg-red-50/50 dark:bg-red-950/30 border-red-200 dark:border-red-900"
-                        >
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>{t("dashboard.resumes.notice.title")}</AlertTitle>
-                            <AlertDescription className="flex items-center justify-between">
-                                <span className="text-red-700 dark:text-red-400">
-                                    {t("dashboard.resumes.notice.description")}
-                                </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="ml-4 hover:bg-red-100 dark:hover:bg-red-900"
-                                    onClick={() => {
-                                        router.push("/app/dashboard/settings");
-                                    }}
-                                >
-                                    <Settings className="w-4 h-4 mr-2" />
-                                    {t("dashboard.resumes.notice.goToSettings")}
-                                </Button>
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                </motion.div>
 
                 <motion.div
                     className="px-4 sm:px-6 flex items-center justify-between"

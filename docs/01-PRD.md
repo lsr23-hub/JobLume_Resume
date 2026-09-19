@@ -538,8 +538,8 @@ JobLume Resume
 
 | 项 | 要求 |
 |---|---|
-| 浏览器 | Chrome / Edge 最新版（必需，因依赖 File System Access API 的可选能力） |
-| Firefox / Safari | 核心功能可用，本地文件夹同步功能降级 |
+| 浏览器 | Chrome / Edge 最新版（推荐） |
+| Firefox / Safari | 核心功能可用 |
 | 屏幕 | 桌面优先（最小 1280px），移动端仅支持查看与简单编辑 |
 
 ---

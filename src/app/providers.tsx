@@ -8,11 +8,9 @@ import "dayjs/locale/en";
 import { ThemeProvider, useTheme } from "next-themes";
 import { HeroUIProvider } from "@heroui/react";
 import { useLocale } from "@/i18n/compat/client";
-import { useResumeDirectorySync } from "@/hooks/useResumeDirectorySync";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const locale = useLocale();
-  useResumeDirectorySync();
 
   return (
     <HeroUIProvider locale={locale}>
