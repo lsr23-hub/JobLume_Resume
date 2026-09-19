@@ -139,10 +139,12 @@ await page.getByText("经典模板", { exact: true }).first().click();
 await page.waitForTimeout(1300);
 await page.getByRole("button", { name: /就用这个模板开始|用这个模板/ }).first().click();
 await page.waitForTimeout(3000);
-for (const label of ["保留全部并生成", "应用并生成"]) {
-  const b = page.getByRole("button", { name: label });
-  if ((await b.count()) && (await b.first().isVisible().catch(() => false))) { await b.first().click(); break; }
-}
+// 通用简历现在也要过「内容选择」步：默认全不勾，这里全勾上再生成
+const genBoxes = page.locator('input[type=checkbox]');
+const genBoxCount = await genBoxes.count();
+for (let i = 0; i < genBoxCount; i++) await genBoxes.nth(i).check();
+await page.waitForTimeout(600);
+await page.getByRole("button", { name: "开始生成" }).click();
 await page.waitForTimeout(4000);
 step(/\/app\/workbench\//.test(page.url()), "③ 无 Key：通用简历生成成功并进入工作台");
 

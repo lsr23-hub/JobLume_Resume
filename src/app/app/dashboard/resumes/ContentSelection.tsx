@@ -14,8 +14,13 @@ interface Props {
   onToggle: (entityId: string) => void;
   onToggleSection: (sectionId: string, enabled: boolean) => void;
   disabledSections: Set<string>;
-  /** 当前选择的预计页数；null = 没量出来（不假装「装得下」） */
-  pages: number | null;
+  /**
+   * 是否显示 AI 标注（★ 与理由）。
+   *
+   * 通用简历没有分析结果，**整条路径不碰 AI** —— 不显示星标、不显示推荐，
+   * 用户自己点。岗位专用简历才有。
+   */
+  showAnnotations: boolean;
 }
 
 const ENTITY_SECTIONS = SECTION_DEFS.filter((s) => s.accepts.length > 0);
@@ -38,7 +43,7 @@ export const ContentSelection = ({
   onToggle,
   onToggleSection,
   disabledSections,
-  pages,
+  showAnnotations,
 }: Props) => {
   const t = useTranslations("dashboard.resumes.createDialog");
   // 板块名挂在 profile 命名空间下（与 SECTION_DEFS.titleKey 对应）。
@@ -93,19 +98,19 @@ export const ContentSelection = ({
         ))}
       </div>
 
-      {analysis ? (
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        {analysis && showAnnotations && (
           <Button variant="outline" size="sm" onClick={checkRecommended}>
             {t("checkRecommended")}
           </Button>
-          <Button variant="ghost" size="sm" onClick={clearAll}>
-            {t("clearAll")}
-          </Button>
-          <span className="text-xs text-muted-foreground">{t("noDefaultHint")}</span>
-        </div>
-      ) : (
-        <p className="text-xs text-muted-foreground">{t("noAnalysisHint")}</p>
-      )}
+        )}
+        <Button variant="ghost" size="sm" onClick={clearAll}>
+          {t("clearAll")}
+        </Button>
+        <span className="text-xs text-muted-foreground">
+          {analysis && showAnnotations ? t("noDefaultHint") : t("plainNoDefaultHint")}
+        </span>
+      </div>
 
       {grouped.map(({ section, items }) => (
         <div key={section.id} className="space-y-1.5">
@@ -116,21 +121,15 @@ export const ContentSelection = ({
             <EntityRow
               key={entity.id}
               entity={entity}
-              item={analysis?.items[entity.id]}
+              item={showAnnotations ? analysis?.items[entity.id] : undefined}
               checked={checked.has(entity.id)}
-              hasAnalysis={Boolean(analysis)}
+              hasAnalysis={Boolean(analysis) && showAnnotations}
               onToggle={() => onToggle(entity.id)}
             />
           ))}
         </div>
       ))}
 
-      {/* 页数只是提示，不挡生成 —— 「一页为最佳，尽量不超过两页」，不是硬约束 */}
-      {checked.size > 0 && (
-        <p className="text-xs text-muted-foreground">
-          {pages === null ? t("budgetUnknown") : t("budgetApprox", { pages })}
-        </p>
-      )}
     </div>
   );
 };

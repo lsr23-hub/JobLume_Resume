@@ -14,15 +14,12 @@ import { useRouter } from "@/lib/navigation";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { hasUsableProfile } from "@/lib/profile/generateResume";
 import { useJobTargetStore, selectSortedTargets } from "@/store/useJobTargetStore";
-import { useTemplateFit } from "./useTemplateFit";
-import { FitProposal } from "./FitProposal";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { TemplateGallery } from "./TemplateGallery";
 import { ContentSelection } from "./ContentSelection";
-import { selectAllEntities } from "@/lib/profile/generateResume";
 
 /** 生成哪一类简历。与 `ResumeSnapshot.mode` 的取值对齐（manual 是编辑器里手建的） */
 export type ResumeKind = "generic" | "targeted";
@@ -72,15 +69,6 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [disabledSections, setDisabledSections] = useState<Set<string>>(new Set());
-  const [pages, setPages] = useState<number | null>(null);
-  const [planning, setPlanning] = useState(false);
-
-  const { measuring, pending, pickTemplate, reset, measurePlan, measureHost } = useTemplateFit({
-    mode,
-    targetId,
-    onFits: (tpl, selection) =>
-      onComplete({ mode, targetId, templateId: tpl, selection, disabledSections: new Set() }),
-  });
 
   const sortedTargets = useMemo(() => selectSortedTargets(targets), [targets]);
 
@@ -94,11 +82,9 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
       setTemplateId(null);
       setChecked(new Set());
       setDisabledSections(new Set());
-      setPages(null);
-      reset();
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [open, reset]);
+  }, [open]);
 
   const pickMode = (next: ResumeKind) => {
     setMode(next);
@@ -112,7 +98,6 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
     // 选择是跟着目标走的，换目标就把上一次的勾选丢掉
     setChecked(new Set());
     setDisabledSections(new Set());
-    setPages(null);
     setStep("template");
   };
 
@@ -125,27 +110,15 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
   };
 
   /**
-   * 岗位专用路径选完模板：**不测算、不弹提议**，直接进内容选择。
+   * 选完模板 → 进内容选择。
    *
-   * 默认勾选分两种情况：
-   * - **有分析结果** → 一条都不勾。D19 的规则：AI 一预设勾选，用户会直接点
-   *   确认而不逐条审视。这里正是有推荐可审的时候
-   * - **没有分析结果**（未配 Key / 分析失败 / 没分析过）→ 全选。没有任何推荐
-   *   可审，让用户从零勾一遍纯属折磨，而且这正是改动前一直以来的行为
+   * **两条路径完全一样** —— 通用简历也不走 AI，所以没有「要不要分析」的分支。
+   * 初始一律不预勾选：放进简历的必须是用户自己点的。
    */
-  const pickTargetedTemplate = async (tpl: string) => {
+  const pickTemplateAndSelect = (tpl: string) => {
     setTemplateId(tpl);
-    const analysis = targetId ? targets[targetId]?.matchAnalysis ?? null : null;
-    const initial = analysis ? new Set<string>() : allVisibleIds();
-    setChecked(initial);
+    setChecked(new Set());
     setStep("content");
-
-    // 进页面后量一次篇幅，作为提示。用户改勾选后这个数会标为待重算
-    setPlanning(true);
-    const selection = groupBySection(initial);
-    const plan = await measurePlan(selection, tpl);
-    setPages(plan?.pagesBefore ?? null);
-    setPlanning(false);
   };
 
   const groupBySection = (ids: Set<string>): Record<string, string[]> => {
@@ -165,7 +138,6 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
       else next.add(entityId);
       return next;
     });
-    setPages(null); // 选择变了，之前量出来的页数不再作数
   };
 
   const toggleSection = (sectionId: string, enabled: boolean) => {
@@ -184,13 +156,10 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
    * 存放两份状态就会有对不上的时候（提炼 hook 时就踩过：`setStep("fit")`
    * 留在向导里，而 setPending 搬进了 hook，结果提议算出来了却不显示）。
    */
-  const currentStep: Step = pending ? "fit" : step;
+  const currentStep: Step = step;
 
   const goBack = () => {
-    if (currentStep === "fit") {
-      reset();
-      setStep("template");
-    } else if (currentStep === "content") {
+    if (currentStep === "content") {
       // 回退不清勾选 —— 用户可能只是回去换个模板再看看
       setStep("template");
     } else if (currentStep === "template" && mode === "targeted") setStep("target");
@@ -227,7 +196,6 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
               {currentStep === "mode" && t("dashboard.resumes.createDialog.modeTitle")}
               {currentStep === "target" && t("dashboard.resumes.createDialog.selectTargetTitle")}
               {currentStep === "template" && t("dashboard.resumes.createDialog.selectTemplateTitle")}
-              {currentStep === "fit" && t("dashboard.resumes.createDialog.fitTitle")}
               {currentStep === "content" &&
                 t("dashboard.resumes.createDialog.contentTitle")}
             </div>
@@ -334,9 +302,7 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
                 )}
 
                 {currentStep === "template" && (
-                  <TemplateGallery
-                    onPick={mode === "targeted" ? pickTargetedTemplate : pickTemplate}
-                  />
+                  <TemplateGallery onPick={pickTemplateAndSelect} />
                 )}
 
                 {currentStep === "content" && templateId && (
@@ -347,34 +313,10 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
                     onToggle={toggleEntity}
                     onToggleSection={toggleSection}
                     disabledSections={disabledSections}
-                    pages={pages}
+                    showAnnotations={mode === "targeted"}
                   />
                 )}
 
-                {currentStep === "fit" && pending && (
-                  <FitProposal
-                    plan={pending.plan}
-                    hintKey={pending.hintKey}
-                    onApply={() =>
-                      onComplete({
-                        mode,
-                        targetId,
-                        templateId: pending.templateId,
-                        selection: pending.plan.kept,
-                        disabledSections: new Set(),
-                      })
-                    }
-                    onKeepAll={() =>
-                      onComplete({
-                        mode,
-                        targetId,
-                        templateId: pending.templateId,
-                        selection: pending.selection,
-                        disabledSections: new Set(),
-                      })
-                    }
-                  />
-                )}
               </div>
             </ScrollArea>
           </div>
@@ -383,12 +325,10 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
             <div className="flex-none border-t border-border/40 px-8 py-4">
               <div className="flex items-center justify-between gap-4">
                 <span className="text-sm text-muted-foreground">
-                  {planning
-                    ? t("dashboard.resumes.createDialog.fitMeasuring")
-                    : t("dashboard.resumes.createDialog.selectedCount", { count: checked.size })}
+                  {t("dashboard.resumes.createDialog.selectedCount", { count: checked.size })}
                 </span>
                 <Button
-                  disabled={checked.size === 0 || planning}
+                  disabled={checked.size === 0}
                   onClick={() =>
                     onComplete({
                       mode,
@@ -402,17 +342,6 @@ export const CreateResumeWizard = ({ open, onOpenChange, onComplete }: Props) =>
                   {t("dashboard.resumes.createDialog.startGenerate")}
                 </Button>
               </div>
-            </div>
-          )}
-
-          {measureHost}
-
-          {measuring && (
-            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-card/70 dark:bg-gray-950/70 backdrop-blur-sm">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                {t("dashboard.resumes.createDialog.fitMeasuring")}
-              </p>
             </div>
           )}
         </div>
