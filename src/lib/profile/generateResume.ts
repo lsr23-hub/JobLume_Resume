@@ -8,9 +8,9 @@ import { materialize } from "./materialize";
 /**
  * 从职业数据库生成一份简历。
  *
- * 三处调用方共用（新建向导、投递目标页、暂未接入的勾选界面）——
- * 这些逻辑原本在 `GenerateGenericModal` 和 `TargetsWorkbench` 里各抄了一份，
- * 且两份都漏了「应用所选模板的排版参数」，生成出来永远是默认样式。
+ * 三处调用方共用（投递目标页、简历工作台、新建向导的模板适配）——
+ * 这些逻辑原本每个调用方各抄了一份，且都漏了「应用所选模板的排版参数」，
+ * 生成出来永远是默认样式。集中到这里就不会再漏。
  */
 
 export type GenerateMode = "generic" | "targeted";

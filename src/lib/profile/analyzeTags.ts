@@ -33,8 +33,8 @@ export interface TagResult {
  *
  * 先看严格相等；不等时再看这个值里**是否恰好包含一个**已知类别
  * （模型可能写成「金融行业」「互联网 / 软件」）。包含零个或多个都算对不上 ——
- * 对不上就丢掉并记录，**不要猜**：猜错的类别会直接驱动排序衰减，
- * 比没有类别更糟。
+ * 对不上就丢掉并记录，**不要猜**：类别会直接显示在经历列表和候选人列表上，
+ * 猜错比留空更糟。
  */
 export const resolveCategory = (value: unknown): CategoryId | null => {
   if (typeof value !== "string") return null;
