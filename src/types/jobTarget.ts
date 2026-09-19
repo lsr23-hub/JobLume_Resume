@@ -50,7 +50,7 @@ export interface MatchItemResult {
   /** JD 要求但该条目未体现的技能 */
   missingSkills: string[];
 
-  /** 建议突出的内容，供后续改写环节使用 */
+  /** 建议突出的内容。模型会返回，但界面尚未消费 —— 改写类功能已按产品决策移除 */
   suggestedFocus?: string;
 
   /** 用户是否手动改变过该条目的勾选状态 */

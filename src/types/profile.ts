@@ -45,7 +45,7 @@ export interface ProfileEntity {
   // v1 中系统不填充这些字段 —— LLM 分析时直接读 description 理解内容。
   // 保留给用户想显式强调时使用，全部留空不影响任何功能。
 
-  /** 粗粒度标签。`tags[0]` 兼作类别，用于通用简历排序的同类衰减 */
+  /** 粗粒度标签。`tags[0]` 兼作类别，在经历列表与候选人列表上作为展示标签 */
   tags: string[];
   /** 具体技能关键词 */
   skills: string[];

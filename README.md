@@ -2,7 +2,7 @@
 
 把散落各处的求职经历沉淀成一份**结构化的职业数据库**，再针对具体岗位自动筛选、生成针对性简历。
 
-> 本项目基于 [Magic Resume](https://github.com/JOYCEQL/magic-resume) v2.0.8 二次开发。上游代码保留在 `rawproject/`（只读参考，不参与构建）。
+> 本项目基于 [Magic Resume](https://github.com/JOYCEQL/magic-resume) v2.0.8 二次开发。许可证与商业限制条款见 [LICENSE](./LICENSE)。
 
 ---
 
@@ -23,7 +23,7 @@
 ```
 职业数据库（唯一事实来源）
       │
-      │  无 JD：时效 × 同类衰减排序给建议
+      │  无 JD：全选 + 用户自己的顺序
       │  有 JD：LLM 全量排序            ◀── 仅此一步依赖 AI
       │         代码按篇幅截断
       ▼
@@ -54,7 +54,7 @@ LLM 只输出优先级排序，**勾选状态完全由用户产生**，AI 不预
 | 模块 | 说明 |
 |---|---|
 | **职业数据库** | 10 个板块（基本信息 / 教育 / 工作 / 技能 / 证书 / 项目 / 自我评价 / 校园 / 荣誉 / 语言），条目级 CRUD、拖拽排序、显示隐藏 |
-| **通用简历** | 无 JD，按「时效 × 同类衰减」排序给出默认建议 —— 避免简历变成单一领域 |
+| **通用简历** | 无 JD，全选数据库条目、按用户自己的顺序落位 |
 | **目标简历** | 粘贴 JD → LLM 全量排序（每条给理由与命中技能）→ 候选清单按名次标注 → 用户勾选 → 生成 |
 | **技能覆盖度** | 报告 JD 要求中「已覆盖 / 覆盖薄弱 / 缺失」，只报告不伪造 |
 | **简历编辑** | 复用上游工作台：4 套模板、字体字号、间距边距、主题色、板块拖拽排序 |
@@ -162,23 +162,23 @@ docker compose up -d
 
 ```
 docs/          设计文档（PRD / 数据模型 / 算法 / 开发计划 / API）
-rawproject/    上游代码只读参考，不参与构建、不入版本控制
+logo/          品牌标识源文件
 src/
 ├── types/         类型定义（profile / resume / jobTarget）
-├── config/        板块定义、常量、AI Provider 配置
+├── config/        板块定义、常量、AI 配置
 ├── store/         Zustand store（职业数据库 / 简历 / 投递目标）
 ├── lib/
-│   ├── profile/       排序、物化、日期解析
-│   ├── match/         提示词构造、结果校验、指纹缓存、编排
+│   ├── profile/       物化、日期解析、分页预算
+│   ├── match/         提示词构造、结果校验、分析缓存、编排
 │   ├── imageStore.ts  IndexedDB 图片存储
 │   └── backup.ts      全库备份
 ├── app/app/dashboard/
 │   ├── profile/       职业数据库
 │   ├── targets/       投递目标与候选清单
-│   └── resumes/       简历列表（上游）
+│   └── resumes/       简历列表
 └── components/
-    ├── templates/     4 套模板（上游保留 4 套：classic / modern / left-right / timeline）
-    └── editor/        工作台编辑器（上游）
+    ├── templates/     4 套模板（classic / modern / left-right / timeline）
+    └── editor/        工作台编辑器
 ```
 
 设计文档见 [docs/](docs/) —— 建议按 [PRD](docs/01-PRD.md) → [数据模型](docs/02-data-model.md) → [算法](docs/03-generation-algorithm.md) 顺序阅读。

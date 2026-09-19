@@ -16,14 +16,14 @@
 ```
 JobLume_Resume/
 ├── docs/                    # 项目文档（本目录）
-├── rawproject/              # ⚠️ 只读参考，不修改任何文件，已加入 .gitignore
-├── src/                     # 开发代码（从 rawproject 复制后在此基础上二开）
+├── logo/                    # 品牌标识源文件
+├── src/                     # 开发代码
 ├── public/
 ├── package.json
 └── ...
 ```
 
-### 1.2 基线建立步骤（Phase 0）
+### 1.2 基线建立步骤（Phase 0 —— 已完成，以下为存档）
 
 ```bash
 # 1. 复制上游代码作为开发基线（排除依赖与构建产物）
@@ -51,8 +51,7 @@ pnpm build
 | 提交粒度 | 一个功能点一个提交，避免把不相关的改动混在一起 |
 | 提交信息 | Conventional Commits（`feat:` / `fix:` / `refactor:` / `docs:` / `chore:`） |
 | 分支 | `main` 为稳定分支；每个 Phase 开一个特性分支，完成后合并 |
-| `rawproject/` | 永不提交，已加入 `.gitignore` |
-| 上游同步 | 若需跟进上游更新，手动对比 `rawproject/` 与本地代码，不做自动 merge |
+| 上游同步 | 基线建立后不再跟进上游。上游代码曾以 `rawproject/` 作只读参考，现已移除；需要比对历史实现时查上游仓库 |
 
 ---
 
@@ -78,7 +77,7 @@ Phase 5  打磨与验收                   ── 1 天
 | 编号 | 任务 | 验收 |
 |---|---|---|
 | T0-1 | 复制上游代码到仓库根目录 | `src/` 等目录就位 |
-| T0-2 | `git init` + 首次提交 | `git log` 有记录，`rawproject/` 不在版本控制中 |
+| T0-2 | `git init` + 首次提交 | `git log` 有记录 |
 | T0-3 | `pnpm install` | 依赖安装成功 |
 | T0-4 | `pnpm build` | 构建成功，无报错 |
 | T0-5 | `pnpm dev` 手工验证 | 首页可访问、工作台可用、PDF 可导出 |
@@ -89,8 +88,7 @@ Phase 5  打磨与验收                   ── 1 天
 | 风险 | 应对 |
 |---|---|
 | Node 版本不兼容（本项目 Node v22.22.3） | 上游 `package.json` 未固定 `engines`，若报错检查各依赖的 Node 要求 |
-| 上游代码存在未提交的本地修改 | 已确认 `rawproject/` 是干净下载，无 `.git` |
-| 字体文件缺失导致 PDF 导出异常 | `public/fonts/` 下有 11 个字体文件，验证导出时确认中文字体正常 |
+| 字体文件缺失导致 PDF 导出异常 | `public/fonts/` 下有 12 个字体文件，验证导出时确认中文字体正常 |
 
 ---
 
@@ -111,7 +109,7 @@ Phase 5  打磨与验收                   ── 1 天
 | T1-7 | `src/lib/imageStore.ts` | 新建 | ~180 | IndexedDB 图片存储（解决 localStorage 配额） |
 | T1-8 | `src/lib/profile/materialize.ts` | 新建 | ~280 | 物化：Profile → ResumeData |
 | T1-9 | `src/config/algorithmConfig.ts` | 新建 | ~70 | 全部可调参数集中管理 |
-| T1-10 | `src/lib/profile/rankGeneric.ts` | 新建 | ~90 | 时效 × 同类衰减排序（纯函数） |
+| ~~T1-10~~ | ~~`src/lib/profile/rankGeneric.ts`~~ | 已删除 | — | 时效 × 同类衰减排序 —— 产品收缩后不再需要，见 [03](./03-generation-algorithm.md) §2.1 |
 | T1-11 | `vitest.config.ts` + 测试文件 | 新建 | ~400 | 单元测试 |
 
 **总计**：约 1900 行（含测试）
@@ -161,7 +159,7 @@ window.__profile.materializeToResume()   # 产出的对象结构合法
 
 | 风险 | 应对 |
 |---|---|
-| `materialize` 产出的数据无法通过模板渲染 | 参考 `rawproject/src/config/initialResumeData.ts` 的完整示例，逐字段比对 |
+| `materialize` 产出的数据无法通过模板渲染 | 参考 `src/config/initialResumeData.ts` 的完整示例，逐字段比对 |
 | 图片迁移 IndexedDB 后导出 PDF 异常 | 上游 `export.ts` 的 `optimizeImages` 处理的是 DOM 中的图片；确保 `idb:` 引用在渲染前已解析为 `blob:` URL |
 | zustand persist 版本冲突 | 使用新的 storage key `career-profile-storage`，与上游 `resume-storage` 隔离 |
 
@@ -482,7 +480,7 @@ pnpm dev               # 本地运行
 
 ### 10.1 许可证
 
-**Magic Resume 采用 Apache 2.0 + 附加商业限制条款。** 原文（`rawproject/LICENSE`）关键点：
+**Magic Resume 采用 Apache 2.0 + 附加商业限制条款。** 原文保留在仓库根目录的 `LICENSE`（本项目作为二次开发，必须持续保留该文件与归属声明）关键点：
 
 | 场景 | 是否需要商业授权 |
 |---|---|
@@ -561,7 +559,7 @@ pnpm dev               # 本地运行
 
 | 决策 | 结论 |
 |---|---|
-| 目录策略 | `rawproject/` 只读参考，开发代码复制到根目录 |
+| 目录策略 | 开发代码在仓库根目录。上游代码曾以 `rawproject/` 作只读参考，现已移除 |
 | 数据库分组 | 不分组，建一份全景，每次生成时自动筛选 |
 | 板块作用域 | 数据库全量可编辑，简历决定展示哪几个板块 + 顺序 |
 | 新增板块实现 | 政治面貌/作品链接走已有通道；校园经历/荣誉课程/语言能力走 `customData` |
@@ -586,6 +584,6 @@ pnpm dev               # 本地运行
 | **无 API Key 时** | **候选清单照常可用，仅无推荐标注**；生成路径不变 |
 | **模型** | **v1 锁定 DeepSeek**（`deepseek-chat`, temp 0, seed 42） |
 | **匹配字段** | `tags`/`skills`/`metrics` 保留但系统不填充，LLM 直读描述 |
-| **类别** | `tags[0]` 即类别，用于通用简历排序的同类衰减 |
-| **通用排序** | **时效 × 同类衰减**（λ=0.5），不设板块上限；顺序可验证但不必可预测 |
+| **类别** | `tags[0]` 即类别，在经历列表与候选人列表上作为展示标签 |
+| **通用顺序** | 全选 + 用户自己的数据库顺序，不设板块上限；顺序可验证但不必可预测 |
 | **过度设计已清理** | 删除 `MatchProvider` 接口、`aiClient.ts` 抽象层、`skillTags` / `qualityScore` 死字段、`selectEntities` 约束求解器 |

@@ -5,7 +5,7 @@
  *   pnpm eval --transport real --provider deepseek       # 真实跑批
  *
  * API key 从环境变量读，不接受命令行传参 —— 别让它进 shell history。
- *   DEEPSEEK_API_KEY / DOUBAO_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY
+ *   DEEPSEEK_API_KEY（或通用的 EVAL_API_KEY）
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

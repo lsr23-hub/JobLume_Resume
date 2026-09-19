@@ -7,7 +7,7 @@ interface TagsInputProps {
   value: string[];
   onChange: (next: string[]) => void;
   placeholder?: string;
-  /** 第一个标签是「类别」，用于通用简历排序的同类衰减 —— 界面需说明 */
+  /** 第一个标签是「类别」，在列表上作为展示标签 —— 界面需说明它与其他标签不同 */
   firstIsCategory?: boolean;
 }
 

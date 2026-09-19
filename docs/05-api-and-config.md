@@ -9,59 +9,41 @@
 
 ---
 
-## 1. AI Provider 配置（复用上游）
+## 1. AI 配置
 
-### 1.1 v1 锁定 DeepSeek
+### 1.1 只保留 DeepSeek 一条通道
 
-**已决策：本项目 v1 只使用 DeepSeek 一个模型。**
+**已决策：本项目只使用 DeepSeek 一个模型。**
+
+上游曾支持豆包 / OpenAI 兼容 / Gemini 共 4 家。四条通道各自要维护一套请求头、错误格式与前端表单，而实际只用到一条 —— 已全部移除。所以 `src/config/ai.ts` 里不再有「服务商」这个概念：**端点固定，模型名可调**。
 
 | 项 | 值 |
 |---|---|
-| `modelType` | `deepseek` |
+| `modelType` | `deepseek`（唯一取值） |
 | 默认模型 | `deepseek-chat` |
 | `temperature` | `0` |
-| `seed` | `42`（DeepSeek 支持，配合 `temperature=0` 进一步降低波动） |
-| 需要用户配置 | 仅 API Key（模型 ID 与 Endpoint 都有内置默认值） |
+| `seed` | `42`（配合 `temperature=0` 进一步降低波动） |
+| 需要用户配置 | 仅 API Key（Endpoint 有内置默认值，模型 ID 可留空） |
 | 稳定性验收 | **只针对 DeepSeek 实测** |
 
-**上游的 4 家 Provider 配置保留不动**（`rawproject/src/config/ai.ts`）。用户若想换成豆包/Gemini/OpenAI 兼容接口，改配置即可，无需改代码 —— 但其他 Provider 的最低 temperature 未经验证，稳定性需自行承担。
-
-上游已支持的 Provider 一览：
-
-| Provider | 类型标识 | 默认模型 | 需要 API Endpoint | 需要 Model ID |
-|---|---|---|---|---|
-| 豆包（火山方舟） | `doubao` | — | 否 | **是** |
-| DeepSeek | `deepseek` | `deepseek-chat` | 否 | 否 |
-| OpenAI 兼容 | `openai` | — | **是** | **是** |
-| Google Gemini | `gemini` | `gemini-flash-latest` | 否 | **是** |
-
-**注意 `openai` 类型的定位**：它是一个**通用的 OpenAI 兼容接口**，不是专指 OpenAI 官方。任何提供 `/chat/completions` 的服务（本地 Ollama、One-API 中转、Azure OpenAI、各类国产模型）都能通过它接入。这是成本最低的扩展路径 —— 用户想接入新模型，不需要改代码。
+`deepseek-chat` 同时具备识图能力，PDF 简历导入走它，因此不需要单独的视觉模型。
 
 ### 1.2 配置存储
 
 ```ts
-// src/store/useAIConfigStore.ts  —— 上游已有，本项目不改
+// src/store/useAIConfigStore.ts
 {
-  selectedModel: "doubao" | "deepseek" | "openai" | "gemini",
-  doubaoApiKey: string,
-  doubaoModelId: string,
   deepseekApiKey: string,
-  deepseekModelId: string,
-  openaiApiKey: string,
-  openaiModelId: string,
-  openaiApiEndpoint: string,
-  geminiApiKey: string,
-  geminiModelId: string,
+  deepseekModelId: string,   // 留空则用 src/config/ai.ts 的 DEFAULT_MODEL
 }
 ```
 
-持久化 key：`ai-config-storage`（localStorage）。
+持久化 key：`ai-config-storage`（localStorage）。老用户已存的 DeepSeek Key 不受影响；其余服务商的历史 Key 会留在 localStorage 里不再被读取，无害。
 
 ### 1.3 降级判定
 
 ```ts
-// 上游已有
-useAIConfigStore.getState().isConfigured(): boolean
+useAIConfigStore.getState().isConfigured(): boolean   // deepseekApiKey 非空即为 true
 ```
 
 **所有 AI 功能入口都必须先检查此函数。** 未配置时：
@@ -83,38 +65,31 @@ useAIConfigStore.getState().isConfigured(): boolean
 
 ### 2.1 路由总表
 
-| 路由 | 方法 | 用途 | 上游有？ |
+| 路由 | 方法 | 用途 | 来源 |
 |---|---|---|---|
-| `/api/polish` | POST | 段落润色（流式） | ✅ 复用（上游已有，本项目不主动调用） |
-| `/api/grammar` | POST | 语法检查 | ✅ 复用 |
-| `/api/resume-import` | POST | 简历 PDF 解析 | ✅ 复用（用于职业数据库导入） |
-| `/api/proxy/image` | GET | 图片代理 | ✅ 复用 |
-| **`/api/match`** | POST | LLM 推荐标注分析 | ❌ 新增 |
+| `/api/match` | POST | LLM 推荐标注分析 | 本项目新增 |
+| `/api/tag` | POST | 经历自动归类（与 `/api/match` 共用处理器，只换 prompt） | 本项目新增 |
+| `/api/resume-import` | POST | 简历 PDF 解析（用于职业数据库导入） | 沿用上游 |
+| `/api/proxy/image` | GET | 图片代理 | 沿用上游 |
+
+> 上游的 `/api/polish`（段落润色）与 `/api/grammar`（语法检查）本项目从未调用，且改写类 AI 已按产品决策移除（「AI 只判定，不动你的文字」，见提交 `7168adf`），两条路由已删除。
 
 ### 2.2 通用请求约定
 
-所有 AI 路由遵循上游已确立的约定：
+所有 AI 路由遵循同一套约定：
 
 ```ts
 // 请求体公共字段
 {
   apiKey: string;           // 用户 API Key，由客户端传入
-  model: string;            // 模型 ID
-  modelType: AIModelType;   // "doubao" | "deepseek" | "openai" | "gemini"
-  apiEndpoint?: string;     // 仅 openai 类型需要
+  model: string;            // 模型 ID，留空则用服务端默认
   // ... 各路由的业务字段
 }
 ```
 
 服务端从 `AI_MODEL_CONFIGS[modelType]` 取 URL 与 headers，不保存任何配置。
 
-**复用上游的服务端工具**：
-
-```ts
-import { formatGeminiErrorMessage, getGeminiModelInstance } from "@/lib/server/gemini";
-```
-
-Gemini 走 `@google/generative-ai` SDK 并支持 `HTTPS_PROXY` 环境变量；其余走 `fetch` 直连 `/chat/completions`。
+**服务端工具**（均在 `src/lib/server/`）：`llmRoute.ts`（`handleLlmRoute` 公共处理器）、`urlGuard.ts`（出站 URL 校验）、`rateLimit.ts`（限流）。
 
 ---
 
@@ -344,11 +319,13 @@ export async function resolveImagesInElement(el: HTMLElement): Promise<void>;
 
 | 变量 | 用途 | 是否必需 |
 |---|---|---|
-| `HTTPS_PROXY` / `https_proxy` | Gemini 请求的代理（上游 `src/lib/server/gemini.ts` 已支持） | 否 |
-| `HTTP_PROXY` / `http_proxy` | 同上 | 否 |
-| `FONTCONFIG_PATH` | PDF 导出时的字体路径（上游 `.env` 已设） | 否（Docker 部署需要） |
+| `TRUST_PROXY` | 设为 `1` 时信任 `X-Forwarded-For`。**只有确认跑在反向代理后面才可设** —— 否则限流可被伪造的转发头绕过 | 否 |
+| `PORT` / `HOSTNAME` | 服务监听地址（见 `server.mjs`） | 否 |
+| `DEEPSEEK_API_KEY` | 评测 / canary 脚本用的 Key（**服务端运行时不读** —— 用户 Key 由客户端传入） | 否 |
+| `EVAL_API_KEY` | 同上，通用名，优先于 provider 专用名 | 否 |
+| `VITE_SITE_URL` | 站点对外域名，供 canonical / og:image / hreflang / robots / sitemap 使用。**未设则不输出 sitemap**，robots 也不写 Sitemap 行 | 否 |
 
-**本项目不新增任何必需的环境变量。** 所有配置由用户在界面上完成。
+**本项目不新增任何必需的环境变量。** 所有 AI 配置由用户在界面上完成。
 
 ---
 
