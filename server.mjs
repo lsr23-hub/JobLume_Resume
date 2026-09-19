@@ -111,6 +111,15 @@ const trustProxy = process.env.TRUST_PROXY === "1";
 const rateLimitMode = trustProxy ? "per-ip" : "shared";
 
 /**
+ * 存档端点的开关状态。
+ *
+ * 默认关，所以「忘了设」的失败方式是**应用整个不能用**（数据读不出来也写不进去）。
+ * 这种失败必须一眼看见 —— 启动时打一行，并放进 /healthz，与 rateLimitMode 同一个
+ * 理由：默认值带来的失败最不该靠猜。
+ */
+const savesEnabled = process.env.SAVES_ENABLED === "1";
+
+/**
  * 健康检查。
  *
  * 放在静态文件与路由之前，所以它不经过应用渲染，也不受 /api 的限流影响 ——
@@ -134,7 +143,8 @@ function handleHealthz(req, res) {
     uptimeSec: Math.round((Date.now() - startedAt) / 1000),
     // "shared" 表示所有请求共用一个限流额度 —— 部署在反向代理后面时
     // 应该设 TRUST_PROXY=1，否则用户会互相挤掉额度
-    rateLimitMode
+    rateLimitMode,
+    savesEndpoint: savesEnabled ? "enabled" : "disabled"
   });
 
   res.statusCode = 200;
@@ -219,5 +229,12 @@ createServer(async (req, res) => {
       ? "Rate limit: per client IP (TRUST_PROXY=1)"
       : "Rate limit: SHARED — all clients share one quota. " +
         "Set TRUST_PROXY=1 if a reverse proxy sits in front."
+  );
+  console.log(
+    savesEnabled
+      ? "Saves endpoint: ENABLED (/api/saves) — and it is UNAUTHENTICATED. " +
+        "Do not expose this instance to the public internet."
+      : "Saves endpoint: DISABLED. The app cannot read or write any data " +
+        "without it — set SAVES_ENABLED=1."
   );
 });

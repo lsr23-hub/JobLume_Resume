@@ -5,16 +5,39 @@ import type { SaveKind } from "@/lib/saves/kinds";
 export { isSaveKind, SAVE_KINDS, type SaveKind } from "@/lib/saves/kinds";
 
 /**
- * 默认存档目录：`<仓库根>/saves/<userId>/`。
+ * 存档目录：`<仓库根>/saves/<userId>/`（可用 `SAVES_ROOT` 改根）。
  *
- * 定位：**浏览器 localStorage 仍是真相源，这里只是它的镜像**（见 plan/task_plan.md
- * 的决策）。用途是让数据在你硬盘上看得见、能进 git、能手改 —— 而不是取代浏览器存储。
- *
- * ⚠️ 安全边界：这是全项目唯一会**按请求往磁盘写文件**的地方。三层防护缺一不可：
+ * ⚠️ **这是全项目唯一按请求读写用户数据的模块。** 三层防护缺一不可：
  * 1. 路径片段只允许 uuid 那一类安全字符（见 `SAFE_SEGMENT`）——不含 `.`、`/`、`\`
  * 2. 拼完之后再用 `path.relative` 确认没跑出 `saves/`（纵深防御，防字符集被绕过）
- * 3. 写入只发生在 `saves/` 下，而静态文件服务的是 `dist/client`，两者不相交
+ * 3. 读写只发生在 `saves/` 下，而静态文件服务的是 `dist/client`，两者不相交
+ *
+ * 目录形状：
+ * ```
+ * saves/<userId>/profile.json
+ * saves/<userId>/resumes/<resumeId>.json
+ * saves/<userId>/jds/<targetId>.json
+ * ```
+ *
+ * **`SAVES_ENABLED` 是硬开关，默认关。** 这个端点既是存储后端也是泄露面 ——
+ * 一旦部署到公网，任何能访问站点的人都能读到所有人的姓名、联系方式与经历。
+ * 默认关的意思是「没想过这件事的部署会失败关闭」，而不是「又一个可以忘的配置项」。
+ * 本机开发（`pnpm dev`）与 docker-compose 都显式设了它。
  */
+export const SAVES_ROOT_ENV = "SAVES_ROOT";
+export const SAVES_ENABLED_ENV = "SAVES_ENABLED";
+
+/** 端点开关。只认 `"1"` —— 空串、`"0"`、`"true"` 都算关，不留模糊地带 */
+export const savesEnabled = (): boolean => process.env[SAVES_ENABLED_ENV] === "1";
+
+/**
+ * 存档的**父目录**（存档本身落在 `<root>/saves/`）。默认 `process.cwd()`，
+ * 容器里用 `SAVES_ROOT` 指到挂载卷上。
+ *
+ * 名字沿用下面各函数的 `root` 参数语义，不是「saves 目录本身」—— 这一点容易记反，
+ * 所以这里与 README 都写清楚。
+ */
+export const savesRoot = (): string => process.env[SAVES_ROOT_ENV] ?? process.cwd();
 export const SAVES_DIRNAME = "saves";
 
 /**
@@ -45,24 +68,38 @@ export const resolveSavePath = (
   kind: SaveKind,
   id?: unknown
 ): string => {
-  if (!isSafeSegment(userId)) {
-    throw new Error(`[saves] 非法的 userId：${String(userId).slice(0, 40)}`);
-  }
+  const userDir = resolveUserDir(root, userId);
+
   if (kind === "profile") {
     if (id !== undefined && id !== null) {
       throw new Error("[saves] profile 不接受 id");
     }
-  } else if (!isSafeSegment(id)) {
-    throw new Error(`[saves] 非法的 id：${String(id).slice(0, 40)}`);
+    return path.join(userDir, "profile.json");
   }
 
-  const savesRoot = path.resolve(root, SAVES_DIRNAME);
-  const fileName = kind === "profile" ? "profile.json" : `${id as string}.json`;
-  const full = path.resolve(savesRoot, userId, SUBDIR[kind], fileName);
+  if (!isSafeSegment(id)) {
+    throw new Error(`[saves] 非法的 id：${String(id).slice(0, 40)}`);
+  }
+  return path.join(userDir, SUBDIR[kind], `${id}.json`);
+};
+
+/**
+ * 解析某个用户的目录 `saves/<userId>/`。
+ *
+ * 拆出来是因为读取侧要**列目录**，而列目录没有 id 可以交给 `resolveSavePath`。
+ * 校验与 `resolveSavePath` 完全同一套，不另开一条路。
+ */
+export const resolveUserDir = (root: string, userId: unknown): string => {
+  if (!isSafeSegment(userId)) {
+    throw new Error(`[saves] 非法的 userId：${String(userId).slice(0, 40)}`);
+  }
+
+  const rootDir = path.resolve(root, SAVES_DIRNAME);
+  const full = path.resolve(rootDir, userId);
 
   // 纵深防御：上面的字符集已经堵死了 `..` 与分隔符，这里再确认一次最终路径
   // 确实落在 saves/ 之内。安全校验不该只有一层。
-  const rel = path.relative(savesRoot, full);
+  const rel = path.relative(rootDir, full);
   if (rel.startsWith("..") || path.isAbsolute(rel)) {
     throw new Error("[saves] 解析出的路径跑出了 saves/ 目录");
   }
@@ -116,5 +153,138 @@ export const removeSaveFile = async (
 ): Promise<string> => {
   const full = resolveSavePath(root, userId, kind, id);
   await fs.rm(full, { force: true });
+  return full;
+};
+
+// ─────────────────────────────── 读取 ───────────────────────────────
+
+/** 能有一整个目录的那些 kind。profile 一个用户只有一份，不在此列 */
+export type CollectionKind = Exclude<SaveKind, "profile">;
+
+/**
+ * 读一份存档。**文件不存在返回 null**（镜像/存档本来就可能落后，不是错），
+ * 但内容不是合法 JSON 时**抛错** —— 那说明这个文件被人改坏了或写了一半，
+ * 调用方要把它记进 `problems` 并**跳过**，绝不能当成「没有这份数据」而在后续
+ * 写回时覆盖掉它。
+ */
+export const readSaveFile = async (
+  root: string,
+  userId: unknown,
+  kind: SaveKind,
+  id?: unknown
+): Promise<unknown | null> => {
+  const full = resolveSavePath(root, userId, kind, id);
+  let text: string;
+  try {
+    text = await fs.readFile(full, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+  return JSON.parse(text);
+};
+
+/**
+ * 列出一个用户某个集合下的全部 id。
+ *
+ * 只认 `<合法片段>.json` —— 别的文件（编辑器留下的 `.DS_Store`、`.bak`、
+ * 手写的笔记）一律跳过，不报错也不当成数据。
+ */
+export const listSaveIds = async (
+  root: string,
+  userId: unknown,
+  kind: CollectionKind
+): Promise<string[]> => {
+  const dir = path.join(resolveUserDir(root, userId), SUBDIR[kind]);
+
+  let names: string[];
+  try {
+    names = await fs.readdir(dir);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+
+  const ids: string[] = [];
+  for (const name of names) {
+    if (!name.endsWith(".json")) continue;
+    const id = name.slice(0, -".json".length);
+    if (isSafeSegment(id)) ids.push(id);
+  }
+  // 排序是为了确定性：同一份目录必须产生完全相同的响应，便于比对与测试
+  return ids.sort();
+};
+
+/** 一个用户的原始存档树。字段值是**未校验的** JSON —— schema 归客户端管 */
+export interface RawSaveTree {
+  profile: unknown;
+  resumes: Record<string, unknown>;
+  targets: Record<string, unknown>;
+  /** 读不出来的条目（不是合法 JSON / 读失败）。客户端据此提示，绝不静默覆盖 */
+  problems: string[];
+}
+
+export const readSaveTree = async (root: string, userId: unknown): Promise<RawSaveTree> => {
+  const problems: string[] = [];
+
+  const readOne = async (kind: SaveKind, id?: string): Promise<unknown | null> => {
+    try {
+      return await readSaveFile(root, userId, kind, id);
+    } catch {
+      problems.push(id ? `${kind}:${id}` : kind);
+      return null;
+    }
+  };
+
+  const readCollection = async (kind: CollectionKind): Promise<Record<string, unknown>> => {
+    const out: Record<string, unknown> = {};
+    for (const id of await listSaveIds(root, userId, kind)) {
+      const value = await readOne(kind, id);
+      if (value !== null) out[id] = value;
+    }
+    return out;
+  };
+
+  return {
+    profile: await readOne("profile"),
+    resumes: await readCollection("resume"),
+    targets: await readCollection("jd"),
+    problems,
+  };
+};
+
+/** 存档目录下有哪些用户。只认合法目录名，其余（`.DS_Store` 之类）忽略 */
+export const listUserIds = async (root: string): Promise<string[]> => {
+  const dir = path.resolve(root, SAVES_DIRNAME);
+
+  let entries: Awaited<ReturnType<typeof fs.readdir>>;
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+
+  const ids: string[] = [];
+  for (const entry of entries) {
+    if (typeof entry === "string") continue;
+    if (entry.isDirectory() && isSafeSegment(entry.name)) ids.push(entry.name);
+  }
+  return ids.sort();
+};
+
+/**
+ * 删掉一个用户的整个存档目录。
+ *
+ * **这是全项目唯一一处递归删除**，所以单独写一段理由：存档成为唯一真相源之后，
+ * 在应用里删掉一个用户却不删目录，下次启动他会从磁盘上**复活**（连同简历与岗位）。
+ * 单文件删除做不到这件事。
+ *
+ * 边界收得比别处更紧：只接受一个路径片段，仍走 `isSafeSegment` + `path.relative`
+ * 复核；**不接受客户端直接传路径**，调用方只能是服务器自己。
+ */
+export const removeUserDir = async (root: string, userId: unknown): Promise<string> => {
+  const full = resolveUserDir(root, userId);
+  await fs.rm(full, { recursive: true, force: true });
   return full;
 };

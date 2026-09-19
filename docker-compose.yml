@@ -1,4 +1,3 @@
-
 services:
   web:
     build:
@@ -11,4 +10,16 @@ services:
       # 前面挂了反向代理就打开它，否则所有请求会被当成同一个来源共用一个限流额度。
       # compose 这里是直接暴露端口，所以默认不设。详见 README「部署」。
       # - TRUST_PROXY=1
+      # ⚠️ 存档端点（saves/<userId>/）的硬开关，**默认关**。这个应用的数据就存在
+      # 那里，关掉它 = 应用不可用 —— 所以自建部署必须显式打开。
+      # 反过来说：把这份 compose 原样发到公网，等于公开所有使用者的姓名、联系方式
+      # 与经历。要公网部署，先自己加一层认证，并且删掉下面这行。
+      - SAVES_ENABLED=1
+      # 存档目录的父目录（存档落在 <它>/saves/）。挂到卷上，容器重建不丢数据。
+      - SAVES_ROOT=/data
+    volumes:
+      - saves-data:/data
     restart: always
+
+volumes:
+  saves-data:

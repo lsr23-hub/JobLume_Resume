@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@10.3.0",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "SAVES_ENABLED=1 vite dev",
     "build": "vite build",
     "start": "node server.mjs",
     "preview": "vite preview",
