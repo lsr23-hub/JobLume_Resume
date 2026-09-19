@@ -160,6 +160,32 @@ if (printInfo?.html) {
   step(all.includes("林可"), "⑪ PDF 文字层含姓名");
 }
 
+// ── token 健康检查 ──
+// 这套配色是「别名链」：hsl(var(--background)) → var(--canvas)。链上任何一环缺失，
+// background-color 会变成 unset＝透明，露出浏览器画布 —— 暗色下就是纯黑一片、
+// 图标跟着看不见。这个失效模式在开发中出现过一次，所以钉成断言。
+const VITALS = ["--canvas", "--ink", "--coral", "--surface-card", "--hairline", "--background", "--primary", "--border"];
+for (const theme of ["light", "dark"]) {
+  const p3 = await ctx.newPage();
+  await p3.addInitScript((t) => localStorage.setItem("magic-resume-theme", t), theme);
+  await p3.goto(`${BASE}/app/dashboard/resumes`, { waitUntil: "networkidle" });
+  await p3.waitForTimeout(1200);
+  const v = await p3.evaluate((names) => {
+    const cs = getComputedStyle(document.documentElement);
+    const out = {};
+    for (const n of names) out[n] = cs.getPropertyValue(n).trim();
+    out._htmlBg = getComputedStyle(document.documentElement).backgroundColor;
+    out._bodyBg = getComputedStyle(document.body).backgroundColor;
+    // 透明＝链断了
+    out._transparent = out._bodyBg.startsWith("rgba(0, 0, 0, 0");
+    return out;
+  }, VITALS);
+  const empty = VITALS.filter((n) => !v[n]);
+  step(empty.length === 0, `${theme} 主题：${VITALS.length} 个 token 全部解析${empty.length ? `（缺 ${empty.join(",")}）` : ""}`);
+  step(!v._transparent, `${theme} 主题：body 底色非透明（${v._bodyBg}）`);
+  await p3.close();
+}
+
 console.log("\n页面错误:", errors.length ? errors.slice(0, 10) : "无");
 console.log("\n结果:", exp.filter((e) => e.ok).length + "/" + exp.length);
 await browser.close();

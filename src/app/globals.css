@@ -163,6 +163,20 @@
 }
 
 @layer base {
+  /* ── 兜底底色（字面值，不参与变量链）──
+     hsl(var(--x)) 之所以危险，是因为它是一条链：--background → --canvas。
+     中间任何一环缺失，background-color 就变成 unset＝透明，露出浏览器画布，
+     而暗色模式下那正是纯黑 —— 整个界面会「漆黑一片」、图标跟着看不见。
+     这里用字面值再压一层：链断了最多是颜色旧一点，绝不会落成黑屏。 */
+  html {
+    background-color: #faf9f5;
+    color: #141413;
+  }
+  html.dark {
+    background-color: #181715;
+    color: #faf9f5;
+  }
+
   * {
     @apply border-border;
   }

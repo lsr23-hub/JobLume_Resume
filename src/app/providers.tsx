@@ -47,9 +47,11 @@ function AntdProvider({ children }: { children: React.ReactNode }) {
       theme={{
         algorithm: dark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
         token: {
-          // 与 globals.css 的 --primary 一致：浅色近黑、深色近白
-          colorPrimary: dark ? "#fafaf5" : "#1b1b18",
-          borderRadius: 6,
+          // 与 globals.css 的 --primary 一致。主色改为珊瑚后这里没跟上，
+          // 日期选择器之类的 antd 组件会继续用旧的近黑按钮，和全站对不上。
+          // 珊瑚在亮暗两种底色上都成立，所以不再分主题给两个值。
+          colorPrimary: "#cc785c",
+          borderRadius: 8,
           fontFamily: "inherit",
         },
       }}
