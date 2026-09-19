@@ -168,15 +168,6 @@
      中间任何一环缺失，background-color 就变成 unset＝透明，露出浏览器画布，
      而暗色模式下那正是纯黑 —— 整个界面会「漆黑一片」、图标跟着看不见。
      这里用字面值再压一层：链断了最多是颜色旧一点，绝不会落成黑屏。 */
-  html {
-    background-color: #faf9f5;
-    color: #141413;
-  }
-  html.dark {
-    background-color: #181715;
-    color: #faf9f5;
-  }
-
   * {
     @apply border-border;
   }
@@ -330,4 +321,26 @@
   ::view-transition-new(root) {
     animation: none;
   }
+}
+
+/* ── 画布兜底底色（字面值，不参与变量链）──
+   hsl(var(--x)) 是一条链：--background → --canvas。中间任何一环缺失，
+   background-color 就变成 unset＝透明，露出浏览器画布 —— 暗色模式下那正是
+   纯黑，整个界面会「漆黑一片」。这里用字面值再压一层：链断了最多是颜色旧
+   一点，绝不会落成黑屏。
+
+   这一层还决定「视口之外的画布」是什么颜色：body 只有一屏高，超出的部分由
+   画布承载。工作台此前会在底部漏出一条白，根因是布局高度链上少了 `min-h-0`
+   （见 dashboard/client.tsx），内容溢出到视口之外把画布露了出来 —— 那已经修掉；
+   这里保证即使将来再出现溢出，露出来的也是主题色而不是白。
+
+   放在 @layer base **之外**：分层规则会被未分层规则压过，而这层兜底应当是最
+   后一道防线，不该被任何 utility 覆盖。 */
+html {
+  background-color: #faf9f5;
+  color: #141413;
+}
+html.dark {
+  background-color: #181715;
+  color: #faf9f5;
 }

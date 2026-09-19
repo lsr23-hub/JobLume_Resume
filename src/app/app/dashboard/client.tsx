@@ -197,7 +197,12 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
           <div className="p-2">
             <SidebarTrigger />
           </div>
-          <div className="flex-1">{children}</div>
+          {/* min-h-0 与上面那条 min-w-0 是同一类问题的高度版本：flex item 默认
+              min-height:auto，不肯缩到内容高度以下。缺了它，内容比视口高时这个
+              div 会跟着长高、溢出 h-screen 的根容器，文档随之出现滚动条 ——
+              而多出来的那段露在 html 上，不是 body 的背景。
+              职业数据库内容一多就能看见底部漏出一条白。 */}
+          <div className="flex-1 min-h-0">{children}</div>
         </main>
       </SidebarProvider>
     </div>
