@@ -11,7 +11,7 @@
  *   pnpm e2e:photo
  */
 import { chromium, type Page } from "playwright";
-import { ensureCurrentUser } from "./userScope.mjs";
+import { ensureCurrentUser, seedSaves } from "./userScope.mjs";
 
 const BASE = process.env.E2E_BASE ?? "http://localhost:3000";
 
@@ -145,6 +145,7 @@ const profilePhoto = await page.evaluate(() =>
 step(profilePhoto === "idb:img_", `裁剪结果写进档案（${profilePhoto}…，档案层走 IndexedDB 引用）`);
 
 // ─────────── 简历编辑器 ───────────
+await seedSaves(page);
 await page.goto(`${BASE}/app/dashboard/resumes`, { waitUntil: "networkidle" });
 await page.waitForTimeout(1200);
 await page.getByRole("button", { name: "新建简历" }).first().click();

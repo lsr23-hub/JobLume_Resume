@@ -9,8 +9,8 @@
  *   pnpm e2e:users
  */
 import { chromium, type Page } from "playwright";
-// 只为副作用而引入：它注册了退出时清扫 saves/ 的钩子（见该文件的注释）
-import "./userScope.mjs";
+// seedSaves 把种子也写一份到磁盘；这个 import 同时注册了退出时清扫 saves/ 的钩子
+import { seedSaves } from "./userScope.mjs";
 
 const BASE = process.env.E2E_BASE ?? "http://localhost:3000";
 const PROFILE_KEY = "career-profile-storage";
@@ -157,6 +157,7 @@ await page.evaluate((key) => {
 await page.reload({ waitUntil: "networkidle" });
 await page.waitForTimeout(1500);
 
+await seedSaves(page);
 await page.goto(`${BASE}/app/dashboard/resumes`, { waitUntil: "networkidle" });
 await page.waitForTimeout(1500);
 step(!(await picker(page).isVisible().catch(() => false)), "我的简历页：有当前用户时直接进");
@@ -283,6 +284,7 @@ step(!targetBuckets.alias.includes("targets"),
 // tsx 用的 esbuild 开了 keepNames，会给具名箭头函数塞一个 `__name` 调用，
 // 而那个 helper 只在 bundle 里存在，注入到页面里就是 ReferenceError。
 await switchTo(page, "甲同学");
+await seedSaves(page);
 await page.goto(`${BASE}/app/dashboard/targets`, { waitUntil: "networkidle" });
 await page.waitForTimeout(1500);
 const jiaIdNow = await page.evaluate(
@@ -335,6 +337,7 @@ step(migratedTargets.legacyT3?.matchAnalysis === null,
   "没人分析过的那条归到 LEGACY_USER_ID，分析槽为空");
 
 // ════════════════ 4d. 删除用户：二次确认 + 连带清理 ════════════════
+await seedSaves(page);
 await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
 await page.waitForTimeout(1500);
 await switchTo(page, "甲同学");

@@ -1,5 +1,5 @@
 import { chromium } from "playwright";
-import { ensureCurrentUser } from "./userScope.mjs";
+import { ensureCurrentUser, seedSaves } from "./userScope.mjs";
 import fs from "node:fs";
 
 const BASE = process.env.E2E_BASE ?? "http://localhost:3000";
@@ -68,6 +68,7 @@ await page.evaluate(({ now }) => {
 }, { now });
 
 // ── 生成简历 ──
+await seedSaves(page);
 await page.goto(`${BASE}/app/dashboard/resumes`, { waitUntil: "networkidle" });
 await page.waitForTimeout(1200);
 await page.getByRole("button", { name: "新建简历" }).first().click();

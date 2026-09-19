@@ -2,15 +2,17 @@ import fs from "node:fs";
 import path from "node:path";
 
 /**
- * 多用户改造后，e2e 脚本共用的三件事。
+ * e2e 脚本共用的几件事。
  *
  * 1. **先有当前用户。** 改造前「导航到职业数据库」会惰性创建一份档案，脚本靠这个
  *    前提往 storage 里灌数据。现在门禁会拦下没有当前用户的访问，所以脚本必须先
  *    点一次「新建用户」。
  * 2. **档案的路径变了。** `state.profile`（标量）→
  *    `state.profiles[state.currentUserId]`（按用户索引）。
- * 3. **收尾清扫 `saves/`**（见文件末尾）。存档镜像一上线，每个脚本建的用户都会
- *    在盘上留一个目录，不清就会跟真数据混在一起。
+ * 3. **种子要同时写盘**（`seedSaves`）。应用改成从磁盘读之后，只灌 localStorage
+ *    的种子会失效。
+ * 4. **收尾清扫 `saves/`**（见文件末尾）。每个脚本建的用户都会在盘上留一个目录，
+ *    不清就会跟真数据混在一起。
  *
  * 用 `.mjs` 而不是 `.ts`：`core-flow.mjs` / `editor-picker.mjs` / `legacy-template.mjs`
  * 是 JS，tsx 也能 import `.mjs`，一份 helper 两边都能用。
@@ -48,6 +50,90 @@ export const ensureCurrentUser = async (page) => {
   return true;
 };
 
+/** 存档根：`<仓库根>/saves/`，与 `lib/server/saves.ts` 的约定一致 */
+export const savesDir = () => path.join(process.cwd(), "saves");
+
+/** 当前用户 id。改造前从档案 blob 取，改造后从这里取 —— 两个都认 */
+const readCurrentUserId = async (page) =>
+  page.evaluate(() => {
+    const direct = localStorage.getItem("joblume-current-user");
+    if (direct) return direct;
+    const st = JSON.parse(localStorage.getItem("career-profile-storage") ?? "null")?.state;
+    return st?.currentUserId ?? null;
+  });
+
+const writeJson = (file, data) => {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
+};
+
+/**
+ * 把页面里刚种好的数据**也写一份到 `saves/<userId>/`**。
+ *
+ * 为什么要这样做：存档成为唯一真相源之后，应用改成**从磁盘读**，而这 8 个脚本的
+ * 种子原本全是往 localStorage 灌的。让种子两边都写，翻转那一步就不必同时改
+ * 8 个脚本；在翻转之前多写的这一份无害（应用仍从 localStorage 读，镜像随后会用
+ * 同样的内容覆盖它）。
+ *
+ * ⚠️ **必须在 seed 之后、导航之前立刻调用。** 镜像的防抖 flush 会把内存里的状态
+ * 写回磁盘，可能盖掉这里写下的种子；而调用点与随后的 `page.goto` 之间只隔一条
+ * 语句，导航会连同页面上下文一起销毁那个定时器。中间别插 `waitForTimeout`。
+ */
+export const seedSaves = async (page) => {
+  const userId = await readCurrentUserId(page);
+  if (!userId) return null;
+
+  const tree = await page.evaluate(() => {
+    const state = (key) => JSON.parse(localStorage.getItem(key) ?? "null")?.state ?? null;
+    const p = state("career-profile-storage");
+    const r = state("resume-storage");
+    const t = state("job-target-storage");
+    const uid = localStorage.getItem("joblume-current-user") ?? p?.currentUserId ?? null;
+    return {
+      uid,
+      profile: uid ? p?.profiles?.[uid] ?? p?.profile ?? null : null,
+      resumes: uid ? r?.byUser?.[uid] ?? r?.resumes ?? {} : {},
+      targets: uid ? t?.targetsByUser?.[uid] ?? t?.targets ?? {} : {},
+    };
+  });
+  if (!tree.uid) return null;
+
+  const dir = path.join(savesDir(), tree.uid);
+  if (tree.profile) writeJson(path.join(dir, "profile.json"), tree.profile);
+  for (const [id, data] of Object.entries(tree.resumes)) {
+    writeJson(path.join(dir, "resumes", `${id}.json`), data);
+  }
+  for (const [id, data] of Object.entries(tree.targets)) {
+    writeJson(path.join(dir, "jds", `${id}.json`), data);
+  }
+
+  // 也让「上次看的是谁」有个着落：改造后它不再跟着档案 blob 走
+  await page.evaluate((uid) => localStorage.setItem("joblume-current-user", uid), tree.uid);
+  return tree.uid;
+};
+
+/** 直接读盘上某个用户的某份存档（断言用，不经浏览器） */
+export const readSaveFile = (userId, rel) => {
+  const file = path.join(savesDir(), userId, rel);
+  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null;
+};
+
+/** 某个用户目录下有哪些文件（相对路径，已排序） */
+export const listSaveFiles = (userId) => {
+  const dir = path.join(savesDir(), userId);
+  const out = [];
+  const walk = (base, prefix) => {
+    if (!fs.existsSync(base)) return;
+    for (const name of fs.readdirSync(base).sort()) {
+      const full = path.join(base, name);
+      if (fs.statSync(full).isDirectory()) walk(full, `${prefix}${name}/`);
+      else out.push(`${prefix}${name}`);
+    }
+  };
+  walk(dir, "");
+  return out;
+};
+
 /**
  * 跑 e2e 会**真的往仓库根下的 `saves/` 写文件** —— 存档镜像一上线，每个脚本
  * 建出来的用户都会在盘上留一个目录。不清理的话，跑几轮之后 `saves/` 里就混满
@@ -61,7 +147,7 @@ export const ensureCurrentUser = async (page) => {
  *
  * 只用同步 API：`exit` 钩子里不允许异步。
  */
-const SAVES_ROOT = path.join(process.cwd(), "saves");
+const SAVES_ROOT = savesDir();
 const preexistingSaves = new Set(
   fs.existsSync(SAVES_ROOT) ? fs.readdirSync(SAVES_ROOT) : []
 );

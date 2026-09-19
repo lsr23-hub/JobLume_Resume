@@ -12,7 +12,7 @@
  *   npx tsx scripts/e2e/acceptance.ts
  */
 import { chromium } from "playwright";
-import { ensureCurrentUser } from "./userScope.mjs";
+import { ensureCurrentUser, seedSaves } from "./userScope.mjs";
 import fs from "node:fs";
 import { fingerprintEntity, fingerprintContent } from "../../src/lib/match/analysisCache";
 import { PROMPT_VERSION } from "../../src/lib/match/buildMatchPrompt";
@@ -106,6 +106,9 @@ const seedProfile = async () => {
     p.selfEvaluationContent = "<p>四年前端开发经验，关注工程质量。</p>";
     localStorage.setItem("career-profile-storage", JSON.stringify(raw));
   }, { now: NOW, ents: ENTITIES() });
+  // 种子也要写盘（应用改成从磁盘读之后，只灌 localStorage 会失效）。
+  // 必须紧挨着后面的导航，中间别插等待 —— 镜像的防抖 flush 会盖掉写下的种子。
+  await seedSaves(page);
 };
 
 // ════════════════════════════════════════════════════════════
@@ -337,6 +340,7 @@ try {
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(1500);
 
+  await seedSaves(page);
   await page.goto(`${BASE}/app/dashboard/settings`, { waitUntil: "networkidle" });
   await page.waitForTimeout(1500);
   const dl = page.waitForEvent("download", { timeout: 15000 });

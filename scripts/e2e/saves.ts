@@ -13,7 +13,7 @@
 import { chromium, type Page } from "playwright";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { ensureCurrentUser } from "./userScope.mjs";
+import { ensureCurrentUser, seedSaves } from "./userScope.mjs";
 
 const BASE = process.env.E2E_BASE ?? "http://localhost:3000";
 const SAVES_ROOT = path.join(process.cwd(), "saves");
@@ -89,6 +89,8 @@ try {
     };
     localStorage.setItem(KEY, JSON.stringify(raw));
   });
+  // 种子也要写盘：应用改成从磁盘读之后，只灌 localStorage 会失效
+  await seedSaves(page);
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(SETTLE);
   step((await readJson(profilePath(jia)).catch(() => null))?.entities?.exp1?.title === "星图智能",

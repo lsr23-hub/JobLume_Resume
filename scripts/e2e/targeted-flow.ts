@@ -12,7 +12,7 @@
  *   pnpm e2e:targeted
  */
 import { chromium, type Page } from "playwright";
-import { ensureCurrentUser } from "./userScope.mjs";
+import { ensureCurrentUser, seedSaves } from "./userScope.mjs";
 import fs from "node:fs";
 import { validateMatchResult } from "../../src/lib/match/validateMatchResult";
 import { PROMPT_VERSION } from "../../src/lib/match/buildMatchPrompt";
@@ -124,6 +124,7 @@ await ensureCurrentUser(page);
 await seed();
 
 // ── 1. 投递目标页：只做分析 ──
+await seedSaves(page);
 await page.goto(`${BASE}/app/dashboard/targets`, { waitUntil: "networkidle" });
 await page.waitForTimeout(1200);
 await page.getByText("华泰证券", { exact: false }).first().click();
