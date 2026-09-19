@@ -433,7 +433,7 @@ describe("aggregateMetrics —— 覆盖类指标只在有标注的案例上平�
       },
       requirements: { requirementRecall: 0 },
       ranking: { ndcgAt5: 0, spearman: 0, top5HitRate: 0 },
-      selection: { mustHaveRecall: 0, mustHaveTotal: 0, idealJaccard: 0, selectionQuality: 0 },
+      selection: { budget: 0, mustHaveRecall: 0, mustHaveTotal: 0, idealJaccard: 0, selectionQuality: 0, missed: [], wronglyIncluded: [] },
       coverage: { ...COVERAGE_DEFAULTS, ...coverage },
     }) as unknown as CaseMetrics;
 
@@ -483,9 +483,9 @@ describe("aggregateMetrics —— 覆盖类指标只在有标注的案例上平�
     // 实测依据：8 个案例里 jun-02 一条 must-have 都没标，它给 89.6% 这个数字
     // 贡献了一个假的 1.0（selection.ts 在 mustHaveIds.length === 0 时返 1）
     const withMust = mkCase("withMust", {});
-    withMust.selection = { mustHaveRecall: 0.8, mustHaveTotal: 3, idealJaccard: 0, selectionQuality: 0 };
+    withMust.selection = { budget: 0, mustHaveRecall: 0.8, mustHaveTotal: 3, idealJaccard: 0, selectionQuality: 0, missed: [], wronglyIncluded: [] };
     const withoutMust = mkCase("withoutMust", {});
-    withoutMust.selection = { mustHaveRecall: 1, mustHaveTotal: 0, idealJaccard: 0, selectionQuality: 0 };
+    withoutMust.selection = { budget: 0, mustHaveRecall: 1, mustHaveTotal: 0, idealJaccard: 0, selectionQuality: 0, missed: [], wronglyIncluded: [] };
 
     const { values, annotatedCases } = aggregateMetrics([withMust, withoutMust], null);
 

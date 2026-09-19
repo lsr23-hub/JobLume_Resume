@@ -5,7 +5,13 @@ import { getSafeFileName } from "@/utils/export";
  * 调用浏览器打印功能导出 PDF。
  *
  * 这是唯一产出真实文字层 PDF 的路径 —— 浏览器打印引擎负责分页，
- * 结果可选中、可复制、可被 ATS 解析，且不依赖任何外部服务。
+ * 结果可选中、可复制，且不依赖任何外部服务。
+ *
+ * **已知缺陷**：Chromium 生成 ToUnicode CMap 时，对「汉字与康熙部首共用字形」
+ * 的字符会挑部首码位 —— 实测约 11% 的汉字在文字层里变成康熙部首（页→⻚）。
+ * 复制粘贴与 ATS 解析会拿到错字，其中 ⻚(U+2EDA) 连 NFKC 都还原不了。
+ * 因此上面的「可选中、可复制」不适用于 ATS 场景。
+ * 成因、A/B 实测与可修路径见 docs/04 §8.2 与 plan/notes.md §七。
  * 代价是需要在系统打印对话框里选择「另存为 PDF」。
  */
 export const exportResumeToBrowserPrint = async (

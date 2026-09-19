@@ -62,7 +62,7 @@
     },
     "templates": {
       "title": "Four templates, and that is enough",
-      "subtitle": "Every one exports a real, ATS-parseable text layer — not an image."
+      "subtitle": "Every one exports a real text layer — not an image. Selectable and copyable."
     },
     "judgement": {
       "eyebrow": "Boundaries",
@@ -222,7 +222,7 @@
     "modal": {
       "title": "Export Resume",
       "subtitle": "Select the format you want to export your resume",
-      "pdfDesc": "Exported via browser print. Real text layer — selectable and ATS-parseable. Choose \"Save as PDF\" in the print dialog.",
+      "pdfDesc": "Exported via browser print. Real text layer, selectable and copyable — choose \"Save as PDF\" in the print dialog. Note: in practice about 11% of Chinese characters come out distorted in ATS parsing; double-check before submitting.",
       "longPagePdfDesc": "Renders the entire resume as an image in a custom-height, single-page PDF. Best for online preview and sharing; not recommended for printing, text selection, or ATS parsing.",
       "longPageImageDesc": "Exports the entire resume as a single tall PNG. Best for mobile preview, portfolios, and image uploads; not recommended for formal applications or printing.",
       "jsonDesc": "Export your resume data as JSON to backup or transfer between devices.",
@@ -740,7 +740,7 @@
       },
       "export-methods": {
         "question": "Which export format should I use?",
-        "answer": "• PDF: Uses the backend service for high-precision rendering. Recommended for formal applications, printing, and archiving.\n\n• PDF (Long Page): Renders the resume as an image in a custom-height, single-page PDF. Best for online preview and sharing; not recommended for printing, text selection, or ATS parsing.\n\n• PNG (Long Image): Exports the resume as one tall image. Best for mobile preview, portfolios, and image-upload workflows.\n\n• PDF (Backup): Uses the browser's print dialog to save a PDF. Use it when the primary export service is unavailable or when you need to adjust print margins manually.\n\n• JSON Config: Exports a resume data backup for restoration or migration.\n\n• Markdown: Exports plain text for use in other tools."
+        "answer": "• PDF: Uses the browser print dialog to save a PDF. Real text layer, selectable and copyable — recommended for formal applications and printing. Note: in practice about 11% of Chinese characters come out distorted in ATS parsing; double-check before submitting.\n\n• PDF (Long Page): Renders the resume as an image in a custom-height, single-page PDF. Best for online preview and sharing; not recommended for printing, text selection, or ATS parsing.\n\n• PNG (Long Image): Exports the resume as one tall image. Best for mobile preview, portfolios, and image-upload workflows.\n\n• JSON Config: Exports a resume data backup for restoration or migration.\n\n• Markdown: Exports plain text for use in other tools."
       },
       "drag-and-drop": {
         "question": "How do I drag and drop to reorder modules?",
