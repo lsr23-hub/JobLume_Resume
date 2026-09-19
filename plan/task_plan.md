@@ -214,7 +214,7 @@
 | 4 | 分析读写点切到"当前用户那一份"；删掉 `JobTarget` 上的旧单槽字段 | ⬜ |
 | 5 | 备份归属：导出带姓名（含文件名），导入前并排说明「是谁的 / 写进谁名下」 | ✅ 5 条单测 |
 | 6 | 6 个既有 e2e 脚本改 localStorage 路径 | ✅ 新增 `scripts/e2e/userScope.mjs`；6 套全绿（86 项） |
-| 7 | 文档同步（含已有的 `resume-store` 笔误等存量错误） | ⬜ |
+| 7 | 文档同步（含已有的 `resume-store` 笔误等存量错误） | ✅ README + docs/02 §7.1/§7.2/§9（D30–D33）|
 
 **第 1a 步留下的过渡缝**：`userScope.ts` 导出了 `ScopedJobTarget = JobTarget & TargetScopedAnalysis`。
 迁移产出的目标一定带 per-user 分析字段，而 `JobTarget` 接口上旧的两个单槽字段要等第 4 步

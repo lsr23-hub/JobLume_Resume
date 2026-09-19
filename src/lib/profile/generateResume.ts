@@ -32,6 +32,9 @@ export interface GenerateResumeInput {
 
   templateId: string;
 
+  /** 生成这份简历的用户，写进快照供溯源。可选 */
+  profileId?: string;
+
   /** 运行时元信息由调用方提供，保持本函数可测 */
   id: string;
   title: string;
@@ -90,6 +93,7 @@ export const generateResume = (input: GenerateResumeInput): ResumeData => {
     mode,
     target,
     targetAnalysis,
+    profileId,
     templateId,
     id,
     title,
@@ -163,6 +167,7 @@ export const generateResume = (input: GenerateResumeInput): ResumeData => {
             jdSnapshot: target.jdRaw,
             matchAnalysisSnapshot: targetAnalysis ?? undefined,
             selectedEntityIds: selection,
+            profileId,
             generatedAt: now,
           }
         : { mode: "generic", jobTargetId: null, generatedAt: now },

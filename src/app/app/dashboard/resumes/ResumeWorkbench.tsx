@@ -141,6 +141,7 @@ const ResumeWorkbenchInner = () => {
             target,
             // 分析按「岗位 × 用户」存，取当前用户那一份
             targetAnalysis: analysisFor(target, currentUserId),
+            profileId: currentUserId ?? undefined,
             templateId: choice.templateId,
             id,
             title,

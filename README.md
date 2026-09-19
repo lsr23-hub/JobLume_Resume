@@ -128,11 +128,24 @@ docker compose up -d
 
 ### 数据存在哪里
 
-**全部在浏览器本地**：职业数据库在 `localStorage`（键 `career-profile-storage`），
-简历在 `resume-store`，简历照片在 IndexedDB。服务端不保存任何用户数据 ——
-换浏览器或清空站点数据都会看不到原来的内容，服务端也无从恢复。
+**全部在浏览器本地**，分三份 `localStorage` 记录：
 
-需要备份就用「职业数据库 → 导出」，或配置同步到本地文件夹。
+| 内容 | 键 | 结构 |
+|---|---|---|
+| 职业数据库 | `career-profile-storage` | `profiles[userId]` + `currentUserId` |
+| 简历 | `resume-storage` | `byUser[userId][resumeId]` |
+| 投递目标 | `job-target-storage` | `targets[targetId]`，分析在 `analysesByUser[userId]` 里 |
+
+简历照片在 IndexedDB。
+
+**职业数据库、简历、岗位分析都按用户隔离**（进入这两个板块前先选人）；**投递目标
+本身是全局共享的** —— 多个用户可以投同一个岗位，但各自的匹配分析互不可见。
+
+服务端不保存任何用户数据 —— 换浏览器或清空站点数据都会看不到原来的内容，
+服务端也无从恢复。
+
+需要备份就用「职业数据库 → 导出」或「通用设置 → 导出数据」（导的是**当前用户**，
+文件名带姓名），或配置同步到本地文件夹。
 
 > 顺带一提：因为服务端不落地数据，API Key 也不需要放在服务端 ——
 > 每个用户填自己的 key，存在自己浏览器里。

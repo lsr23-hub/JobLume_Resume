@@ -269,6 +269,14 @@ export interface ResumeSnapshot {
   /** 各板块选中的条目 id */
   selectedEntityIds?: Record<string, string[]>;
 
+  /**
+   * 生成这份简历的用户（`currentUserId`）。
+   *
+   * 多用户下用于溯源：`selectedEntityIds` / `sourceMap` 指向的是**哪个人的**经历。
+   * 可选 —— 改造前生成的简历没有它。仅作记录，不参与渲染或生成逻辑。
+   */
+  profileId?: string;
+
   /** 生成时间 */
   generatedAt: string;
 }

@@ -295,8 +295,13 @@ export interface ResumeSnapshot {
   /** 各板块选中的条目 id */
   selectedEntityIds?: Record<string, string[]>;
 
-  /** 用户手动改变过勾选状态的条目 id */
-  manuallyAdjustedIds?: string[];
+  /**
+   * 生成这份简历的用户（`currentUserId`）。
+   *
+   * 多用户下用于溯源：这份简历的 `selectedEntityIds` / `sourceMap` 指向的是
+   * **哪个人的**经历。可选项 —— 改造前生成的简历没有它。
+   */
+  profileId?: string;
 
   /** 生成时间 */
   generatedAt: string;
@@ -511,8 +516,11 @@ export interface MatchItemResult {
    */
   inTopN: boolean;
 
-  /** 用户是否手动改变过该条目的勾选状态 */
-  manuallyAdjusted?: boolean;
+  /**
+   * 该条目支撑了哪几条要求（引用 `Requirement.id`）。
+   * 与 `requirements[].entityIds` 是同一个关系的两个方向，校验时会丢弃不存在的 id。
+   */
+  requirementIds: string[];
 }
 
 /**
@@ -554,20 +562,31 @@ export interface AnalysisCache {
 
 | Store | 持久化 key | 内容 | 是否已有 |
 |---|---|---|---|
-| `useCareerProfileStore` | `career-profile-storage` | `CareerProfile` | 新建 |
-| `useResumeStore` | 上游原有 key | `ResumeData[]` | 扩展 |
-| `useJobTargetStore` | `job-target-storage` | `JobTarget[]` | 新建 |
+| `useCareerProfileStore` | `career-profile-storage` | `{ profiles: Record<userId, CareerProfile>, currentUserId }` | 新建 |
+| `useResumeStore` | `resume-storage` | `{ byUser: Record<userId, Record<resumeId, ResumeData>>, activeByUser }` | 扩展 |
+| `useJobTargetStore` | `job-target-storage` | `{ targets: Record<targetId, JobTarget> }` | 新建 |
 
 **为什么拆三个 store**：`CareerProfile` 的数据量远大于单份简历，混在一个 store 里会导致任何一处修改都触发全量持久化。拆分后各自的持久化互不干扰。
 
+**用户维度（D30）**：职业档案、简历、岗位分析都按 `userId` 分桶；`currentUserId`
+存在档案 store 里（用户就是一份档案，不另设用户记录）。投递目标**本身**保持全局
+共享 —— 多个用户可以投同一个岗位，但 `JobTarget.analysesByUser` 让各人只看得到
+自己那份匹配分析。
+
+三个 store 都带 `version: 1` + `migrate` + `merge`，迁移把存量数据归到固定字面量
+`LEGACY_USER_ID` 名下（**不生成随机 id**：三个 store 各自独立迁移、没有协调者，
+各生成一个 id 会让简历挂在一个档案不认识的用户名下）。两条必须守住的规则：
+`migrate` 遇坏输入**抛错**而不是返回空结构（抛错不写盘，返回空结构会把空数据
+当成迁移结果提交），且必须**同步**（异步会让 persist 解构一个未 await 的 Promise）。
+
 ### 7.2 事件契约
 
-三个 store 之间不直接互相 import（避免循环依赖），通过**显式传参**连接：
+三个 store 之间**基本**不互相 import，通过**显式传参**连接：
 
 ```ts
 // 生成目标简历时，由 UI 层协调
 const profile = useCareerProfileStore.getState().profile;
-const target  = useJobTargetStore.getState().getTarget(targetId);
+const target  = useJobTargetStore.getState().targets[targetId];
 
 // 1. 取分析结果：指纹命中则复用，否则调用 LLM
 const analysis = await getOrCreateAnalysis({ profile, target });
@@ -587,6 +606,23 @@ useResumeStore.getState().addResume(resume);
 
 **唯一例外**：`useResumeStore` 内部为了维护 `sourceMap` 的一致性，需要在 `updateResume` 时读取 `sourceMap` —— 但这是读自身状态，不构成跨 store 依赖。
 
+#### 一处刻意的例外：`useResumeStore` → `useCareerProfileStore`
+
+简历 store 会 `import` 档案 store，读 `getState().currentUserId` 来定位「当前用户的
+简历桶」。上面那条约定在这里**刻意破例**，理由是：
+
+- 这条依赖**真实存在** —— 简历本来就属于某个人，藏起来不如写出来
+- 它是**单向无环**的：档案 store 不反向依赖简历 store（也不需要，它不必知道简历存在）
+- 替代方案都更差：让 33 个调用点各自传 `userId`（改动面 33 个文件、收益为零）；
+  或在简历 store 里镜像一份 `currentUserId`（多一份真相 + 多一个同步点）
+
+配套两条保障：**写入统一走 store 内部包装过的 `set`**，由它把当前用户的切片镜像回
+`byUser`（35 个 action 体因此一个字没改）；**切用户靠模块级订阅**档案 store，而不是
+让每个切人入口自己记得调 —— 切人有「选卡」「新建」等入口，订阅让「忘记同步」在结构
+上不可能发生。
+
+> `useJobTargetStore` **没有**这条例外：它由 UI 层传参调用，不反向 import 任何 store。
+
 ### 7.3 分析结果的所有权
 
 `MatchAnalysis` 存在 `JobTarget` 上，**不在简历上**。但简历通过 `snapshot.matchAnalysisSnapshot` 持有一份拷贝。
@@ -599,7 +635,7 @@ useResumeStore.getState().addResume(resume);
 
 **为什么拷贝而不是引用**：简历是某一时刻的产物，必须能独立地回答「我当时依据什么做的决定」。引用会被后续修改污染。
 
-### 7.3 图片存储迁移
+### 7.4 图片存储迁移
 
 **问题**：上游把照片（`basic.photo`）和证书（`Certificate.url`）存为 Base64 字符串，放在 localStorage。localStorage 配额约 5MB，2-3 张证书图片即可撑满。
 
@@ -700,6 +736,10 @@ localStorage 中的引用形式: `idb:img_xxxxxxxx`
 | D16 | 用 `evidence` 硬字段替代「请保守判断」的软提示 | 提示词中写「宁可少推荐」 | 模糊标准会放大不稳定性 —— 模型每次对「多保守」的理解略有不同，边界条目来回横跳。要求逐字引用原文是可程序验证的硬约束 |
 | D17 | `tags` / `skills` / `metrics` 从打分输入降级为模型提示 | 保持为打分的必填字段 | LLM 直接读描述即可理解，不需要用户预先做「内容 → 标签」的翻译。字段保留但可空；`skills`/`metrics` 改由 LLM 在归类与匹配时填充（本地正则抽取的 `extractMetrics` / `extractSkillTags` 已删除） |
 | D18 | JD 不做预解析，原文直传模型 | 本地规则 + AI 结构化解析 | 预解析引入一层信息损失。JD 原文中的「团队正在做…」等上下文对理解岗位真实需求很重要，直接给原文质量更高，且少一个组件 |
+| D30 | **用户维度**：职业档案、简历、岗位分析都按 `userId` 分桶；投递目标**本身**保持全局共享 | 全站单一隐式「我」 / 岗位也按用户隔离 | 要替家人朋友各维护一份材料。岗位必须共享（多人可投同一岗），但「这条要求由哪几段经历支撑」只对某一个人成立 —— 分析不隔离会让 B 看到用 A 的经历支撑的「你具备」。**一个用户 = 一份职业档案**，不另设用户记录：名字与证件照只存一处，不可能出现「用户名张三、档案里李四」 |
+| D31 | **迁移的两条硬规则**：`migrate` 遇坏输入**抛错**、且必须**同步** | 返回空结构 / 允许异步 | 抛错会跳过 merge/set/setItem，磁盘原封不动、只弹提示；返回空结构反而会被当成迁移结果提交并写盘。异步则更凶：persist 从不 await `migrate` 的返回值，会把 pending Promise 交给 `merge` 展成空对象，然后因为 `migrated === true` **立刻把空状态写盘** —— 静默全量清空 |
+| D32 | **简历 store 单向 import 档案 store**（§7.2 的刻意例外） | 严格互不 import | 见 §7.2 的例外说明。核心权衡：这条依赖真实存在且无环，而「33 个调用点各传 `userId`」改动面大、收益为零 |
+| D33 | **备份的归属字段是纯提示，不参与逻辑** | 用姓名做归属校验/匹配 | 姓名会重复、会改，拿它判定只会制造新的错误来源。它的唯一职责是让用户在导入前看到「这份是谁的、要写进谁名下」—— 多用户下最容易静默出错的一步。老备份没有这个字段也必须照常能读 |
 
 ---
 
