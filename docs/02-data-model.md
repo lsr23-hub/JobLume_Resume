@@ -18,7 +18,7 @@
 | 编号 | 约束 | 来源 |
 |---|---|---|
 | C1 | **不修改 `rawproject/` 下任何文件** | 用户明确要求 |
-| C2 | **不修改 9 套模板的 section 组件** | 改动成本 = 9 套 × 8 文件 = 72 个文件，不可接受 |
+| C2 | **不修改 4 套模板的 section 组件** | 改动成本 = 4 套 × 8 文件 = 32 个文件，不可接受 |
 | C3 | **AI 不得编造事实** | 简历造假在求职场景中是致命的 |
 
 C2 的具体含义：`ResumeData` 的 **shape 只能扩展，不能重构**。任何需要改变 `Experience` / `Project` 等既有类型字段结构的方案都被否决。
@@ -374,7 +374,7 @@ export function materialize(input: MaterializeInput): ResumeData;
 - 组的顺序按 `order` 排序
 - 若某组 `content` 为空则跳过该组
 
-**约束**：生成的 HTML 结构必须与上游 `initialResumeData.ts` 中的 `skillContent` 示例一致（`div.skill-content > ul > li`），否则 9 套模板中的 `SkillSection` 组件的样式会失效。
+**约束**：生成的 HTML 结构必须与上游 `initialResumeData.ts` 中的 `skillContent` 示例一致（`div.skill-content > ul > li`），否则 4 套模板中的 `SkillSection` 组件的样式会失效。
 
 ### 5.4 自定义板块的落位
 
@@ -389,7 +389,9 @@ default:
   return null;
 ```
 
-**已验证**：9 套模板（classic / modern / left-right / timeline / minimalist / elegant / creative / editorial / swiss）的 `index.tsx` 中均存在此分支。因此新增这三个板块**不需要修改任何模板文件**。
+**已验证**：4 套模板（classic / modern / left-right / timeline）的 `index.tsx` 中均存在此分支。
+
+> 2026-09-19 复核：模板从 9 套精简到 4 套后重新逐套确认，仍然全部存在此分支。因此新增这三个板块**不需要修改任何模板文件**。
 
 **同时必须满足的前置条件**：`menuSections` 中必须存在对应 `id` 的条目且 `enabled: true`，否则 `enabledSections` 过滤后不会进入渲染循环。
 
@@ -668,7 +670,7 @@ localStorage 中的引用形式: `idb:img_xxxxxxxx`
 
 | 编号 | 决策 | 备选方案 | 选择理由 |
 |---|---|---|---|
-| D1 | 数据库与渲染层彻底分离，通过物化连接 | 直接改造 `Experience` 等类型加匹配字段 | 备选方案需改 9 套模板 × 8 文件 = 72 个文件 |
+| D1 | 数据库与渲染层彻底分离，通过物化连接 | 直接改造 `Experience` 等类型加匹配字段 | 备选方案需改 4 套模板 × 8 文件 = 32 个文件 |
 | D2 | `sourceMap` 存在简历上而非数据库上 | 数据库记录「被哪些简历引用」 | 简历知道自己的来源更自然；删除简历不必回写数据库 |
 | D3 | 自定义板块走 `customData` 通道 | 为每个板块新建类型 + section 组件 | 上游已有通用回退分支，零模板改动 |
 | D4 | 三个独立 store | 单个 store | 数据量差异大，拆分后持久化互不干扰 |

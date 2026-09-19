@@ -194,8 +194,8 @@ describe("generateResume — 板块内容门控", () => {
 
 describe("generateResume — 模板排版参数", () => {
   it("把所选模板的主题色与间距写进 globalSettings", () => {
-    const template = DEFAULT_TEMPLATES.find((t) => t.id === "elegant")!;
-    const resume = run({ templateId: "elegant" });
+    const template = DEFAULT_TEMPLATES.find((t) => t.id === "timeline")!;
+    const resume = run({ templateId: "timeline" });
 
     expect(resume.globalSettings.themeColor).toBe(template.colorScheme.primary);
     expect(resume.globalSettings.sectionSpacing).toBe(template.spacing.sectionGap);
@@ -222,10 +222,10 @@ describe("generateResume — 页数预算的接入", () => {
   });
 
   it("模板自带排版参数时也不会把 autoOnePage 覆盖掉", () => {
-    const resume = run({ templateId: "elegant" });
+    const resume = run({ templateId: "timeline" });
     expect(resume.globalSettings.autoOnePage).toBe(true);
     expect(resume.globalSettings.themeColor).toBe(
-      DEFAULT_TEMPLATES.find((t) => t.id === "elegant")!.colorScheme.primary
+      DEFAULT_TEMPLATES.find((t) => t.id === "timeline")!.colorScheme.primary
     );
   });
 });

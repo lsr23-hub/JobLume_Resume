@@ -6,22 +6,12 @@ import { classicConfig } from "./classic/config";
 import { modernConfig } from "./modern/config";
 import { leftRightConfig } from "./left-right/config";
 import { timelineConfig } from "./timeline/config";
-import { minimalistConfig } from "./minimalist/config";
-import { elegantConfig } from "./elegant/config";
-import { creativeConfig } from "./creative/config";
-import { editorialConfig } from "./editorial/config";
-import { swissConfig } from "./swiss/config";
 
 // Import components
 import ClassicTemplate from "./classic";
 import ModernTemplate from "./modern";
 import LeftRightTemplate from "./left-right";
 import TimelineTemplate from "./timeline";
-import MinimalistTemplate from "./minimalist";
-import ElegantTemplate from "./elegant";
-import CreativeTemplate from "./creative";
-import EditorialTemplate from "./editorial";
-import SwissTemplate from "./swiss";
 
 export interface TemplateRegistryEntry {
   config: ResumeTemplate;
@@ -38,11 +28,6 @@ export const TEMPLATE_REGISTRY: TemplateRegistryEntry[] = [
   { config: modernConfig, Component: ModernTemplate },
   { config: leftRightConfig, Component: LeftRightTemplate },
   { config: timelineConfig, Component: TimelineTemplate },
-  { config: minimalistConfig, Component: MinimalistTemplate },
-  { config: elegantConfig, Component: ElegantTemplate },
-  { config: creativeConfig, Component: CreativeTemplate },
-  { config: editorialConfig, Component: EditorialTemplate },
-  { config: swissConfig, Component: SwissTemplate },
 ];
 
 /** All template configs — drop-in replacement for the old DEFAULT_TEMPLATES */

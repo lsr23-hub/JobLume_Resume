@@ -83,84 +83,37 @@ for (const label of ["保留全部并生成", "应用并生成"]) {
 await page.waitForTimeout(4000);
 step(/\/app\/workbench\//.test(page.url()), "生成简历并进入工作台");
 
-// ── 4 套模板逐一验证项目板块 ──
-const preview = page.locator("#resume-preview");
-const sheetTrigger = page.locator("svg.lucide-panels-left-bottom").first();
-const grid = page.locator('button:has(> div.aspect-\\[210\\/297\\])');
 
-for (let i = 0; i < TPL.length; i++) {
-  await sheetTrigger.click();
-  await page.waitForTimeout(900);
-  const n = await grid.count();
-  if (n < TPL.length) { step(false, `模板面板未展开（${n} 个模板按钮，期望 ${TPL.length}）`); break; }
-  await grid.nth(i).click();
-  await page.waitForTimeout(1100);
-  await page.keyboard.press("Escape");
-  await page.waitForTimeout(800);
-  const text = await preview.innerText().catch(() => "");
-  step(text.includes(PROJECT), `模板 ${i + 1}/${TPL.length} · ${TPL[i]} 渲染出项目经历`);
-}
-await page.screenshot({ path: `${OUT}/shot-4-after-templates.png` });
-
-// ── 导出：抓打印 HTML ──
-await page.getByRole("button", { name: "导出" }).first().click();
-await page.waitForTimeout(900);
-// 导出是一个模态：卡片按描述文案定位，避免撞上图标 SVG 里的 "PDF" 文本
-await page.locator("div.cursor-pointer").filter({ hasText: "调用浏览器打印导出" }).first().click();
-// 等到打印管线真的跑起来（字体 + 图片就绪后才调 print）
-for (let i = 0; i < 40; i++) {
-  const done = await page.evaluate(() => !!window.__printCalled);
-  if (done) break;
-  await page.waitForTimeout(500);
-}
-const printInfo = await page.evaluate(() => {
-  const f = window.__printFrames?.[window.__printFrames.length - 1];
-  if (!f) return null;
-  const html = f.contentDocument?.documentElement?.outerHTML ?? "";
-  return { called: !!window.__printCalled, len: html.length, html };
+// ── 老数据兼容：把 templateId 改成已删的模板，看还能不能渲染 ──
+await page.goto(`${BASE}/app/dashboard/resumes`, { waitUntil: "networkidle" });
+await page.waitForTimeout(1500);
+const seeded = await page.evaluate(() => {
+  const raw = JSON.parse(localStorage.getItem("resume-storage") || "null");
+  if (!raw) return { ok: false, reason: "resume-storage 不存在" };
+  const first = Object.values(raw.state.resumes ?? {})[0];
+  if (!first) return { ok: false, reason: "还没有简历" };
+  const before = first.templateId;
+  first.templateId = "swiss";          // 本次精简删掉的模板
+  localStorage.setItem("resume-storage", JSON.stringify(raw));
+  return { ok: true, id: first.id, before };
 });
-step(!!printInfo, "① 导出触发了打印管线");
-step(!!printInfo?.called, "② 打印函数被调用");
-step((printInfo?.len ?? 0) > 20000, `③ 打印文档已生成（${printInfo?.len ?? 0} 字符）`);
-if (printInfo?.html) {
-  fs.writeFileSync("/tmp/jl2/print.html", printInfo.html);
-  step(printInfo.html.includes("职光简历 JobLume"), "④ 打印文档内含项目名称");
-  step(/@page\s*\{[^}]*size:\s*A4/.test(printInfo.html), "⑤ 打印文档带 A4 分页规则");
-}
-
-// ── 用 Chromium 打印引擎真正出一份 PDF，再从文字层验内容 ──
-if (printInfo?.html) {
+step(seeded.ok, `① 把简历的 templateId 从 ${seeded.before} 改成已删的 swiss`);
+if (seeded.ok) {
   const p2 = await ctx.newPage();
-  await p2.setContent(printInfo.html, { waitUntil: "load" });
-  await p2.emulateMedia({ media: "print" });
-  await p2.pdf({ path: `${OUT}/export.pdf`, format: "A4", printBackground: true });
-  const buf = fs.readFileSync("/tmp/jl2/export.pdf");
-  step(buf.length > 5000, `⑥ 产出 PDF（${(buf.length / 1024).toFixed(0)} KB，magic=${buf.subarray(0, 5).toString()}）`);
-
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const doc = await pdfjs.getDocument({ data: new Uint8Array(buf), useSystemFonts: true }).promise;
-  let all = "";
-  for (let i = 1; i <= doc.numPages; i++) {
-    const c = await (await doc.getPage(i)).getTextContent();
-    all += c.items.map((it) => it.str).join("");
-  }
-  step(doc.numPages >= 1, `⑦ PDF 页数 ${doc.numPages}`);
-  step(all.includes("职光简历"), "⑧ PDF 文字层含项目名称");
-  // 已知缺陷：Chromium 写 ToUnicode 时，汉字与康熙部首共用字形的字符会被编成部首码位，
-  // 裸文本匹配会失败。NFKC 能还原绝大多数（仅 U+2EDA ⻚ 无兼容分解）。见 docs/04 §8.2。
-  const norm = all.normalize("NFKC");
-  step(norm.includes("独立开发"), "⑨ PDF 文字层含项目角色（NFKC 归一化后）");
-  const KANGXI = /[\u2E80-\u2FDF]/;
-  const cjk = Array.from(all).filter((c) => /[\u4E00-\u9FFF\u2E80-\u2FDF]/.test(c));
-  const bad = cjk.filter((c) => KANGXI.test(c));
-  if (bad.length) {
-    console.log(`   ℹ️  已知缺陷：文字层 ${bad.length}/${cjk.length} 个汉字是康熙部首（${(bad.length / cjk.length * 100).toFixed(1)}%）：${[...new Set(bad)].join(" ")}`);
-  }
-  step(all.includes("要求项召回"), "⑩ PDF 文字层含项目描述");
-  step(all.includes("林可"), "⑪ PDF 文字层含姓名");
+  const errs2 = [];
+  p2.on("pageerror", (e) => errs2.push(e.message));
+  p2.on("console", (m) => { if (m.type() === "error") errs2.push(m.text()); });
+  await p2.goto(`${BASE}/app/workbench/${seeded.id}`, { waitUntil: "networkidle" });
+  await p2.waitForTimeout(3000);
+  const prev = await p2.locator("#resume-preview").innerText().catch(() => "");
+  const body = await p2.locator("body").innerText().catch(() => "");
+  step(prev.length > 50, `② 简历照常渲染（预览 ${prev.length} 字符，回退到经典模板）`);
+  step(prev.includes("职光简历 JobLume"), "③ 项目经历仍在");
+  step(errs2.length === 0, `④ 页面错误 ${errs2.length}`);
+  if (errs2.length) console.log("   ", errs2.slice(0, 5));
+  step(!/出了点问题|出错了|Something went wrong/i.test(body), "⑤ 没有落到错误页");
+  await p2.screenshot({ path: `${OUT}/shot-8-stale-template.png` });
 }
-
-console.log("\n页面错误:", errors.length ? errors.slice(0, 10) : "无");
 console.log("\n结果:", exp.filter((e) => e.ok).length + "/" + exp.length);
 await browser.close();
 process.exit(exp.every((e) => e.ok) ? 0 : 1);

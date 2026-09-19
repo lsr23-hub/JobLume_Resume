@@ -180,7 +180,7 @@ const removeLongPageHeightConstraints = (element: HTMLElement) => {
     rootElement.style.setProperty("min-height", "0", "important");
   }
 
-  const constrainedElements = element.querySelectorAll<HTMLElement>(".min-h-screen, .min-h-full, .editorial-print-container");
+  const constrainedElements = element.querySelectorAll<HTMLElement>(".min-h-screen, .min-h-full");
   constrainedElements.forEach((node) => {
     node.style.setProperty("height", "auto", "important");
     node.style.setProperty("min-height", "0", "important");

@@ -3,7 +3,6 @@ import fs from "node:fs";
 
 const BASE = process.env.E2E_BASE ?? "http://localhost:3000";
 const PROJECT = "职光简历 JobLume 求职助手";
-const TPL = ["经典", "现代(两栏)", "左右分栏", "时间轴", "极简", "优雅", "创意", "画报", "瑞士"];
 const OUT = process.env.E2E_OUT ?? "/tmp/jl2";
 fs.mkdirSync(OUT, { recursive: true });
 const exp = [];
@@ -56,7 +55,7 @@ await page.evaluate(({ now }) => {
             description: "<ul><li>负责核心业务前端开发，页面性能提升 40%</li></ul>" },
     proj1: { ...base, id: "proj1", type: "project", sectionId: "projects", title: "职光简历 JobLume 求职助手",
              subtitle: "独立开发", dateRange: "2026.01 - 2026.09",
-             description: "<ul><li>从零实现职业数据库与简历生成，覆盖 9 套模板</li><li>接入大模型做 JD 匹配，要求项召回 97.9%</li></ul>",
+             description: "<ul><li>从零实现职业数据库与简历生成，覆盖 4 套模板</li><li>接入大模型做 JD 匹配，要求项召回 97.9%</li></ul>",
              link: "https://example.com/joblume", linkLabel: "项目主页" },
   };
   p.skillGroups = [{ id: "sg1", name: "前端", content: "React、TypeScript、Tailwind CSS", order: 0 }];

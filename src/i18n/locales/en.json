@@ -227,26 +227,6 @@
       "timeline": {
         "name": "Timeline Layout",
         "description": "Timeline style, emphasizing chronological order of experiences"
-      },
-      "minimalist": {
-        "name": "Minimalist",
-        "description": "Large amount of whitespace, clean and pure layout style"
-      },
-      "elegant": {
-        "name": "Elegant",
-        "description": "Centered title single-column design, with a touch of elegance"
-      },
-      "creative": {
-        "name": "Creative",
-        "description": "Visual contrast design, vibrant and personalized"
-      },
-      "editorial": {
-        "name": "Editorial",
-        "description": "Luxurious blend of bold serif and refined sans-serif typography"
-      },
-      "swiss": {
-        "name": "Swiss Aesthetic",
-        "description": "Artistic Bauhaus layout with strong typographic hierarchy and geometric accents, showing modern minimalism"
       }
     }
   },
