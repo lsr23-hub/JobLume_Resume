@@ -219,3 +219,37 @@
 **第 1a 步留下的过渡缝**：`userScope.ts` 导出了 `ScopedJobTarget = JobTarget & TargetScopedAnalysis`。
 迁移产出的目标一定带 per-user 分析字段，而 `JobTarget` 接口上旧的两个单槽字段要等第 4 步
 全部读取方切完才能删。在那之前，凡"已经过迁移"的目标请用 `ScopedJobTarget` 标注。
+
+---
+
+## 2026-09-19 追加：默认存档目录 saves/<userId>/
+
+三个已定的决策（本轮问过）：
+
+| # | 决策 | 说明 |
+|---|---|---|
+| 1 | **浏览器为准，saves/ 做自动导出** | localStorage 仍是真相源；saves/ 是镜像。文件夹丢了不丢数据，但可能落后 |
+| 2 | **岗位完全按用户隔离** | JD 跟随用户走。连带后果：`JobTarget.analysesByUser` 塌回单槽（同一个人不再需要「按用户索引分析」），**这是对上一轮第 4 步的重构** |
+| 3 | **目录名用纯 id**（`saves/<userId>/`） | 不含姓名。姓名改了路径不变 —— 姓名从来不是唯一标识 |
+
+目录形状：
+
+```
+saves/<userId>/profile.json
+saves/<userId>/resumes/<resumeId>.json
+saves/<userId>/jds/<targetId>.json
+```
+
+| 步 | 内容 | 状态 |
+|---|---|---|
+| 1 | `lib/server/saves.ts`：路径解析 + 校验 + 写入 | ✅ 21 条单测 |
+| 2 | `routes/api/saves.ts`：写入端点 | ✅ 实测四种输入（正常 / 穿越 / 斜杠 id / 未知 kind） |
+| 3 | `.gitignore` 加 `saves/` —— 这是**用户数据**，绝不能入库 | ✅ |
+| 4 | 岗位按用户隔离（target store 再改一次，`analysesByUser` 塌回单槽） | ⬜ **下一步** |
+| 5 | 镜像接线：store 写入后防抖同步到 saves/ | ⬜ |
+| 6 | 文档：README 的「服务端不保存任何用户数据」必须改 | ⬜ |
+
+**⚠️ 安全边界（已写进代码注释，也要写进 README）**：`/api/saves` 是全项目唯一
+按请求往磁盘写文件的端点。三层防护：字符集白名单（不含 `.` `/` `\`）、
+`path.relative` 复核没跑出 `saves/`、静态文件服务的是 `dist/client` 与 `saves/` 不相交。
+**部署到公网前必须关掉它** —— 那等于对外开一个（受限于 saves/ 的）文件写入面。

@@ -31,3 +31,7 @@ pnpm-debug.log*
 
 # 评测产物（每次跑都重新生成）
 eval-results/
+
+# 用户存档（默认存档目录 saves/<userId>/）—— 
+# 这是**用户数据**，含姓名、联系方式、经历，绝不能入库
+saves/
