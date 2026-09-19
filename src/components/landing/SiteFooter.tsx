@@ -10,7 +10,8 @@ const SiteFooter = () => {
     <footer className="bg-surface-dark">
       <div className="mx-auto max-w-[1200px] px-6 py-16">
         <div className="flex items-center gap-2.5">
-          <Logo size={28} />
+          {/* 页脚在两种主题下都是深色面，标识的墨色固定取 on-dark。 */}
+          <Logo size={28} className="text-on-dark" />
           <span className="text-[15px] font-medium text-on-dark">{t("brand")}</span>
         </div>
         <p className="mt-5 max-w-[34rem] text-[14px] leading-[1.55] text-on-dark-soft">

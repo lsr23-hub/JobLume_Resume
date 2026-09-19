@@ -98,11 +98,14 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
           className="border-r border-border/40 bg-card/50 backdrop-blur-xl"
         >
           <SidebarHeader className="h-16 flex items-center justify-center border-b border-border/40">
-            <div className="w-full cursor-pointer justify-center flex items-center" onClick={() => router.push(`/${locale}`)}
+            <div className="w-full cursor-pointer justify-center flex items-center gap-2.5" onClick={() => router.push(`/${locale}`)}
             >
+              {/* 新标识是通体填满画布的三角+J，同样的盒子比原来的方形徽标
+                  视觉重量大得多；36px 让它与 18px 的品牌名保持导航栏的
+                  比例（30/15），48px 会压过文字。 */}
               <Logo
-                className=" hover:opacity-80 transition-opacity"
-                size={48}
+                className="hover:opacity-80 transition-opacity"
+                size={36}
               />
               {open && (
                 <span className="font-bold text-lg tracking-tight">

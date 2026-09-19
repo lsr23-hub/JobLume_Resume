@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="职光简历">
-  <rect width="512" height="512" rx="102" ry="102" fill="#1B1B18"/>
-  <text x="256" y="256" fill="#FAF9F5"
-        font-family="Arial, Helvetica, system-ui, sans-serif"
-        font-size="215" font-weight="700"
-        text-anchor="middle" dominant-baseline="central">JL</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="职光简历 JobLume">
+  <rect width="512" height="512" rx="102" fill="#FAF9F5"/>
+  <g transform="translate(60.964 46.794) scale(0.833488)">
+    <path fill="#F6B856" d="M289.88 111.86 l45.76 16.64 -80.05 217.325 H298.461452 L256 407.885 H64.51 C139.498 309.214 207.872 210.543 289.88 111.86 Z"/>
+    <path fill="#1B1C1D" d="M289.88 107.38 309.53 93.92 l94.27 34.28 V357.665 A50.22 50.22 0 0 1 353.58 407.885 H263.91 L305.813829 346.64 322.55 345.825 A21.23 19.19 0 0 0 343.78 326.635 V126.98 Z"/>
+  </g>
 </svg>
