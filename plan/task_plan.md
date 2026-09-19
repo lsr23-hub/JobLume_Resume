@@ -195,3 +195,25 @@
 
 修法要选：materialize 变异步、还是把 blob 一并写进简历库、还是在简历层渲染时解析引用。
 | 2026-09-19 | 照片裁剪复用 + 技能分组化 + 荣誉改名 + 清死代码 | ✅ 提交见下；新增 `pnpm e2e:photo` 22 项 |
+
+---
+
+## 2026-09-19 追加：多用户（用户为总入口）
+
+完整方案见 `~/.claude/plans/wild-humming-sprout.md`（已按 zustand 源码校验修正）。
+四个产品决策：用户=档案 / 分析按「岗位×用户」/ 备份只导当前用户 / 新建切换删除在弹窗。
+
+| 步 | 内容 | 状态 |
+|---|---|---|
+| 1a | `src/store/userScope.ts` —— 三份持久化状态的迁移 + 归一化 + 按用户读写分析的辅助 | ✅ 21 条单测 |
+| 1b | 三个 store 改形状、接 `version: 1` + `migrate`、收敛 `commit()` 别名 | ⬜ 下一步 |
+| 2 | 稳定 selector（模块作用域函数）+ `useResolvedImage` | ⬜ |
+| 3 | `UserSelectDialog` + `RequireUser` + 侧边栏 chip | ⬜ |
+| 4 | 分析读写点切到"当前用户那一份"；删掉 `JobTarget` 上的旧单槽字段 | ⬜ |
+| 5 | 备份调用点按用户收口（`lib/backup.ts` 本身不用改） | ⬜ |
+| 6 | 6 个既有 e2e 脚本改 localStorage 路径 + 新增 `e2e:users` | ⬜ |
+| 7 | 文档同步（含已有的 `resume-store` 笔误等存量错误） | ⬜ |
+
+**第 1a 步留下的过渡缝**：`userScope.ts` 导出了 `ScopedJobTarget = JobTarget & TargetScopedAnalysis`。
+迁移产出的目标一定带 per-user 分析字段，而 `JobTarget` 接口上旧的两个单槽字段要等第 4 步
+全部读取方切完才能删。在那之前，凡"已经过迁移"的目标请用 `ScopedJobTarget` 标注。
