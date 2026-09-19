@@ -2,6 +2,7 @@ import { useTranslations } from "@/i18n/compat/client";
 import { useRouter } from "@/lib/navigation";
 import Logo from "@/components/shared/Logo";
 import LanguageSwitch from "@/components/shared/LanguageSwitch";
+import ThemeToggle from "@/components/shared/ThemeToggle";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -42,7 +43,9 @@ const SiteNav = () => {
           ))}
         </nav>
 
-        <div className="ml-auto flex shrink-0 items-center gap-3">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          {/* 落地页此前没有任何明暗切换入口。放在语言切换旁边 —— 最右侧留给主 CTA */}
+          <ThemeToggle mode="toggle" />
           <LanguageSwitch />
           <Button
             size="sm"
