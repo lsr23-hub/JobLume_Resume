@@ -41,6 +41,10 @@ pnpm e2e:legacy               # 老简历用了已删模板时的回退
 裸文本匹配会失败，这不是脚本写错，是 Chromium 的 ToUnicode 生成问题 —— 成因、
 影响与取舍写在 [docs/04 §8.2](../../docs/04-development-plan.md)。
 
+**2026-09-19 补充：这条缺陷已确认可修。** A/B 对照同一段文字：Chromium 打印 11/20 个汉字
+成康熙部首，而 `jspdf` 自绘 0 个。条件是 jsPDF 只支持 TrueType（项目 6 个 OTF 字体不可用），
+且 4 套模板的版面复刻尚未验证。详见 `plan/notes.md` §七。
+
 ## 注意
 
 - 这两个脚本**不进 `pnpm test`**：它们要一个跑着的服务端，且单次要几十秒。
