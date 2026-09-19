@@ -1,4 +1,5 @@
 
+import type React from "react";
 import { motion, Reorder, useDragControls } from "framer-motion";
 import { Eye, EyeOff, GripVertical, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -58,15 +59,30 @@ const LayoutItem = ({
    *
    * 只在**该板块被选中时**展开 —— 十个板块各挂两个开关，常显会把列表淹掉。
    */
-  const displayToggles = (
+  const togglesShell = (children: React.ReactNode) => (
     <div className="space-y-2 border-t border-border/60 px-3 py-3" onClick={(e) => e.stopPropagation()}>
-      {onToggleIconMode && (
-        <ToggleRow
-          label={tSide("mode.useIconMode.title")}
-          checked={Boolean(useIconMode)}
-          onChange={onToggleIconMode}
-        />
-      )}
+      {children}
+    </div>
+  );
+
+  /**
+   * 基本信息**只有**图标模式。
+   *
+   * 它渲染的是姓名 / 职位 / 联系方式，没有「学校 + 专业 + 学历」那种带副标题的
+   * 头部 —— 四套模板的 BaseInfo 都没有读 centerSubtitle / flexibleHeaderLayout，
+   * 挂在那儿就是两个不生效的开关。
+   */
+  const iconToggle = togglesShell(
+    <ToggleRow
+      label={tSide("mode.useIconMode.title")}
+      checked={Boolean(useIconMode)}
+      onChange={(on) => onToggleIconMode?.(on)}
+    />
+  );
+
+  /** 其余板块：副标题居中 / 长标题模式，各板块一份 */
+  const displayToggles = togglesShell(
+    <>
       <ToggleRow
         label={tSide("mode.centerSubtitle.title")}
         checked={display.centerSubtitle}
@@ -77,7 +93,7 @@ const LayoutItem = ({
         checked={display.flexibleHeaderLayout}
         onChange={(v) => onToggleDisplay({ flexibleHeaderLayout: v })}
       />
-    </div>
+    </>
   );
 
   if (isBasic) {
@@ -105,7 +121,7 @@ const LayoutItem = ({
             {item.title}
           </span>
         </div>
-        {activeSection === item.id && displayToggles}
+        {activeSection === item.id && iconToggle}
       </div>
     );
   }

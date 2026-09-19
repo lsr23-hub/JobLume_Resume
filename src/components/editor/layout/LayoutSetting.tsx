@@ -42,9 +42,7 @@ const LayoutSetting = ({
           removeCustomData={removeCustomData}
           menuSections={menuSections}
           display={effectiveSectionDisplay(globalSettings, basicSection.id)}
-          onToggleDisplay={(patch) =>
-            onUpdateGlobalSettings(withSectionDisplay(globalSettings, basicSection.id, patch))
-          }
+          onToggleDisplay={() => {}}
           useIconMode={globalSettings.useIconMode}
           onToggleIconMode={(on) => onUpdateGlobalSettings({ useIconMode: on })}
         />

@@ -26,7 +26,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({ data, template }) => {
     const renderSection = (sectionId: string) => {
         switch (sectionId) {
             case "basic":
-                return <BaseInfo basic={data.basic} globalSettings={withSectionOverrides(data.globalSettings, "basic")} template={template} />;
+                return <BaseInfo basic={data.basic} globalSettings={data.globalSettings} template={template} />;
             case "experience":
                 return <ExperienceSection experiences={data.experience} globalSettings={withSectionOverrides(data.globalSettings, "experience")} />;
             case "education":
