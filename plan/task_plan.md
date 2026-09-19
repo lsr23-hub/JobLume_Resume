@@ -158,3 +158,40 @@
 | 2026-09-19 | 导出文案去过度承诺 | ✅ 提交 `b9af154` |
 | 2026-09-19 | B1 验收清单（12 项全绿，覆盖 3/8） | ✅ 提交 `6f57c72` |
 | 2026-09-19 | 模块职责重划：投递目标只做 JD 分析 + 岗位适配度等级 + 内容选择步 | ✅ 9 个提交 `7f9a57b..`；新增 `pnpm e2e:targeted` 15 项 |
+
+---
+
+## 2026-09-19 追加：照片裁剪复用 + 技能分组化 + 荣誉改名
+
+四项用户直接指令，与 A/B/C 主线无关，单独一轮做完。
+
+| # | 事项 | 关键事实 | 状态 |
+|---|---|---|---|
+| 1 | 简历编辑器「照片」复用职业数据库的 `PhotoCropper` | 编辑器现在**没有裁剪**（`handleFile` 直接压缩存 base64）。`PhotoCropper` 在 `profile/` 下、绑死 `profile` 命名空间 → 提到 `components/shared/` | ✅ 已完成 |
+| 2 | 裁剪滑块「没法滑动，只能点击」 | 实测：**Root 命中带只有 8px 高**（track `h-2`），滑块 20px 溢出在外；`−` / `+` 两个图标看着像按钮、实际不可点。Chromium/WebKit 合成拖拽可复现「能拖」，故按**命中区过小 + 无按钮路径**处理 | ✅ 已完成 |
+| 3 | 专业技能里证书奖项 / 语言能力改成「分组」形态 | 数据模型不变（`certificateText` / `languageText`），只改面板：两行对齐的分组行，不可拖拽、不可删除（materialize 固定把它们排在最后） | ✅ 已完成 |
+| 4 | 板块「荣誉课程」→「获奖情况」 | 只有两处用户可见：`config/sections.ts` 的 `title` 兜底、`zh.json` 的 `profile.sections.honors` | ✅ 已完成 |
+
+**顺带发现**：`PhotoCropper` 的取消按钮用 `t("cancel")` 但 `profile.cancel` 不存在 → 按钮上直接显示英文小写 `cancel`（截图确认）。
+
+### 实际做法与偏差
+
+| 项 | 做法 | 偏差说明 |
+|---|---|---|
+| 1 | `PhotoCropper` 提到 `components/shared/`，i18n 从 `profile` 命名空间改挂 `photoConfig.crop.*`；编辑器上传后先进裁剪器再落地 | 顺带删掉了 `PhotoConfigDrawer` 里已死的 URL/代理加载逻辑 |
+| 2 | 命中带 8px → 24px（Root 加 `py-2`）；`−` / `+` 改成真按钮；加缩放百分比 | **Chromium/WebKit 合成拖拽实测是能拖的**，所以按「命中带过窄 + 没有按钮路径」处理，没有找到能稳定复现的硬故障 |
+| 3 | 两个固定行，与分组同形、列对齐；不可拖不可删 | 顺带修：证书/语言的切分原来只认 `\n`，单行输入写不出来 → 改为同时认 `；`/`;` |
+| 4 | `config/sections.ts` 的 `title` + `zh.json` 的 `profile.sections.honors` | 英文 `Honors` 本身不误导，未动 |
+
+**顺带清掉的死代码**（上一轮承诺的 + 这一轮新增的孤儿）：
+`/api/resume-import`、`/api/proxy/image`、`ResumeWorkbench` 里的 pdfjs 抽图逻辑（约 130 行）、`lib/server/urlGuard.ts` + 其 13 个测试（只服务于已删的 proxy 端点）。
+
+### ⚠️ 新发现的真 bug（未修，需你定方向）
+
+**档案里的照片进不了生成的简历。** `materialize.ts:225` 是 `basic: { ...profile.basic }` 整体铺开，
+把档案层的 `idb:img_xxx`（IndexedDB 引用）原样带进了简历层；而 `resolveImageRef` 全仓只在
+`profile/BasicPanel.tsx` 被调用过一次。实测：生成的简历 `basic.photo === "idb:img_..."`，
+模板渲染时浏览器报 `net::ERR_UNKNOWN_URL_SCHEME` —— **简历上没有照片，导出的 PDF 同样没有**。
+
+修法要选：materialize 变异步、还是把 blob 一并写进简历库、还是在简历层渲染时解析引用。
+| 2026-09-19 | 照片裁剪复用 + 技能分组化 + 荣誉改名 + 清死代码 | ✅ 提交见下；新增 `pnpm e2e:photo` 22 项 |

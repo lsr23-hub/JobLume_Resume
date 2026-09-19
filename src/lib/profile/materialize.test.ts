@@ -18,8 +18,7 @@ const basic: BasicInfo = {
   photoConfig: {
     width: 90,
     height: 120,
-    aspectRatio: "1:1",
-    borderRadius: "none",
+      borderRadius: "none",
     customBorderRadius: 0,
   },
   icons: {},
@@ -110,6 +109,16 @@ describe("renderSkillContent", () => {
     const html = renderSkillContent(profile, "证书奖项");
     expect(html).toContain("<li>证书奖项：CET-6；ACM-ICPC 银奖</li>");
     expect(html.indexOf("前端框架")).toBeLessThan(html.indexOf("证书奖项"));
+  });
+
+  it("证书/语言也认分号作分隔符（面板改成单行输入后写不出换行）", () => {
+    const profile = buildInput().profile;
+    profile.certificateText = "CET-6； ACM-ICPC 银奖;蓝桥杯";
+    profile.languageText = "英语 CET-6；日语 N2";
+
+    const html = renderSkillContent(profile, "证书奖项", "语言能力");
+    expect(html).toContain("<li>证书奖项：CET-6；ACM-ICPC 银奖；蓝桥杯</li>");
+    expect(html).toContain("<li>语言能力：英语 CET-6；日语 N2</li>");
   });
 
   it("只有证书没有技能组时也产出列表", () => {

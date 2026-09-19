@@ -46,7 +46,7 @@ export const SECTION_DEFS: SectionDef[] = [
   { id: "projects", title: "项目经历", titleKey: "sections.projects", icon: "🚀", required: false, preset: true, accepts: ["project"] },
   { id: "selfEvaluation", title: "自我评价", titleKey: "sections.selfEvaluation", icon: "💬", required: false, preset: true, accepts: [] },
   { id: "campus", title: "校园经历", titleKey: "sections.campus", icon: "🏫", required: false, preset: true, accepts: ["campus"] },
-  { id: "honors", title: "荣誉课程", titleKey: "sections.honors", icon: "🎖️", required: false, preset: true, accepts: ["honors"] },
+  { id: "honors", title: "获奖情况", titleKey: "sections.honors", icon: "🎖️", required: false, preset: true, accepts: ["honors"] },
 ];
 
 export const SECTION_IDS = SECTION_DEFS.map((s) => s.id);

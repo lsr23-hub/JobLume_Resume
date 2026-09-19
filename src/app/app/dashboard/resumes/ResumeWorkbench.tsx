@@ -17,25 +17,14 @@ import { cn } from "@/lib/utils";
 import { getConfig, getFileHandle } from "@/utils/fileSystem";
 import { preloadFontFamily } from "@/utils/fonts";
 import { useResumeStore } from "@/store/useResumeStore";
-import { useAIConfigStore } from "@/store/useAIConfigStore";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { useJobTargetStore } from "@/store/useJobTargetStore";
 import { generateResume } from "@/lib/profile/generateResume";
-import { profileImportFromAiResult } from "@/lib/profile/importFromAi";
 import { generateUUID } from "@/utils/uuid";
 import { CreateResumeWizard, type WizardChoice } from "./CreateResumeWizard";
 import { ImportResumeDialog } from "./ImportResumeDialog";
 import { ResumeCardItem } from "./ResumeCardItem";
 import { AnimatedImportButton } from "./AnimatedImportButton";
-import {
-    extractJsonContent,
-    toStringArray
-} from "./utils";
-import pdfWorkerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
-
-const MAX_PDF_IMPORT_PAGES = 3;
-const PDF_IMAGE_QUALITY = 0.82;
-const PDF_MAX_IMAGE_WIDTH = 1600;
 
 export const ResumeWorkbench = () => {
     const t = useTranslations();
@@ -48,19 +37,14 @@ export const ResumeWorkbench = () => {
         addResume,
         deleteResume,
     } = useResumeStore();
-    const { profile, addEntity, addSkillGroup, updateBasic } = useCareerProfileStore();
-    const { targets } = useJobTargetStore();
-    const { deepseekApiKey, deepseekModelId } = useAIConfigStore();
     const router = useRouter();
+    const { profile } = useCareerProfileStore();
+    const { targets } = useJobTargetStore();
     const [hasConfiguredFolder, setHasConfiguredFolder] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     const jsonFileInputRef = useRef<HTMLInputElement>(null);
-    // ⚠️ PDF 导入的入口已移除（只保留 JSON 导入）。下面这套 pdfjs 抽图逻辑
-    // 现在**没有任何调用方** —— 留着是为了这轮不把改动摊得太大，
-    // 应连同 /api/resume-import 一起清掉。
-    const pdfFileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const loadSavedConfig = async () => {
@@ -231,121 +215,6 @@ export const ResumeWorkbench = () => {
         router.push({ to: "/app/workbench/$id", params: { id: resumeId } });
     };
 
-    const extractImagesFromPdf = async (file: File) => {
-        const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-        const buffer = await file.arrayBuffer();
-        const typedPdfjs = pdfjs as any;
-
-        typedPdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-
-        const loadingTask = typedPdfjs.getDocument({
-            data: new Uint8Array(buffer),
-        });
-        const pdf = await loadingTask.promise;
-        const pageImages: string[] = [];
-        const totalPages = Math.min(pdf.numPages, MAX_PDF_IMPORT_PAGES);
-
-        for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
-            const page = await pdf.getPage(pageNumber);
-            const baseViewport = page.getViewport({ scale: 2 });
-            const widthScale = Math.min(1, PDF_MAX_IMAGE_WIDTH / baseViewport.width);
-            const viewport = page.getViewport({ scale: 2 * widthScale });
-            const canvas = document.createElement("canvas");
-            const context = canvas.getContext("2d", { alpha: false });
-
-            if (!context) {
-                throw new Error("Unable to create canvas context");
-            }
-
-            canvas.width = Math.max(1, Math.floor(viewport.width));
-            canvas.height = Math.max(1, Math.floor(viewport.height));
-
-            await page.render({
-                canvasContext: context,
-                viewport,
-            }).promise;
-
-            const imageDataUrl = canvas.toDataURL("image/jpeg", PDF_IMAGE_QUALITY);
-            pageImages.push(imageDataUrl);
-
-            canvas.width = 0;
-            canvas.height = 0;
-        }
-
-        return pageImages;
-    };
-
-    const importResumeFromPdf = async (file: File) => {
-        // PDF 导入靠识图，key 是必需项；缺了就直接把人送到配置页，
-        // 而不是发一个必然失败的请求
-        if (!deepseekApiKey) {
-            toast.error(t("dashboard.resumes.importDialog.aiConfigRequired"));
-            router.push("/app/dashboard/ai");
-            return;
-        }
-
-        const pdfImages = await extractImagesFromPdf(file);
-        if (pdfImages.length === 0) {
-            throw new Error("No extractable PDF pages");
-        }
-
-        const response = await fetch("/api/resume-import", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                images: pdfImages,
-                apiKey: deepseekApiKey,
-                model: deepseekModelId,
-                modelType: "deepseek",
-                locale,
-            }),
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-            const message = data?.details
-                ? `${data?.error || "Resume import failed"}\n${data.details}`
-                : data?.error || "Resume import failed";
-            throw new Error(message);
-        }
-
-        const aiResume = data?.resume
-            ? data.resume
-            : data?.choices?.[0]?.message?.content
-                ? extractJsonContent(data.choices[0].message.content)
-                : null;
-
-        if (!aiResume) {
-            throw new Error("Invalid AI response");
-        }
-
-        // 落到**职业数据库**，不是简历。
-        //
-        // 这条路径原来直接造一份简历 —— 那是上游的设计（简历即数据）。
-        // 但本项目的架构是「数据库是唯一事实来源」：内容只进简历的话，
-        // 导进来就用完了，享受不到匹配、复用、一库多版本生成。
-        const imported = profileImportFromAiResult(aiResume, {
-            skillGroupName: tSection("skills.importedGroupName"),
-        });
-
-        if (imported.entities.length === 0) {
-            toast.error(t("dashboard.resumes.importDialog.pdfNothingExtracted"));
-            return;
-        }
-
-        for (const entity of imported.entities) addEntity(entity);
-        if (imported.skillGroup) addSkillGroup(imported.skillGroup);
-        if (Object.keys(imported.basic).length > 0) updateBasic(imported.basic);
-
-        setIsImportDialogOpen(false);
-        toast.success(
-            t("dashboard.resumes.importDialog.pdfSuccess", { count: imported.entities.length })
-        );
-        router.push("/app/dashboard/profile");
-    };
-
     const handleJsonFileChange = async (
         event: React.ChangeEvent<HTMLInputElement>
     ) => {
@@ -363,29 +232,6 @@ export const ResumeWorkbench = () => {
             setIsImporting(false);
         }
     };
-
-    const handlePdfFileChange = async (
-        event: React.ChangeEvent<HTMLInputElement>
-    ) => {
-        const file = event.target.files?.[0];
-        event.target.value = "";
-        if (!file || isImporting) return;
-
-        try {
-            setIsImporting(true);
-            await importResumeFromPdf(file);
-        } catch (error) {
-            console.error("Import PDF error:", error);
-            const message =
-                error instanceof Error && error.message
-                    ? error.message
-                    : t("dashboard.resumes.importDialog.pdfError");
-            toast.error(message);
-        } finally {
-            setIsImporting(false);
-        }
-    };
-
     return (
         <ScrollArea className="h-[calc(100vh-2rem)] w-full">
             <motion.div

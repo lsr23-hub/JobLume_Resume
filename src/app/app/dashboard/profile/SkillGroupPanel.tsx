@@ -5,8 +5,38 @@ import { useTranslations } from "@/i18n/compat/client";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+
+/**
+ * 固定分组行：证书奖项 / 语言能力。
+ *
+ * 形态与上面的技能分组一致（一行「名称 + 内容」），但**不可拖拽、不可删除** ——
+ * `materialize` 固定把这两项排在技能板块的最后，允许拖动位置就是在撒谎。
+ * 名称也不可改：它同时是简历上的行首标签，来自 i18n。
+ */
+const FixedRow = ({
+  label,
+  value,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (next: string) => void;
+}) => (
+  <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-card p-3">
+    {/* 两个占位块对应分组行的拖拽把手与删除按钮，保证各列对齐 */}
+    <span className="h-4 w-4 shrink-0" aria-hidden />
+    <span className="w-36 shrink-0 truncate text-sm font-medium">{label}</span>
+    <Input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="flex-1"
+    />
+    <span className="h-8 w-8 shrink-0" aria-hidden />
+  </div>
+);
 
 export const SkillGroupPanel = () => {
   const t = useTranslations("profile");
@@ -74,6 +104,22 @@ export const SkillGroupPanel = () => {
         ))}
       </Reorder.Group>
 
+      {/* 证书 / 语言：原为两个独立文本框吊在列表下方，现改为与分组同形的一行 */}
+      <div className="space-y-2">
+        <FixedRow
+          label={t("skills.certificateLabel")}
+          value={profile.certificateText ?? ""}
+          placeholder={t("skills.certificatePlaceholder")}
+          onChange={setCertificateText}
+        />
+        <FixedRow
+          label={t("skills.languageLabel")}
+          value={profile.languageText ?? ""}
+          placeholder={t("skills.languagePlaceholder")}
+          onChange={setLanguageText}
+        />
+      </div>
+
       <div className="flex gap-2">
         <Input
           value={draftName}
@@ -88,30 +134,6 @@ export const SkillGroupPanel = () => {
       </div>
 
       <p className="text-xs text-muted-foreground">{t("skills.note")}</p>
-
-      {/* 证书：原为独立板块的图片画廊，现并入本板块，纯文本一行一条 */}
-      <div className="space-y-1.5 border-t border-border/40 pt-4">
-        <Label className="text-sm font-medium">{t("skills.certificateLabel")}</Label>
-        <Textarea
-          value={profile.certificateText ?? ""}
-          onChange={(e) => setCertificateText(e.target.value)}
-          placeholder={t("skills.certificatePlaceholder")}
-          rows={3}
-        />
-        <p className="text-xs text-muted-foreground">{t("skills.certificateNote")}</p>
-      </div>
-
-      {/* 语言能力：原为独立板块，现并入本板块，形态与证书一致 */}
-      <div className="space-y-1.5 border-t border-border/40 pt-4">
-        <Label className="text-sm font-medium">{t("skills.languageLabel")}</Label>
-        <Textarea
-          value={profile.languageText ?? ""}
-          onChange={(e) => setLanguageText(e.target.value)}
-          placeholder={t("skills.languagePlaceholder")}
-          rows={3}
-        />
-        <p className="text-xs text-muted-foreground">{t("skills.languageNote")}</p>
-      </div>
     </div>
   );
 };

@@ -3,7 +3,6 @@ import type { MatchAnalysis } from "./jobTarget";
 export interface PhotoConfig {
   width: number;
   height: number;
-  aspectRatio: "1:1" | "4:3" | "3:4" | "16:9" | "custom";
   borderRadius: "none" | "medium" | "full" | "custom";
   customBorderRadius: number;
   visible?: boolean;
@@ -12,23 +11,41 @@ export interface PhotoConfig {
 export const DEFAULT_CONFIG: PhotoConfig = {
   width: 90,
   height: 120,
-  aspectRatio: "1:1",
   borderRadius: "none",
   customBorderRadius: 0,
   visible: true,
 };
 
-export const getRatioMultiplier = (ratio: PhotoConfig["aspectRatio"]) => {
-  switch (ratio) {
-    case "4:3":
-      return 3 / 4;
-    case "3:4":
-      return 4 / 3;
-    case "16:9":
-      return 9 / 16;
-    default:
-      return 1;
-  }
+/**
+ * 证件照三档尺寸。单位是简历画布的 px（画布宽 210mm ≈ 794px），
+ * 所以「大」约占版心宽度的 15%。
+ *
+ * 三档**全部是 3:4**，与 `PhotoCropper` 的固定裁剪比例一致。
+ * 比例若与裁剪结果不符，模板上的 `object-fit: cover` 会把用户刚
+ * 调好的构图二次裁掉 —— 所见非所得。因此这里不再提供自由比例。
+ *
+ * 中档 90×120 就是历史默认值，已有的简历选到「中」不会变样。
+ */
+export const PHOTO_SIZE_PRESETS = [
+  { id: "sm", width: 72, height: 96 },
+  { id: "md", width: 90, height: 120 },
+  { id: "lg", width: 120, height: 160 },
+] as const;
+
+export type PhotoSizeId = (typeof PHOTO_SIZE_PRESETS)[number]["id"];
+
+/**
+ * 由 width 就近推导当前档位。
+ *
+ * 为什么不新增一个 `size` 字段：老数据里存的是任意自定义宽高，
+ * 加了字段就得做一次迁移才能让它们落进某一档。就近推导对老数据
+ * 自动生效，用户点一次档位即被归一到该档的宽高。
+ */
+export const matchPhotoSizePreset = (width: number): PhotoSizeId => {
+  const w = Number.isFinite(width) ? width : DEFAULT_CONFIG.width;
+  return PHOTO_SIZE_PRESETS.reduce((best, preset) =>
+    Math.abs(preset.width - w) < Math.abs(best.width - w) ? preset : best
+  ).id;
 };
 
 export const getBorderRadiusValue = (config?: PhotoConfig) => {

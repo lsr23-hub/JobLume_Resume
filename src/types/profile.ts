@@ -10,7 +10,7 @@ export type EntityType =
   | "experience" // 工作 / 实习经历
   | "project" // 项目经验
   | "campus" // 校园经历
-  | "honors" // 荣誉课程
+  | "honors" // 获奖情况
   | "custom"; // 用户自建
 
 export interface ProfileEntity {

@@ -19,8 +19,7 @@ const basic: BasicInfo = {
   photoConfig: {
     width: 90,
     height: 120,
-    aspectRatio: "1:1",
-    borderRadius: "none",
+      borderRadius: "none",
     customBorderRadius: 0,
   },
   icons: {},

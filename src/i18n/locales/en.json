@@ -678,30 +678,29 @@
     "title": "Photo Settings",
     "description": "Customize your resume photo",
     "upload": {
-      "title": "Online Link",
       "dragHint": "Drag and drop or click to upload image",
-      "sizeLimit": "Image size must not exceed 2MB",
       "typeLimit": "Please upload an image file",
-      "urlPlaceholder": "Enter image link",
-      "invalidUrl": "Invalid image URL or inaccessible, please try another image link",
-      "timeout": "Loading timeout",
-      "loadError": "Failed to load image"
+      "error": "Failed to process the photo"
+    },
+    "crop": {
+      "title": "Crop photo",
+      "hint": "Drag to reposition; zoom with the slider or the − / + buttons. The ratio is fixed at 3:4 (ID-photo standard).",
+      "confirm": "Apply crop",
+      "ratioNote": "Outputs 450×600 at 3:4",
+      "zoom": "Zoom",
+      "zoomOut": "Zoom out",
+      "zoomIn": "Zoom in",
+      "cancel": "Cancel"
     },
     "config": {
-      "aspectRatio": "Aspect Ratio",
       "size": "Size",
-      "width": "Width",
-      "height": "Height",
-      "border-radius": "Border Radius",
-      "widthPlaceholder": "Width",
-      "heightPlaceholder": "Height",
-      "ratios": {
-        "1:1": "1:1 Square",
-        "4:3": "4:3 Landscape",
-        "3:4": "3:4 Portrait",
-        "16:9": "16:9 Widescreen",
-        "custom": "Custom"
+      "sizes": {
+        "sm": "Small",
+        "md": "Medium",
+        "lg": "Large"
       },
+      "sizeNote": "All three are 3:4, matching the crop ratio. Larger takes more space on the resume.",
+      "border-radius": "Border Radius",
       "borderRadius": {
         "none": "None",
         "medium": "Medium",
@@ -711,9 +710,7 @@
       }
     },
     "actions": {
-      "reset": "Reset",
       "close": "Close",
-      "cancel": "Cancel",
       "removePhoto": "Remove Photo"
     }
   },
@@ -830,14 +827,12 @@
       "newGroupPlaceholder": "New group name, e.g. Frontend frameworks",
       "addGroup": "Add group",
       "defaultGroupName": "New group",
-      "note": "Renders as \"Group name: content\" on the resume. Skill names are extracted later by the AI matching step — no need to split them yourself.",
+      "note": "Renders as \"Group name: content\" on the resume. Skill names are extracted later by the AI matching step — no need to split them yourself. Certificates and languages use the same shape and are always placed last.",
       "certificateLabel": "Certificates & awards",
-      "certificatePlaceholder": "One per line, e.g.\nCET-6 (642)\nACM-ICPC Asia Regional — Silver",
-      "certificateNote": "One per line. These are folded into the Skills section on the resume as \"Certificates: first; second\".",
+      "certificatePlaceholder": "Separate with \";\", e.g. CET-6 (642); ACM-ICPC Asia Regional — Silver",
       "importedGroupName": "Skills",
       "languageLabel": "Languages",
-      "languagePlaceholder": "One per line, e.g.:\nEnglish CET-6 (fluent)\nJapanese N2",
-      "languageNote": "Previously its own section — now merged here and rendered as one \"Languages: …\" line"
+      "languagePlaceholder": "Separate with \";\", e.g. English CET-6 (fluent); Japanese N2"
     },
     "selfEvaluation": {
       "placeholder": "A few sentences on your strengths and positioning",
@@ -872,10 +867,6 @@
       "processing": "Processing…",
       "saved": "Photo saved",
       "saveFailed": "Failed to save photo",
-      "cropTitle": "Crop photo",
-      "cropHint": "Drag to reposition, use the slider to zoom. The ratio is fixed at 3:4 (ID-photo standard).",
-      "cropConfirm": "Apply crop",
-      "ratioNote": "Outputs 450×600 at 3:4",
       "notImage": "\"{name}\" is not an image file"
     },
     "save": {

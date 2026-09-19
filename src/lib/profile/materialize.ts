@@ -82,6 +82,13 @@ export interface MaterializeInput {
  *
  * 证书并进同一份列表 —— 数据库里它已不是独立板块，简历上也不该独立成块。
  */
+/** 证书 / 语言的条目切分：换行与中英文分号都算分隔符 */
+const splitItems = (text?: string): string[] =>
+  (text ?? "")
+    .split(/[\n；;]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
 export const renderSkillContent = (
   profile: CareerProfile,
   certificateLabel?: string,
@@ -92,19 +99,15 @@ export const renderSkillContent = (
     .sort((a, b) => a.order - b.order)
     .map((g) => `<li>${g.name}：${g.content}</li>`);
 
-  const certificates = (profile.certificateText ?? "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+  // 分隔符同时认换行与中英文分号：这两项在面板上是单行输入（与技能分组同形），
+  // 用户写不出换行；而历史数据（原是多行 Textarea、或由 entities 迁移而来）里是换行。
+  const certificates = splitItems(profile.certificateText);
 
   if (certificates.length > 0 && certificateLabel) {
     items.push(`<li>${certificateLabel}：${certificates.join("；")}</li>`);
   }
 
-  const languages = (profile.languageText ?? "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const languages = splitItems(profile.languageText);
 
   if (languages.length > 0 && languageLabel) {
     items.push(`<li>${languageLabel}：${languages.join("；")}</li>`);

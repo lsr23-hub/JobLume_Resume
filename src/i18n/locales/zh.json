@@ -634,30 +634,29 @@
     "title": "照片设置",
     "description": "自定义您的简历照片",
     "upload": {
-      "title": "在线链接",
       "dragHint": "拖拽或点击上传图片",
-      "sizeLimit": "图片大小不能超过2MB",
       "typeLimit": "请上传图片文件",
-      "urlPlaceholder": "输入图片链接",
-      "invalidUrl": "图片链接无效或无法访问，请尝试使用其他图片链接",
-      "timeout": "加载超时",
-      "loadError": "图片加载失败"
+      "error": "照片处理失败"
+    },
+    "crop": {
+      "title": "裁剪照片",
+      "hint": "拖动图片调整位置，用滑块或 − / + 缩放。比例固定为 3:4（证件照标准）。",
+      "confirm": "确认裁剪",
+      "ratioNote": "输出 450×600，比例 3:4",
+      "zoom": "缩放",
+      "zoomOut": "缩小",
+      "zoomIn": "放大",
+      "cancel": "取消"
     },
     "config": {
-      "aspectRatio": "宽高比",
       "size": "尺寸",
-      "width": "宽度",
-      "height": "高度",
-      "border-radius": "圆角",
-      "widthPlaceholder": "宽度",
-      "heightPlaceholder": "高度",
-      "ratios": {
-        "1:1": "1:1 正方形",
-        "4:3": "4:3 横版",
-        "3:4": "3:4 竖版",
-        "16:9": "16:9 宽屏",
-        "custom": "自定义"
+      "sizes": {
+        "sm": "小",
+        "md": "中",
+        "lg": "大"
       },
+      "sizeNote": "三档都是 3:4，与裁剪比例一致。越大，照片在简历上占位越宽。",
+      "border-radius": "圆角",
       "borderRadius": {
         "none": "无",
         "medium": "中等",
@@ -667,9 +666,7 @@
       }
     },
     "actions": {
-      "reset": "重置",
       "close": "关闭",
-      "cancel": "取消",
       "removePhoto": "删除照片"
     }
   },
@@ -831,14 +828,12 @@
       "newGroupPlaceholder": "新分组名称，如「前端框架」",
       "addGroup": "添加分组",
       "defaultGroupName": "新分组",
-      "note": "简历上会显示为「分组名称：内容」。技能名的识别由后续的 AI 匹配分析完成，无需手动拆分。",
+      "note": "简历上会显示为「分组名称：内容」。技能名的识别由后续的 AI 匹配分析完成，无需手动拆分。证书奖项与语言能力同形，固定排在最后，并成各自的一行。",
       "certificateLabel": "证书奖项",
-      "certificatePlaceholder": "一行一条，如：\nCET-6（642 分）\nACM-ICPC 亚洲区域赛 银奖",
-      "certificateNote": "一行一条。简历上会并进「专业技能」板块，显示成「证书奖项：第一条；第二条」。",
+      "certificatePlaceholder": "多项用「；」分隔，如：CET-6（642 分）；ACM-ICPC 亚洲区域赛 银奖",
       "importedGroupName": "技能",
       "languageLabel": "语言能力",
-      "languagePlaceholder": "一行一条，如：\n英语 CET-6（可流利沟通）\n日语 N2",
-      "languageNote": "原为独立板块，现并入本板块 —— 生成简历时并成「语言能力：…」一行"
+      "languagePlaceholder": "多项用「；」分隔，如：英语 CET-6（可流利沟通）；日语 N2"
     },
     "selfEvaluation": {
       "placeholder": "用几句话概括你的优势与定位",
@@ -863,7 +858,7 @@
       "projects": "项目经历",
       "selfEvaluation": "自我评价",
       "campus": "校园经历",
-      "honors": "荣誉课程"
+      "honors": "获奖情况"
     },
     "photo": {
       "none": "未上传",
@@ -873,10 +868,6 @@
       "processing": "处理中…",
       "saved": "照片已保存",
       "saveFailed": "照片保存失败",
-      "cropTitle": "裁剪照片",
-      "cropHint": "拖动图片调整位置，用滑块缩放。比例固定为 3:4（证件照标准）。",
-      "cropConfirm": "确认裁剪",
-      "ratioNote": "输出 450×600，比例 3:4",
       "notImage": "「{name}」不是图片文件"
     },
     "save": {

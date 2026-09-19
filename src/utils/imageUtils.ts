@@ -59,3 +59,18 @@ export const estimateBase64Size = (base64String: string): number => {
   const base64Data = base64String.split(",")[1] || base64String;
   return Math.round((base64Data.length * 3) / 4);
 };
+
+/**
+ * Blob -> base64 data URL。
+ *
+ * 放大用这个而不是 `compressImage`：裁剪器吐出来的已经是 450×600 的 JPEG，
+ * 再走一遍 canvas 重编码只会掉一次质量，尺寸一点不省。
+ */
+export const blobToDataUrl = (blob: Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("读取裁剪结果失败"));
+    reader.readAsDataURL(blob);
+  });
+};

@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { BirthdayPicker } from "./BirthdayPicker";
-import { PhotoCropper } from "./PhotoCropper";
+import { PhotoCropper } from "@/components/shared/PhotoCropper";
 import { RegionSelector } from "./RegionSelector";
 
 /**

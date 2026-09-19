@@ -22,8 +22,9 @@ const CustomPanel = memo(({ sectionId }: { sectionId: string }) => {
     ensureEnabled(sectionId);
   };
 
-  // 校园经历 / 荣誉课程 / 语言能力在职业数据库里有对应板块；
+  // 校园经历 / 获奖情况在职业数据库里有对应板块；
   // 用户自建的模块没有，那种情况保持原来的「只加空白」。
+  // （语言能力已并入专业技能的固定分组，不再是独立板块。）
   const hasProfileSection = Boolean(getSectionDef(sectionId));
 
   return (

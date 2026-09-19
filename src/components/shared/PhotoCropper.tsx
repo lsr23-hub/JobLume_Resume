@@ -20,6 +20,8 @@ const OUT_W = 450;
 const OUT_H = 600;
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 3;
+/** − / + 按钮每次的步进 */
+const ZOOM_STEP = 0.1;
 
 interface Props {
   file: File;
@@ -33,9 +35,11 @@ interface Props {
  * 为什么固定比例：简历上的照片框是固定尺寸的，非 3:4 的图会被
  * `object-fit: cover` 二次裁切 —— 用户在裁剪器里看到的构图与最终
  * 简历上的不一致。固定比例让「所见即所得」。
+ *
+ * 职业数据库与简历编辑器共用这一个组件。i18n 走 `photoConfig` 命名空间。
  */
 export const PhotoCropper = ({ file, onCancel, onConfirm }: Props) => {
-  const t = useTranslations("profile");
+  const t = useTranslations("photoConfig");
   const imgRef = useRef<HTMLImageElement>(null);
   const [url, setUrl] = useState("");
   const [natural, setNatural] = useState({ w: 0, h: 0 });
@@ -99,13 +103,14 @@ export const PhotoCropper = ({ file, onCancel, onConfirm }: Props) => {
   };
 
   const handleZoom = (next: number) => {
+    const target = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next));
     // 以裁剪框中心为锚点缩放，避免图片乱跑
     const centerX = (FRAME_W / 2 - offset.x) / scale;
     const centerY = (FRAME_H / 2 - offset.y) / scale;
     const nextBase = natural.w && natural.h
-      ? Math.max(FRAME_W / natural.w, FRAME_H / natural.h) * next
+      ? Math.max(FRAME_W / natural.w, FRAME_H / natural.h) * target
       : 1;
-    setZoom(next);
+    setZoom(target);
     setOffset(
       clamp(FRAME_W / 2 - centerX * nextBase, FRAME_H / 2 - centerY * nextBase)
     );
@@ -147,8 +152,8 @@ export const PhotoCropper = ({ file, onCancel, onConfirm }: Props) => {
     <Dialog open onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{t("photo.cropTitle")}</DialogTitle>
-          <DialogDescription>{t("photo.cropHint")}</DialogDescription>
+          <DialogTitle>{t("crop.title")}</DialogTitle>
+          <DialogDescription>{t("crop.hint")}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-4 py-2">
@@ -188,31 +193,68 @@ export const PhotoCropper = ({ file, onCancel, onConfirm }: Props) => {
             </div>
           </div>
 
-          <div className="flex w-full items-center gap-3">
-            <Minus className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <div className="flex w-full items-center gap-2">
+            {/*
+              两侧图标此前只是装饰 —— 看着能点、点了没反应，用户于是以为
+              缩放坏掉了。改成真的按钮，并给出一个不依赖拖拽的缩放路径。
+            */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              aria-label={t("crop.zoomOut")}
+              disabled={zoom <= ZOOM_MIN}
+              onClick={() => handleZoom(zoom - ZOOM_STEP)}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            {/*
+              py-2 是修「滑块只能点不能拖」的关键：track 只有 8px 高
+              （h-2），Root 的命中带因此也只有 8px，而滑块本身 20px 是溢出
+              在外的。指针落在 track 上下 3px 内就完全落空。把 Root 撑到
+              24px，整条带子都能按下并拖动。
+            */}
             <Slider
+              className="cursor-pointer py-2"
               value={[zoom]}
               min={ZOOM_MIN}
               max={ZOOM_MAX}
               step={0.01}
+              thumbAriaLabel={t("crop.zoom")}
               onValueChange={([v]) => handleZoom(v)}
             />
-            <Plus className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              aria-label={t("crop.zoomIn")}
+              disabled={zoom >= ZOOM_MAX}
+              onClick={() => handleZoom(zoom + ZOOM_STEP)}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <span className="w-12 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+              {Math.round(zoom * 100)}%
+            </span>
           </div>
 
-          <p className="text-xs text-muted-foreground">{t("photo.ratioNote")}</p>
+          <p className="text-xs text-muted-foreground">{t("crop.ratioNote")}</p>
         </div>
 
         <DialogFooter>
           <Button variant="ghost" onClick={onCancel}>
-            {t("cancel")}
+            {t("crop.cancel")}
           </Button>
           <Button onClick={() => void handleConfirm()} disabled={busy || !natural.w}>
             {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t("photo.cropConfirm")}
+            {t("crop.confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
+
+export default PhotoCropper;

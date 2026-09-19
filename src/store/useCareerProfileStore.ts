@@ -22,7 +22,6 @@ export const PROFILE_STORAGE_KEY = "career-profile-storage";
 const DEFAULT_PHOTO_CONFIG: PhotoConfig = {
   width: 90,
   height: 120,
-  aspectRatio: "1:1",
   borderRadius: "none",
   customBorderRadius: 0,
   visible: true,
