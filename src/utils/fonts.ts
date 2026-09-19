@@ -60,8 +60,11 @@ const FONT_DEFINITIONS: FontDefinition[] = [
         style: "normal"
       },
       {
+        // 与 `app/font.css` 的 MiSans 声明保持一致：那一份把 Medium 挂在 700。
+        // 原先这里写的是 `MiSans-Bold.ttf` —— **那个文件根本不存在**，于是选了
+        // MiSans 之后导出/打印会 404，字体静默回退。
         family: "MiSans",
-        url: "/fonts/MiSans-Bold.ttf",
+        url: "/fonts/MiSans-Medium.ttf",
         format: "truetype",
         weight: "700",
         style: "normal"

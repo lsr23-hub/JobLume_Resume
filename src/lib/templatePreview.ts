@@ -8,10 +8,22 @@ import type { ResumeTemplate } from "@/types/template";
 
 export const TEMPLATE_PREVIEW_WIDTH_PX = 794;
 export const TEMPLATE_PREVIEW_HEIGHT_PX = 1123;
-export const TEMPLATE_SNAPSHOT_VERSION = 1;
+// 2：快照从 1588px PNG 换成 794px JPEG（见 generate-template-snapshots.ts）。
+// 文件格式变了，版本跟着动 —— 目前没有校验方，留着是为了以后真加校验时不必回头考古。
+export const TEMPLATE_SNAPSHOT_VERSION = 2;
 export const TEMPLATE_SNAPSHOT_ROOT_ATTRIBUTE = "data-template-snapshot-root";
 export const TEMPLATE_SNAPSHOT_ROOT_SELECTOR = `[${TEMPLATE_SNAPSHOT_ROOT_ATTRIBUTE}]`;
 export const TEMPLATE_SNAPSHOT_PUBLIC_DIR = "template-snapshots";
+
+/**
+ * 快照的图片格式。
+ *
+ * 用 JPEG 而不是 PNG：这些图是**带文字的整页截图**，PNG 下每张 650KB，
+ * 8 张就是 4.7MB —— 而落地页只用它们当小缩略图。JPEG q85 在同样尺寸下是 162KB。
+ * Playwright 的元素截图只支持 png / jpeg 两种，所以选 JPEG 也省掉了一步额外的
+ * 转码工具链。
+ */
+export const TEMPLATE_SNAPSHOT_EXT = "jpg";
 export const TEMPLATE_PREVIEW_LOCALES = ["zh", "en"] as const;
 
 export type TemplatePreviewLocale = (typeof TEMPLATE_PREVIEW_LOCALES)[number];
@@ -73,7 +85,7 @@ export const createTemplatePreviewData = (
 export const getTemplateSnapshotPath = (
   locale: TemplatePreviewLocale,
   templateId: string
-) => `/${TEMPLATE_SNAPSHOT_PUBLIC_DIR}/${locale}/${templateId}.png`;
+) => `/${TEMPLATE_SNAPSHOT_PUBLIC_DIR}/${locale}/${templateId}.${TEMPLATE_SNAPSHOT_EXT}`;
 
 export const getTemplateSnapshotSrc = (
   manifest: TemplateSnapshotManifest,

@@ -8,6 +8,7 @@ import {
   TEMPLATE_PREVIEW_HEIGHT_PX,
   TEMPLATE_PREVIEW_LOCALES,
   TEMPLATE_PREVIEW_WIDTH_PX,
+  TEMPLATE_SNAPSHOT_EXT,
   TEMPLATE_SNAPSHOT_ROOT_SELECTOR,
   TEMPLATE_SNAPSHOT_VERSION,
   createEmptyTemplateSnapshotManifest,
@@ -156,7 +157,9 @@ const main = async () => {
         width: TEMPLATE_PREVIEW_WIDTH_PX,
         height: TEMPLATE_PREVIEW_HEIGHT_PX,
       },
-      deviceScaleFactor: 2,
+      // 1 而不是 2：快照最大只在 ~400px 宽的卡片里显示，794px 已是 2 倍。
+      // 2 倍（1588px）是 4 倍冗余，而 PNG 下多出来的每一像素都是实打实的体积。
+      deviceScaleFactor: 1,
       colorScheme: "light",
     });
 
@@ -167,7 +170,10 @@ const main = async () => {
       for (const template of DEFAULT_TEMPLATES) {
         console.log(`Capturing ${locale}/${template.id}...`);
         const screenshotUrl = buildTemplateSnapshotUrl(locale, template.id);
-        const outputFilePath = path.join(localeOutputDir, `${template.id}.png`);
+        const outputFilePath = path.join(
+          localeOutputDir,
+          `${template.id}.${TEMPLATE_SNAPSHOT_EXT}`
+        );
 
         await page.goto(screenshotUrl, {
           waitUntil: "networkidle",
@@ -181,7 +187,9 @@ const main = async () => {
 
         await page.locator(TEMPLATE_SNAPSHOT_ROOT_SELECTOR).screenshot({
           path: outputFilePath,
-          type: "png",
+          // Playwright 的元素截图只支持 png / jpeg
+          type: "jpeg",
+          quality: 85,
         });
 
         manifest.locales[locale][template.id] = `${getTemplateSnapshotPath(

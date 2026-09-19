@@ -19,12 +19,9 @@ export default defineConfig({
   server: {
     port: 3000
   },
-  optimizeDeps: {
-    exclude: ["pdfjs-dist"]
-  },
-  ssr: {
-    noExternal: ["pdfjs-dist"]
-  },
+  // 这里原先有 pdfjs-dist 的 optimizeDeps.exclude / ssr.noExternal。
+  // 应用代码从来没有 import 过它 —— 唯一的调用方是 e2e 脚本里那句动态 import，
+  // 走的是 Node 侧的 tsx，与 vite 的依赖预打包无关。配置删掉。
   plugins: [
     tsconfigPaths(),
     tanstackStart({
