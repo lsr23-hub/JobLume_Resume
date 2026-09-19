@@ -349,3 +349,46 @@ README 里写明了。
 | 2 | **限流的 `image` 桶是死代码。** `/api/proxy/image` 上一轮删了，但 `BucketName` 里的 `"image"`、`LIMITS.image` 与那两条测试还在，README 也还在说「图片代理 120 次」 | 文档已改；**代码里的死桶未删**（它牵动 `rateLimit.ts` 与测试，属独立清理） |
 | 3 | **`docs/upstream-derivation.md` 的统计已经不准。** `routes/api/proxy/image.ts` 与 `routes/api/resume-import.ts` 被列在「一、被修改过的上游文件（59）」里，但两个文件都已删除 —— 计数与清单都要重算 | **未动**。要改得同时修 `## 统计` 那一节，属独立一轮 |
 | 4 | 存档镜像一上线，**每个 e2e 脚本都会往 `saves/` 里写东西**，跑几轮就和真数据混在一起 | ✅ `userScope.mjs` 加载时给 `saves/` 拍快照、退出时删掉快照之外的目录。真数据不动，中途崩溃也照样清。反证：临时停用清扫跑一遍 `e2e:core`，盘上留下 1 个目录 / 2 个文件 |
+
+---
+
+## 2026-09-19 追加：saves/ 成为唯一真相源（进行中）
+
+完整方案见 `~/.claude/plans/nifty-puzzling-rose.md`。三个已定决策：照片也落盘、
+三个 store 完全不再持久化 localStorage、退役「本地文件夹同步」。
+
+| # | 提交 | 状态 |
+|---|---|---|
+| C1 | 退役本地文件夹同步（-830 行） | ✅ `9e30ff2` |
+| — | **修 `.gitignore` 把 `src/lib/saves/` 也忽略掉的 bug** | ✅ `244e844` |
+| C2 | 读取端点 + `SAVES_ENABLED` 硬开关 | ✅ `536bd5d` |
+| C3 | journal / legacy 的纯逻辑 | ✅ `3c7b43b` |
+| C4 | e2e 种子同时写盘 | ⬜ |
+| C5 | 启动从磁盘读回（真相源翻转） | ⬜ |
+| C6 | 三个 store 不再持久化 | ⬜ |
+| C7 | journal 接线 + 重试 + 多标签页独占 | ⬜ |
+| C7b | 离开提醒（原生 + 应用内三按钮） | ⬜ |
+| C8 | 照片落盘，简历照片改用引用 | ⬜ |
+| C9 | 文档 | ⬜ |
+
+### ⚠️ 本轮发现的一个真 bug（已修，但值得记）
+
+`.gitignore` 里的 `saves/` **不带前导斜杠**，会匹配任意深度下叫 `saves` 的目录 ——
+上一轮新建的 `src/lib/saves/`（存档源码 + 13 条单测）因此**从没进过 git**。
+后果不是「少几个文件」：`src/lib/server/saves.ts` import 其中的 `kinds.ts`，
+所以 **`5028c8d` 与 `536bd5d` 单独 checkout 出来构建不过**。
+
+一直没暴露是因为所有验证都跑在**工作区**上 —— 文件在磁盘上，只是没被 git 记录。
+修法：`saves/` → `/saves/`（根目录那份用户存档仍被忽略）。往后加目录模式一律带
+前导斜杠；关键提交后用 `git archive HEAD | tar -x` 导出**提交内容**再跑一次 tsc。
+
+### 一处对计划的偏差
+
+C3 原计划含 `lib/saves/images.ts`（图片引用的纯逻辑），实际推到 C8 再写 ——
+现在写它没有消费方，而 GC 的边界要等图片同步的具体形状定下来才谈得上设计正确。
+
+### C2 的一个副作用（需要你知道）
+
+`SAVES_ENABLED` 默认关，所以**开发服务器必须重启并带上它**才能工作：
+`pnpm dev` 脚本与 `docker-compose.yml` 都已经设了。本轮已把在跑的那个 `npm run dev`
+后台进程重启为 `SAVES_ENABLED=1 npx vite dev`。
