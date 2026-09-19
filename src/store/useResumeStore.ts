@@ -79,6 +79,15 @@ interface ResumeStore {
   setActiveUser: (userId: string | null) => void;
   /** 删用户时清掉他名下的全部简历。若删的是当前用户，别名也会被清空 */
   purgeUser: (userId: string) => void;
+  /**
+   * 整体替换当前用户的简历表（备份导入用）。
+   *
+   * **只能用这个 action，不能写 `useResumeStore.setState({ resumes })`。**
+   * store 上的 `setState` 是 zustand 原始的那个，不经过下面那层收口 ——
+   * 它只改别名，`byUser` 原地不动，而 `partialize` 恰好只存 `byUser`，
+   * 于是导入的简历在界面上一应俱全、刷新之后全部消失。
+   */
+  replaceResumes: (resumes: Record<string, ResumeData>) => void;
   updateResumeFromFile: (
     resume: ResumeData,
     sourceModifiedAt?: number
@@ -1071,6 +1080,18 @@ export const useResumeStore = create(
           activeResumeId,
           activeResume: activeResumeId ? resumes[activeResumeId] ?? null : null,
         } as never);
+      },
+
+      replaceResumes: (resumes) => {
+        // 与档案 store 的 `put()` 同一纪律：没有当前用户就没有归属，不写。
+        // （否则会写进一个谁也读不到的别名，下次 merge 直接抹掉）
+        if (!useCareerProfileStore.getState().currentUserId) return;
+
+        // 换掉整张表之后，原来打开的那一份可能已经不在表里了。
+        // 顺着它算 activeResume 会指向一份已经删除的简历
+        const current = get().activeResumeId;
+        const activeResumeId = current && resumes[current] ? current : null;
+        set({ resumes, activeResumeId });
       },
       };
     },

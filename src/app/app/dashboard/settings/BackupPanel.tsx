@@ -88,7 +88,9 @@ const BackupPanel = () => {
       mode === "replace"
         ? { merged: Object.fromEntries(payload.resumes.map((r) => [r.id, r])), added: payload.resumes.length, skipped: 0 }
         : mergeById(resumes, payload.resumes);
-    useResumeStore.setState({ resumes: resumeResult.merged });
+    // 走 action 而不是 setState：后者不经过 set 层收口，只改别名、不进 byUser，
+    // 而持久化切片只有 byUser —— 导入的简历会刷新即丢
+    useResumeStore.getState().replaceResumes(resumeResult.merged);
 
     const targetResult =
       mode === "replace"

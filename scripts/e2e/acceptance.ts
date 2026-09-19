@@ -312,48 +312,62 @@ const profBtns = await page.evaluate(() =>
 console.log("   档案页按钮:", JSON.stringify(profBtns));
 step(profBtns.some((b) => /导出/.test(b)), "⑪ 备份：档案页有导出入口");
 
-// 真的走一遍往返：导出 → 清空 → 导入 → 数据回来
+// 真的走一遍往返：导出 → 清空 → 导入 → 数据回来。
+//
+// 走**通用设置里的「导出全库备份」**，不是档案页那个「导出数据」——
+// 后者导的是 `ProfileArchive`（只有职业数据库，不含简历与投递目标），
+// 拿它验「全库备份」名不副实，简历丢没丢根本测不出来。
 let backupOk = false;
 try {
+  await page.goto(`${BASE}/app/dashboard/settings`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(1500);
   const dl = page.waitForEvent("download", { timeout: 15000 });
-  await page.getByRole("button", { name: /导出数据/ }).first().click();
-  await page.waitForTimeout(800);
-  // 导出可能先弹一个选项框
-  const dlBtn = page.locator('[role="dialog"] button, [role="alertdialog"] button').filter({ hasText: /导出|下载|确认/ }).last();
-  if (await dlBtn.count()) { await dlBtn.click().catch(() => {}); }
+  await page.getByRole("button", { name: /导出全库备份/ }).first().click();
   const download = await dl;
   const file = `${OUT}/accept-backup.json`;
   await download.saveAs(file);
   const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
-  // 备份文件自身的形状没变（app/version/exportedAt/profile/…），读 parsed.profile 即可
   const entityCount = Object.keys(parsed?.profile?.entities ?? {}).length;
+  const resumeCount = (parsed?.resumes ?? []).length;
 
   // 清空后重新导入
   await page.evaluate(() => {
     localStorage.removeItem("career-profile-storage");
     localStorage.removeItem("resume-storage");
   });
+  // 回**有门禁的**档案页建人：`ensureCurrentUser` 靠「选择用户」弹窗判断，
+  // 而通用设置不设门禁，在那儿它会静默什么都不做，导入便写进一个不存在的用户
+  await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
   await page.reload({ waitUntil: "networkidle" });
   await ensureCurrentUser(page);
   await page.waitForTimeout(1500);
-  await page.getByRole("button", { name: /导入数据/ }).first().click();
+  await page.goto(`${BASE}/app/dashboard/settings`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(1500);
+  await page.getByRole("button", { name: /导入备份/ }).first().click();
   await page.waitForTimeout(900);
-  const input = page.locator('input[type="file"]').first();
-  await input.setInputFiles(file);
+  await page.locator('input[type="file"]').first().setInputFiles(file);
   await page.waitForTimeout(1200);
-  const confirm = page.locator('[role="dialog"] button, [role="alertdialog"] button').filter({ hasText: /导入|确认|确定|覆盖/ }).last();
-  if (await confirm.count()) { await confirm.click().catch(() => {}); }
-  await page.waitForTimeout(2000);
+  await page.getByRole("button", { name: /覆盖导入/ }).first().click();
+  await page.waitForTimeout(2500);
+
+  // 一律从**盘上**数，不看内存里的别名 —— 导入曾经只写别名、不进 byUser，
+  // 而持久化切片只有 byUser，于是界面上一切正常、刷新后简历全没了。
   const restored = await page.evaluate(() => {
-    const raw = JSON.parse(localStorage.getItem("career-profile-storage") ?? "null");
-    const st = raw?.state ?? {};
-    const p = st.currentUserId ? st.profiles?.[st.currentUserId] : null;
-    return Object.keys(p?.entities ?? {}).length;
+    const st = JSON.parse(localStorage.getItem("career-profile-storage") ?? "null")?.state ?? {};
+    const r = JSON.parse(localStorage.getItem("resume-storage") ?? "null")?.state ?? {};
+    return {
+      entities: Object.keys(st.profiles?.[st.currentUserId]?.entities ?? {}).length,
+      resumes: Object.keys(r.byUser?.[st.currentUserId] ?? {}).length,
+    };
   });
-  backupOk = entityCount > 0 && restored === entityCount;
-  step(backupOk, `⑫ 备份往返：导出 ${entityCount} 条 → 清空 → 导入后 ${restored} 条`);
+  backupOk = entityCount > 0 && restored.entities === entityCount && restored.resumes === resumeCount;
+  step(
+    backupOk,
+    `⑫ 全库备份往返：导出 ${entityCount} 条经历 / ${resumeCount} 份简历 → 清空 → 导入后 ` +
+      `${restored.entities} 条 / ${restored.resumes} 份`
+  );
 } catch (e) {
-  step(false, `⑫ 备份往返失败：${(e as Error).message.split("\n")[0].slice(0, 80)}`);
+  step(false, `⑫ 全库备份往返失败：${(e as Error).message.split("\n")[0].slice(0, 80)}`);
 }
 
 console.log("\n页面错误:", errors.length ? errors.slice(0, 6) : "无");
