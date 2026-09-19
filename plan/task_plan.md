@@ -246,7 +246,7 @@ saves/<userId>/jds/<targetId>.json
 | 2 | `routes/api/saves.ts`：写入端点 | ✅ 实测四种输入（正常 / 穿越 / 斜杠 id / 未知 kind） |
 | 3 | `.gitignore` 加 `saves/` —— 这是**用户数据**，绝不能入库 | ✅ |
 | 4a | 岗位 v1→v2 迁移（扇出）+ normalize + `targetsOf` | ✅ 8 条单测 |
-| 4b | target store 接 `version: 2`、改形状、切 13 处读取点、改 `types/jobTarget.ts` | ⬜ **下一步** |
+| 4b | target store 接 `version: 2`、改形状、切读取点、改 `types/jobTarget.ts` 成单槽 | ✅ 提交 `edf0472` |
 | 5 | 镜像接线：store 写入后防抖同步到 saves/ | ⬜ |
 | 6 | 文档：README 的「服务端不保存任何用户数据」必须改 | ⬜ |
 
@@ -254,3 +254,54 @@ saves/<userId>/jds/<targetId>.json
 按请求往磁盘写文件的端点。三层防护：字符集白名单（不含 `.` `/` `\`）、
 `path.relative` 复核没跑出 `saves/`、静态文件服务的是 `dist/client` 与 `saves/` 不相交。
 **部署到公网前必须关掉它** —— 那等于对外开一个（受限于 saves/ 的）文件写入面。
+
+---
+
+## 2026-09-19 追加：第 4b / 4c 步（本轮）
+
+4a 只写了纯逻辑（`migrateTargetStateV2` / `normalizeTargetStateV2` / `targetsOf`），
+store 还停在 v1。本轮把线接上。原计划拆三段，实际**两段** —— 「加单槽字段」与
+「删 v1 字段」没法分开：`ScopedTargetV2` 这个过渡缝一旦 store 改形状就编译不过，
+删旧的必须和接新的一起做。
+
+| 提交 | 内容 | 状态 |
+|---|---|---|
+| 1 | 修 `BackupPanel` 导入简历绕过 `set` 层收口的存量 bug（用户拍板：单独一个提交） | ✅ `6717d2f` |
+| 2（4b） | target store → `{ targetsByUser }` + `targets` 别名 + `version: 2`；读取点切单槽；`types/jobTarget.ts` 成单槽；`ScopedTargetV2` 与四个 per-user 辅助函数一并删掉 | ✅ `edf0472` |
+
+### 两个已问过的决策
+
+| # | 决策 | 理由 |
+|---|---|---|
+| 1 | **「投递目标」页也包 `RequireUser`** | v2 下岗位必须属于某个人。不包的话，没有当前用户时 `addTarget` 只写别名、不进 `targetsByUser` —— 列表上看得到、刷新就没了（静默丢数据）。连带：`RequireUser.tsx` 的注释与 `e2e:users` §4 的断言都要反过来 |
+| 2 | **修备份导入丢简历** | `BackupPanel.tsx:94` 的 `useResumeStore.setState({resumes})` 走的是 zustand 原始 `setState`，**不经过 set 层收口** —— 只写别名，`byUser` 没动，而 `partialize` 只存 `byUser`。探针实测确认，`acceptance` ⑫ 只数了 `profile.entities` 所以没抓到 |
+
+### 读取点清单（4b 要切的）
+
+`analysisFor(target, currentUserId)` → `target?.matchAnalysis ?? null`：
+
+- `targets/TargetsWorkbench.tsx:37,38,150`
+- `resumes/ResumeWorkbench.tsx:143`
+- `resumes/CreateResumeWizard.tsx:312`
+
+store 侧：`{ targets }` → `{ targetsByUser, targets }`，`set` 层收口 + `setActiveUser`
+（照搬 `useResumeStore` 的手法）；`purgeUserAnalyses` → `purgeUser`；`BackupPanel` 的
+`setState({targets})` → `replaceTargets()`。
+
+e2e 侧：`targeted-flow.ts` 的种子、`users.ts` §4（门禁反转）与 §4c（岗位不再共享）、
+删除用户的幸存者断言。
+
+### 结果
+
+`edf0472` 收口。tsc 干净 · 单测 358（21 文件，+10 条岗位 store 用例）·
+e2e 七套全绿 —— core 22 / acceptance 12 / picker 9 / legacy 6 / photo 22 /
+targeted 15 / users 64。`e2e:users` 从 55 项涨到 64 项。
+
+### 本轮新发现（都已记下，修了的注明）
+
+| # | 发现 | 处置 |
+|---|---|---|
+| 1 | **`scripts/**` 完全不在 tsc 的检查范围内。** `tsconfig.json` 的 `include` 只有 `src/**`，所以 7 个 e2e 脚本 + eval 脚本从来没被类型检查过 —— tsx 用的 esbuild 只剥类型不校验。本轮一个重名 `const migrated` 就是这么漏过去的：`tsc --noEmit` 是绿的，跑起来才炸在 esbuild 的 transform 上 | **未修**。要修得给 scripts 单开一份 tsconfig（module/target/lib/node types 都得重设，且现存量错误不少）。属开发基建，与 4b 无关 |
+| 2 | **v1→v2 扇出的边界：没人分析过的岗位归到 `LEGACY_USER_ID`**，而多用户安装里这个名字很可能没有对应档案（档案迁移早就跑过了）→ 岗位还在盘上，但界面上够不着 | **未修**，是 4a 已定的规则（`users.test` 的 §4c-2 钉住了它）。影响面：只有在「v1 的盘 + 多个真实用户」这一种情况下会丢可见性。真要做，得让 `migrate` 知道当前用户 —— 那是改 migrate 的签名，不是补丁 |
+| 3 | `acceptance` ⑫ 名不副实：它走的是**档案页的「导出数据」**（`ProfileArchive`，只有职业数据库），却挂着「全库备份与恢复」的名字 —— 简历丢没丢根本不在观测面里 | ✅ 已改成走通用设置的「导出全库备份 / 导入备份 / 覆盖导入」，三样都从盘上数 |
+| 4 | `useResumeStore` 的 set 层收口与岗位 store **不对称**：简历那边没有当前用户时会放行去写别名（岗位那边整个 no-op）。目前唯一够得着的入口是通用设置的备份导入，且 `replaceResumes` 自带守卫 | **未修**。要不要把简历那层也收紧是个独立决定 —— 它被 35 个 action 共用，改了影响面比岗位大 |
