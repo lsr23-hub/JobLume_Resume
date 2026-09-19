@@ -425,3 +425,57 @@ localStorage，而我没有碰过浏览器。下一次打开应用，镜像会�
 「删除没删掉」那类抱怨的来源。`removeUserDir` 一把带走全部。
 
 `.bak` 不会被 `listSaveIds` 当成一份存档（它以 `.json` 结尾才算），有测试钉住。
+
+---
+
+## 2026-09-19 追加：包体瘦身审核（ponytail 式）
+
+saves/「唯一真相源」那条线**停在 C4b**（`6c03563`），C5 的改动存在 `stash@{0}`。
+本轮转做包体审核。
+
+### 实测数字
+
+| | 改造前 | 现在 | |
+|---|---|---|---|
+| `dist/` | 167 MB | **23 MB** | -86% |
+| 落地页 `/` 首屏 | 20.30 MB | **4.08 MB** | -80% |
+| `/app/dashboard/resumes` | 17.77 MB | **3.60 MB** | -80% |
+| `public/fonts` | 149 MB | 14 MB | -91% |
+
+首屏现在 = JS 1275KB + CSS 310KB + 字体 1.86MB（两个预加载的 woff2）。
+
+### 做了什么
+
+**批 1（`c4ec603`）零风险项**
+- 删两个**零引用**字体（36MB 纯死重）
+- 修一个真 bug：`fonts.ts` 要 `/fonts/MiSans-Bold.ttf`，**那个文件不存在** →
+  选 MiSans 后导出/打印 404、字体静默回退
+- 依赖：删 `mark.js` + 其类型声明；删 3 个只是传递依赖的 heroui 子包；
+  `pdfjs-dist` 移 devDependencies（只有 e2e 用）+ 清理 `vite.config` 里它的死配置
+- 图片：`avatar.png` 1461KB→116KB（-93%，**它是每份新简历的默认照片**）；
+  `web-shot.png` 819KB→96KB；模板快照 1588px PNG → 794px JPEG（4.7M→1.4M）
+
+**批 2（`2bd118b`）字体子集化 —— 收益的大头**
+- `pnpm subset:fonts`：字符表 = GB2312 ∪ **界面出现过的每个字** ∪ ASCII
+- 10 个字重 **115692KB → 14714KB（-87%）**
+- 原始字体移出 `public/` → `font-sources/`（113MB，gitignore）
+- 新增 `public/fonts/README.md`：说明产物性质、两个声明来源必须同步、怎么重新生成
+
+### 两处判断被实测推翻（值得记）
+
+1. **「TTF 子集给导出」不需要**。我原先按「jsPDF 只吃 TTF」建议出两套，查证后发现
+   **当前导出路径根本不读字体文件** —— PDF 是 `html2canvas` 截图后 `addImage` 的
+   纯位图；打印路径注入 `@font-face` 让浏览器加载，WOFF2 够用。只出一套，少背 20MB。
+   那条约束只对尚未实现的「自绘 PDF 文字层」（U3）成立。
+2. **`@heroui/theme` 不能删**。它不是代码 import，而是 `tailwind.config.ts` 的
+   content glob 路径。pnpm 严格布局下非直接依赖不在顶层 `node_modules`，
+   删了 Tailwind 就扫不到 heroui 的类。第一遍按「零引用」判了死刑，核查时拦下。
+
+### 还剩下的（没做，按性价比排）
+
+| 项 | 量级 | 代价 |
+|---|---|---|
+| **antd 只为 DatePicker** | `unified-date-range-input` chunk 656KB，只用在一个组件 + 生日选择器 | 换掉要自己写日期选择器（范围选择、中文 locale、键盘可达）—— 天级工作量 |
+| 三个 UI 体系并存 | heroui（`registry` chunk 670KB）+ antd + shadcn/radix | 长期债，重构面很大 |
+| 字体只预加载一个字重 | 省 ~960KB 首屏 | 粗体会 FOUT，观感换体积 |
+| `framer-motion` 用在 61 个文件 | 已在 `main` chunk 里 | 换 CSS 动画是大工程 |
