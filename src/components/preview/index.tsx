@@ -6,6 +6,7 @@ import { DEFAULT_TEMPLATES } from "@/config";
 import { resolveImagesInElement } from "@/lib/imageStore";
 import { cn } from "@/lib/utils";
 import { useResumeStore } from "@/store/useResumeStore";
+import { useImageEpoch } from "@/hooks/useImageEpoch";
 import { useAutoOnePage } from "@/hooks/useAutoOnePage";
 import { useTranslations } from "@/i18n/compat/client";
 import { normalizeFontFamily } from "@/utils/fonts";
@@ -57,6 +58,8 @@ const PreviewPanel = React.forwardRef<HTMLDivElement, PreviewPanelProps>(
     ref
   ) => {
     const { activeResume, setActiveSection } = useResumeStore();
+    // 图片字节可能是后到的（缓存没有时从磁盘拉）—— 引用没变，只有这个信号能触发再解析
+    const imageEpoch = useImageEpoch();
     const selectedFontFamily = normalizeFontFamily(
       activeResume?.globalSettings?.fontFamily
     );
@@ -135,7 +138,8 @@ const PreviewPanel = React.forwardRef<HTMLDivElement, PreviewPanelProps>(
       void resolveImagesInElement(element).catch((error) =>
         console.warn("图片引用解析失败:", error)
       );
-    }, [activeResume, template]);
+      // imageEpoch：字节从磁盘拉回来时引用没变，只有这个信号能触发再解析一次
+    }, [activeResume, template, imageEpoch]);
 
     const pagePadding = activeResume?.globalSettings?.pagePadding || 0;
     const autoOnePageEnabled = activeResume?.globalSettings?.autoOnePage || false;

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Upload, X } from "lucide-react";
 import { useTranslations } from "@/i18n/compat/client";
 import { toast } from "sonner";
-import { blobToDataUrl } from "@/utils/imageUtils";
+import { storeImage } from "@/lib/imageStore";
 import {
   Drawer,
   DrawerContent,
@@ -105,9 +105,15 @@ const PhotoConfigDrawer: React.FC<Props> = ({
   const handleCropped = async (blob: Blob) => {
     setPending(null);
     try {
-      const imageData = await blobToDataUrl(blob);
-      setPreviewUrl(imageData);
-      updateBasicInfo({ photo: imageData });
+      // 与档案照片、证书**统一**：二进制落盘，数据里只留引用。
+      // 内联 data URL 会撑 localStorage 约 5MB 的配额，也让备份/换机器/清缓存三件事
+      // 同时失效（这正是 S5 要解决的）
+      setPreviewUrl(URL.createObjectURL(blob));
+      updateBasicInfo({
+        photo: await storeImage(
+          new File([blob], "photo.jpg", { type: blob.type || "image/jpeg" })
+        ),
+      });
     } catch {
       toast.error(t("upload.error"));
     }

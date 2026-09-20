@@ -11,7 +11,18 @@
  *   pnpm e2e:photo
  */
 import { chromium, type Page } from "playwright";
+import fs from "node:fs/promises";
+import path from "node:path";
 import { ensureCurrentUser, seedSaves } from "./userScope.mjs";
+
+/**
+ * 数据里的照片是不是一个**引用**（`img_<uuid>.<ext>`）。
+ *
+ * S5 之后二进制落盘、数据里只留引用 —— 所以要钉的性质是「**不是内联 base64**」，
+ * 而不是某个具体前缀（前缀随设计变过一次：`idb:img_x` → `img_x.jpg`）。
+ */
+const isStoredRef = (value: unknown): boolean =>
+  typeof value === "string" && /^img_.+\.(jpg|png|webp|gif|avif)$/.test(value);
 
 const BASE = process.env.E2E_BASE ?? "http://localhost:3000";
 
@@ -136,13 +147,30 @@ step(new Set(samples).size > 1, `命中带边缘按下也能拖动（${samples[0
 
 await cropper(page).getByRole("button", { name: "确认裁剪" }).click();
 await page.waitForTimeout(1200);
-const profilePhoto = await page.evaluate(() =>
-  (() => {
-    const st = JSON.parse(localStorage.getItem("career-profile-storage")!).state;
-    return (st.profiles[st.currentUserId].basic.photo ?? "").slice(0, 8);
-  })()
+const profilePhoto = await page.evaluate(() => {
+  const st = JSON.parse(localStorage.getItem("career-profile-storage")!).state;
+  return st.profiles[st.currentUserId].basic.photo ?? "";
+});
+step(isStoredRef(profilePhoto), `裁剪结果写进档案，且是**引用**而非内联 base64（${profilePhoto}）`);
+
+// S5 的核心：二进制真的落到了盘上
+const photoUid = await page.evaluate(
+  () => JSON.parse(localStorage.getItem("career-profile-storage")!).state.currentUserId
 );
-step(profilePhoto === "idb:img_", `裁剪结果写进档案（${profilePhoto}…，档案层走 IndexedDB 引用）`);
+const imageFiles = await fs
+  .readdir(path.join(process.cwd(), "saves", photoUid, "images"))
+  .catch(() => [] as string[]);
+step(
+  imageFiles.includes(profilePhoto),
+  `**字节落到了盘上**（saves/<uid>/images/ 有 ${imageFiles.length} 个文件，含「${profilePhoto}」）`
+);
+step(
+  await fs
+    .stat(path.join(process.cwd(), "saves", photoUid, "images", profilePhoto))
+    .then((s) => s.size > 0)
+    .catch(() => false),
+  "而且那个文件不是空的"
+);
 
 // ─────────── 简历编辑器 ───────────
 await seedSaves(page);
@@ -182,8 +210,8 @@ step((await drawer.innerText()).includes("照片设置"), "在裁剪器里点击
 
 await cropper(page).getByRole("button", { name: "确认裁剪" }).click();
 await page.waitForTimeout(1500);
-const photo = await storedResume(page, (r: any) => (r.basic?.photo ?? "").slice(0, 15));
-step(typeof photo === "string" && photo.startsWith("data:image/jpeg"), `裁剪结果写进简历（${photo}…）`);
+const photo = await storedResume(page, (r: any) => r.basic?.photo ?? "");
+step(isStoredRef(photo), `裁剪结果写进简历，且是**引用**而非内联 base64（${photo}）`);
 step((await page.locator("img[alt='Profile']").count()) > 0, "抽屉里出现裁剪后的预览");
 
 await drawer.getByRole("button", { name: "大", exact: true }).click();
@@ -193,6 +221,34 @@ step(w === 120, `「大」把照片宽度设为 120（当前 ${w}）`);
 await drawer.getByRole("button", { name: "小", exact: true }).click();
 await page.waitForTimeout(700);
 step((await storedResume(page, (r: any) => r.basic?.photoConfig?.width)) === 72, "「小」把照片宽度设为 72");
+
+// ─────────── 缓存被清掉后，照片要从磁盘拉回来 ───────────
+//
+// S5 之后二进制在磁盘上、IndexedDB 只是**缓存**。把缓存清空再打开，照片必须还能显示 ——
+// 这就是"换台机器也看得到"的同一件事（那边连 localStorage 都是空的，多一层采纳用户的
+// 流程）。断言用 `naturalWidth > 0`：那才证明字节真的到了、解码出来了。
+console.log("\n── 缓存清空后从磁盘拉回 ──");
+await page.evaluate(async () => {
+  const db = await new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open("JobLumeImageDB", 1);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction("images", "readwrite");
+    const request = tx.objectStore("images").clear();
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+  db.close();
+});
+await page.reload({ waitUntil: "networkidle" });
+await page.waitForTimeout(2500);
+const restoredWidth = await page.evaluate(() => {
+  const img = Array.from(document.querySelectorAll("img")).find((i) => i.src.startsWith("blob:"));
+  return img ? img.naturalWidth : 0;
+});
+step(restoredWidth > 0, `缓存清空后照片仍显示（${restoredWidth}px 宽）—— 字节是从磁盘拉回来的`);
 
 await browser.close();
 

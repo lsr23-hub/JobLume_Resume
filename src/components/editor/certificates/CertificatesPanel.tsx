@@ -8,7 +8,7 @@ import CertificateItem from "./CertificateItem";
 import { Certificate } from "@/types/resume";
 import { generateUUID } from "@/utils/uuid";
 import { useRef, useEffect } from "react";
-import { compressImage, estimateBase64Size } from "@/utils/imageUtils";
+import { storeImage } from "@/lib/imageStore";
 import { toast } from "sonner";
 
 const CertificatesPanel = () => {
@@ -32,21 +32,10 @@ const CertificatesPanel = () => {
             return;
         }
         try {
-            let imageData: string;
-            if (file.size > 2 * 1024 * 1024) {
-                imageData = await compressImage(file, 800, 800, 0.7);
-                let compressedSize = estimateBase64Size(imageData);
-                if (compressedSize > 2 * 1024 * 1024) {
-                    imageData = await compressImage(file, 600, 600, 0.5);
-                    compressedSize = estimateBase64Size(imageData);
-                    if (compressedSize > 2 * 1024 * 1024) {
-                        imageData = await compressImage(file, 400, 400, 0.4);
-                    }
-                }
-            } else {
-                imageData = await compressImage(file, 1200, 1200, 0.8);
-            }
-            handleCreateCertificate(imageData);
+            // 与档案照片、简历照片**统一**：二进制落盘，数据里只留引用。
+            // 原来的三档压缩（>2MB 时逐级降到 800/600/400）由 `storeImage` 内部
+            // 统一处理（长边 1200 + q0.85）—— 一处策略胜过三处各调一套
+            handleCreateCertificate(await storeImage(file));
         } catch (e) {
             toast.error("Upload error");
         }

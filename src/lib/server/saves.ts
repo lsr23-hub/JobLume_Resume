@@ -4,6 +4,12 @@ import path from "node:path";
 // 所以这里要单独 import 一次才能在 `isSaveOp` 里用
 import { randomUUID } from "node:crypto";
 import { isSaveKind, type SaveKind } from "@/lib/saves/kinds";
+// 同 kinds：值导入 + 上面的 re-export 各来一次（re-export 不引入本地绑定）
+import {
+  IMAGE_MIME_BY_EXT,
+  MAX_IMAGE_BYTES,
+  isImageFileName,
+} from "@/lib/saves/images";
 import { contentHash } from "@/lib/saves/hash";
 // 同 kinds：值导入 + 下面的 re-export 各来一次 —— `export { x } from` 不引入本地绑定
 import {
@@ -484,61 +490,25 @@ export const listUserIds = async (root: string): Promise<string[]> => {
 
 // ─────────────────────────────── 图片 ───────────────────────────────
 
+/**
+ * 图片的命名规则（前缀、扩展名白名单、`isImageFileName` / `imageFileName`）在
+ * `lib/saves/images.ts` —— 客户端也要用同一套（渲染前要判断"这是不是一个引用"），
+ * 而那个模块不含 node 依赖。这里只做 re-export，不另立一套。
+ */
+export {
+  IMAGE_EXT_BY_MIME,
+  IMAGE_ID_PREFIX,
+  IMAGE_MIME_BY_EXT,
+  IMAGE_REF_PREFIX,
+  MAX_IMAGE_BYTES,
+  imageFileName,
+  isImageFileName,
+  isImageRef,
+  newImageId,
+} from "@/lib/saves/images";
+
 /** 图片子目录。与 `resumes` / `jds` 并列 */
 export const IMAGE_DIRNAME = "images";
-
-/**
- * MIME → 扩展名。
- *
- * **扩展名由服务端从请求的 `Content-Type` 推出来，客户端不传** —— 所以存下来的路径
- * 永远由服务端拼，客户端左右不了它。这份白名单同时就是"允许哪些格式"的定义。
- *
- * 覆盖的是这个应用真能产出的：`compressImage` 走 canvas 重编码，`file.type` 是什么就
- * 编成什么（jpeg/png/webp/gif/avif 是浏览器支持的几种）；裁剪器固定输出 jpeg。
- * SVG 进不了这份名单：它过一遍 canvas 出来就是 PNG 了。
- */
-export const IMAGE_EXT_BY_MIME: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-  "image/avif": "avif",
-};
-
-export const IMAGE_MIME_BY_EXT: Record<string, string> = {
-  jpg: "image/jpeg",
-  png: "image/png",
-  webp: "image/webp",
-  gif: "image/gif",
-  avif: "image/avif",
-};
-
-/** 单张图片上限。存档是给人看/进 git 的镜像，不该被塞进几十兆的原图 */
-export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
-
-/**
- * 文件名长这样：`img_<uuid>.jpg`。
- *
- * ⚠️ **id 与扩展名必须分开校验**：`SAFE_SEGMENT` 刻意不含 `.`（那一条堵死了 `..`），
- * 所以拿整个文件名去过 `isSafeSegment` 会把合法文件名一并拒掉。这里按**最后一个点**
- * 切开，两半各校验一次，再拼回去做 `path.relative` 复核。
- */
-export const isImageFileName = (name: unknown): name is string => {
-  if (typeof name !== "string") return false;
-  const at = name.lastIndexOf(".");
-  if (at <= 0) return false;
-  const id = name.slice(0, at);
-  const ext = name.slice(at + 1);
-  return isSafeSegment(id) && Object.prototype.hasOwnProperty.call(IMAGE_MIME_BY_EXT, ext);
-};
-
-/** 由 id 与 MIME 拼出文件名。MIME 不在白名单里就抛错（不"尽量兼容"） */
-export const imageFileName = (id: unknown, mime: string): string => {
-  if (!isSafeSegment(id)) throw new Error(`[saves] 非法的图片 id：${String(id).slice(0, 40)}`);
-  const ext = IMAGE_EXT_BY_MIME[mime.split(";")[0].trim().toLowerCase()];
-  if (!ext) throw new Error(`[saves] 不支持的图片格式：${mime.slice(0, 40)}`);
-  return `${id}.${ext}`;
-};
 
 const resolveImageDir = (root: string, userId: unknown): string =>
   path.join(resolveUserDir(root, userId), IMAGE_DIRNAME);

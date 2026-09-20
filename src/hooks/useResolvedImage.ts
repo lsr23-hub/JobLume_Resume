@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { isImageRef, resolveImageRef } from "@/lib/imageStore";
+import { resolveImageRef } from "@/lib/imageStore";
+import { isImageRef } from "@/lib/saves/images";
+import { useImageEpoch } from "@/hooks/useImageEpoch";
 
 /**
  * 把档案里的图片引用解析成可渲染的 URL。
@@ -12,6 +14,8 @@ import { isImageRef, resolveImageRef } from "@/lib/imageStore";
  */
 export const useResolvedImage = (ref: string | undefined): string => {
   const [url, setUrl] = useState("");
+  // 缓存没有时字节要从磁盘拉，那是"后到"的 —— 只盯 ref 会一直空着（见 useImageEpoch）
+  const imageEpoch = useImageEpoch();
 
   useEffect(() => {
     if (!ref) {
@@ -34,7 +38,7 @@ export const useResolvedImage = (ref: string | undefined): string => {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [ref]);
+  }, [ref, imageEpoch]);
 
   return url;
 };

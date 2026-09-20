@@ -4,7 +4,9 @@ import { toast } from "sonner";
 import { useTranslations } from "@/i18n/compat/client";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import type { BasicInfo } from "@/types/resume";
-import { isImageRef, resolveImageRef, storeImageFile } from "@/lib/imageStore";
+import { resolveImageRef, storeImage } from "@/lib/imageStore";
+import { isImageRef } from "@/lib/saves/images";
+import { useImageEpoch } from "@/hooks/useImageEpoch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -104,6 +106,8 @@ const PhotoField = () => {
   const [busy, setBusy] = useState(false);
 
   const photo = profile?.basic.photo ?? "";
+  // 字节可能是后到的（从磁盘拉）—— 只盯 photo 的话引用没变、界面不刷新
+  const imageEpoch = useImageEpoch();
 
   useEffect(() => {
     if (!isImageRef(photo)) {
@@ -118,14 +122,14 @@ const PhotoField = () => {
     return () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [photo]);
+  }, [photo, imageEpoch]);
 
   const handleConfirmCrop = async (blob: Blob) => {
     setPending(null);
     setBusy(true);
     try {
       const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
-      updateBasic({ photo: await storeImageFile(file) });
+      updateBasic({ photo: await storeImage(file) });
       toast.success(t("photo.saved"));
     } catch (error) {
       console.error("照片保存失败:", error);
