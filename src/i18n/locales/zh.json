@@ -843,13 +843,12 @@
       "notImage": "「{name}」不是图片文件"
     },
     "save": {
-      "saved": "已保存",
-      "saving": "保存中…",
-      "never": "尚未修改",
       "button": "保存",
-      "success": "已保存到本地",
-      "failed": "保存失败，可能是浏览器存储空间不足",
-      "autoNote": "改动会实时写入本地存储，切换板块不会丢失。"
+      "diskSynced": "改动已写入磁盘",
+      "diskWriting": "正在写入磁盘…",
+      "diskFailed": "写入磁盘失败，正在重试…",
+      "diskStopped": "自动写入已停止。改动仍在浏览器里，不会丢。",
+      "diskDisabled": "本次部署没有磁盘存档，数据只在这个浏览器里"
     },
     "import": {
       "button": "导入数据",
@@ -957,7 +956,13 @@
     "deleteTitle": "删除「{name}」？",
     "deleteBody": "该用户的职业档案、名下 {count} 份简历，以及他在各投递目标上的分析都会被一并删除，**无法恢复**。",
     "deleteConfirm": "删除",
+    "deleteDiskFailed": "本地已删除，但磁盘上的存档目录没删掉",
     "cancel": "取消"
+  },
+  "sync": {
+    "retrying": "写入磁盘失败，正在重试",
+    "stopped": "已停止写入磁盘",
+    "retryHint": "点一下立即重试。改动仍在浏览器里，不会丢。"
   },
   "backup": {
     "title": "数据备份",

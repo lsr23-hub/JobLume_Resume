@@ -157,6 +157,43 @@ try {
     "乙名下没有任何岗位文件（乙本来就没有岗位）"
   );
 
+  // ════════════════ 5. 删用户 → 磁盘目录消失，且不被写盘追回来 ════════════════
+  console.log("\n── 5. 删用户 → 目录不复现 ──");
+  //
+  // 这一条钉的是一个**时序竞态**：在防抖窗口（1500ms）内删掉用户时，镜像队列里还留着
+  // 他的写盘 op；那批 flush 若在目录删掉**之后**落地，`fs.mkdir(recursive)` 会把目录
+  // 整个写回来 —— 用户以为删干净了，磁盘上却复活了（实测复现过：请求序列
+  // `DELETE 200 | POST 200`）。
+  //
+  // ⚠️ 所以「删除流程耗时 < 1500ms」是这条用例的**前提**：机器慢的时候它仍然会通过，
+  // 但那时它不再验证竞态。这个形状不理想，但它是目前唯一能在真实浏览器里钉住这个
+  // 不变量的办法（防抖计时器没法从外部注入）。
+  const victim = await currentUserId(page);
+  const t0 = Date.now();
+  await page.locator("input:visible").first().fill("乙同学改名");
+  await page.getByRole("button", { name: /切换用户/ }).first().click();
+  await page.waitForTimeout(250);
+  const card = page
+    .locator('[role="dialog"] [role="button"]')
+    .filter({ hasText: "乙同学改名" })
+    .first();
+  await card.hover();
+  await page.waitForTimeout(200);
+  // ⚠️ 删除按钮**必须限定在这张卡片内**。用全局 `.first()` 会点到 DOM 里第一张卡的
+  // 删除按钮 —— 删掉的是别人，而症状是「被删用户的目录没消失」，极容易误判成竞态
+  // （实测踩过：整个竞态排查都是被这一条带偏的）。
+  await card.getByRole("button", { name: "删除用户" }).click();
+  await page.waitForTimeout(200);
+  await page.getByRole("button", { name: "删除" }).last().click();
+  const elapsed = Date.now() - t0;
+  await page.waitForTimeout(3000);
+
+  step(elapsed < 1500, `删除流程在防抖窗口内完成（${elapsed}ms）—— 竞态条件成立`);
+  step(
+    !(await exists(path.join(SAVES_ROOT, victim))),
+    `删用户后 saves/<uid>/ 消失，且没有被写盘追回来（${victim.slice(0, 8)}…）`
+  );
+
   console.log("\n页面错误:", errors.length ? errors.slice(0, 4) : "无");
 } finally {
   // 只删自己建的目录。递归删除在这里是安全的：路径来自刚创建的两个 uuid，

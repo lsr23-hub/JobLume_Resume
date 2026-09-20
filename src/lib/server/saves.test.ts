@@ -3,17 +3,27 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
+  BASELINE_FILENAME,
+  SAVES_SCHEMA_VERSION,
+  applySaveOps,
+  baselinePath,
+  emptyBaseline,
+  isSaveOp,
   isSafeSegment,
   listSaveIds,
   listUserIds,
+  readBaseline,
   readSaveFile,
   readSaveTree,
+  recordKey,
+  writeBaseline,
   removeSaveFile,
   removeUserDir,
   resolveSavePath,
   savesEnabled,
   writeSaveFile,
 } from "./saves";
+import { contentHash } from "@/lib/saves/hash";
 
 const ROOT = "/repo";
 const UID = "3f2a1b4c-5d6e-7f80-9a0b-1c2d3e4f5a6b";
@@ -252,6 +262,38 @@ describe("写前备份 .bak", () => {
     expect(tree.problems).toEqual([]);
   });
 
+  /**
+   * 这条钉的是「首屏全量重写」的**危害**。客户端每次打开页面都会把该用户的全部文件
+   * 重算一遍 diff（基线从空开始），如果照写不误，`.bak` 每次都被替换成同一份内容 ——
+   * 那它就再也救不了「上一次写坏了」，成了一枚永远等于当前版本的摆设。
+   */
+  it("内容与磁盘上一字不差时：不写、也不动 `.bak`", async () => {
+    await writeSaveFile(root, UID, "profile", undefined, { v: 1 });
+    await writeSaveFile(root, UID, "profile", undefined, { v: 2 });
+    const full = path.resolve(root, "saves", UID, "profile.json");
+
+    const bakBefore = await fs.readFile(`${full}.bak`, "utf8");
+    expect(bakBefore).toContain('"v": 1');
+
+    // 再写一次与当前内容完全相同的
+    expect(await writeSaveFile(root, UID, "profile", undefined, { v: 2 })).toBe(full);
+
+    // `.bak` 仍然是一代之前那一版 —— 没有被同内容顶掉
+    expect(await fs.readFile(`${full}.bak`, "utf8")).toBe(bakBefore);
+    expect(JSON.parse(await fs.readFile(full, "utf8"))).toEqual({ v: 2 });
+  });
+
+  it("内容**变了**就得照常写，并且照样留 `.bak`（跳过写入不能跳过保护）", async () => {
+    await writeSaveFile(root, UID, "profile", undefined, { v: 1 });
+    await writeSaveFile(root, UID, "profile", undefined, { v: 2 });
+    const full = path.resolve(root, "saves", UID, "profile.json");
+
+    await writeSaveFile(root, UID, "profile", undefined, { v: 3 });
+
+    expect(JSON.parse(await fs.readFile(full, "utf8"))).toEqual({ v: 3 });
+    expect(await fs.readFile(`${full}.bak`, "utf8")).toContain('"v": 2');
+  });
+
   it("删除是显式动作：.json 与 .bak 一起清掉，不留「删了还在」的副本", async () => {
     await writeSaveFile(root, UID, "resume", "r1", { id: "r1", title: "旧" });
     await writeSaveFile(root, UID, "resume", "r1", { id: "r1", title: "新" });
@@ -285,5 +327,263 @@ describe("端点开关", () => {
     }
     process.env.SAVES_ENABLED = "1";
     expect(savesEnabled()).toBe(true);
+  });
+});
+
+describe("同步基线", () => {
+  let root: string;
+
+  beforeEach(async () => {
+    root = await fs.mkdtemp(path.join(os.tmpdir(), "joblume-saves-"));
+  });
+
+  afterEach(async () => {
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  it("没有基线文件 → 空基线（还没写过盘，或是从没有基线的版本升上来的目录）", async () => {
+    expect(await readBaseline(root, UID)).toEqual({
+      schemaVersion: SAVES_SCHEMA_VERSION,
+      records: {},
+    });
+  });
+
+  it("写进去再读回来，版本被规整成当前版本", async () => {
+    await writeBaseline(root, UID, { schemaVersion: 1, records: { profile: "abc" } });
+    expect(await readBaseline(root, UID)).toEqual({
+      schemaVersion: SAVES_SCHEMA_VERSION,
+      records: { profile: "abc" },
+    });
+  });
+
+  it("记录键的形状：profile 无 id，其余带 kind 前缀", () => {
+    expect(recordKey("profile")).toBe("profile");
+    expect(recordKey("resume", "r1")).toBe("resume:r1");
+    expect(recordKey("jd", "t1")).toBe("jd:t1");
+  });
+
+  it("基线不是合法 JSON → 抛错", async () => {
+    const full = baselinePath(root, UID);
+    await fs.mkdir(path.dirname(full), { recursive: true });
+    await fs.writeFile(full, "{ 不是 JSON", "utf8");
+    await expect(readBaseline(root, UID)).rejects.toThrow(/不是合法 JSON/);
+  });
+
+  it("**版本比本程序新 → 抛错**（拒绝读写，而不是猜着读）", async () => {
+    const full = baselinePath(root, UID);
+    await fs.mkdir(path.dirname(full), { recursive: true });
+    await fs.writeFile(
+      full,
+      JSON.stringify({ schemaVersion: SAVES_SCHEMA_VERSION + 1, records: {} }),
+      "utf8"
+    );
+    await expect(readBaseline(root, UID)).rejects.toThrow(/高于本程序支持/);
+  });
+
+  /**
+   * 这条钉的是「错误分类」：路由按 `[saves]` 前缀把错误分成调用方的错（400）与
+   * 环境的错（500）。基线坏了属于**服务端自己的状态问题**，带上那个前缀会让它被
+   * 报成 400，把排查方向指错 —— 所以断言里必须没有它。
+   */
+  it("基线的错误消息**不带 `[saves]` 前缀**（否则会被路由报成 400）", async () => {
+    const full = baselinePath(root, UID);
+    await fs.mkdir(path.dirname(full), { recursive: true });
+    await fs.writeFile(full, "{}", "utf8");
+
+    // 捕获而不是 `.rejects`：这里要断言的是消息**内容**，不只是「抛了」
+    let message = "";
+    try {
+      await readBaseline(root, UID);
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error);
+    }
+    expect(message).toMatch(/schemaVersion/);
+    expect(message).not.toContain("[saves]");
+  });
+
+  it("**基线文件本身不被当成一份存档**", async () => {
+    await writeBaseline(root, UID, emptyBaseline());
+
+    expect(await listSaveIds(root, UID, "resume")).toEqual([]);
+    expect(await listSaveIds(root, UID, "jd")).toEqual([]);
+    expect(await readSaveTree(root, UID)).toEqual({
+      profile: null,
+      resumes: {},
+      targets: {},
+      problems: [],
+    });
+    // 但目录本身仍然是一个用户 —— 它出现在磁盘上了
+    expect(await listUserIds(root)).toEqual([UID]);
+  });
+});
+
+describe("批量 op", () => {
+  let root: string;
+
+  beforeEach(async () => {
+    root = await fs.mkdtemp(path.join(os.tmpdir(), "joblume-saves-"));
+  });
+
+  afterEach(async () => {
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  it("一次写多条：逐条给结果，基线记住它们", async () => {
+    const { results, baseline } = await applySaveOps(root, UID, [
+      { op: "write", kind: "profile", data: { basic: { name: "甲" } } },
+      { op: "write", kind: "resume", id: "r1", data: { id: "r1" } },
+      { op: "write", kind: "jd", id: "t1", data: { id: "t1" } },
+    ]);
+
+    expect(results.map((r) => [r.key, r.ok])).toEqual([
+      ["profile", true],
+      ["resume:r1", true],
+      ["jd:t1", true],
+    ]);
+    expect(Object.keys(baseline.records).sort()).toEqual(["jd:t1", "profile", "resume:r1"]);
+    expect(await readBaseline(root, UID)).toEqual(baseline);
+    expect(await readSaveFile(root, UID, "resume", "r1")).toEqual({ id: "r1" });
+  });
+
+  /**
+   * 往返不变量：客户端会拿「从磁盘读回来的内容」重算哈希与基线比。如果这两者
+   * 算不出同一个值，客户端会永远判脏、永远在同步。
+   */
+  it("**回传的哈希 == 从磁盘读回来的内容算出的哈希**", async () => {
+    const data = {
+      id: "r1",
+      z: 1,
+      nested: { b: [1, 2, undefined], c: null },
+      at: "2026-09-20T00:00:00.000Z",
+    };
+    const { results } = await applySaveOps(root, UID, [
+      { op: "write", kind: "resume", id: "r1", data },
+    ]);
+
+    const onDisk = await readSaveFile(root, UID, "resume", "r1");
+    expect(await contentHash(onDisk)).toBe(results[0].hash);
+  });
+
+  it("删除：内容文件、`.bak`、基线条目一起消失", async () => {
+    await applySaveOps(root, UID, [
+      { op: "write", kind: "resume", id: "r1", data: { id: "r1", v: 1 } },
+    ]);
+    // 再写一次制造 .bak
+    await applySaveOps(root, UID, [
+      { op: "write", kind: "resume", id: "r1", data: { id: "r1", v: 2 } },
+    ]);
+    const full = path.resolve(root, "saves", UID, "resumes", "r1.json");
+    expect(await fs.readFile(`${full}.bak`, "utf8")).toContain('"v": 1');
+
+    const { results, baseline } = await applySaveOps(root, UID, [
+      { op: "delete", kind: "resume", id: "r1" },
+    ]);
+
+    expect(results[0]).toEqual({ key: "resume:r1", ok: true });
+    expect(baseline.records["resume:r1"]).toBeUndefined();
+    expect(await readSaveFile(root, UID, "resume", "r1")).toBeNull();
+    await expect(fs.access(`${full}.bak`)).rejects.toThrow();
+  });
+
+  it("部分失败：坏的那条只影响自己，好的照常落盘，基线不记失败那条", async () => {
+    const { results, baseline } = await applySaveOps(root, UID, [
+      // profile 不接受 id —— 这条必定失败
+      { op: "write", kind: "profile", id: "r1", data: { basic: { name: "甲" } } },
+      { op: "write", kind: "resume", id: "r1", data: { id: "r1" } },
+    ]);
+
+    expect(results[0].ok).toBe(false);
+    expect(results[0].error).toMatch(/^\[saves\]/);
+    expect(results[1].ok).toBe(true);
+
+    // 好的那条真的落盘了，且被记进基线
+    expect(await readSaveFile(root, UID, "resume", "r1")).toEqual({ id: "r1" });
+    expect(Object.keys(baseline.records)).toEqual(["resume:r1"]);
+    // 失败的 profile 没有被写出去
+    expect(await readSaveFile(root, UID, "profile")).toBeNull();
+  });
+
+  it("整批都失败 → 仍然回结果，但**不写基线**", async () => {
+    const { results, baseline } = await applySaveOps(root, UID, [
+      { op: "write", kind: "profile", id: "x", data: {} },
+    ]);
+
+    expect(results[0].ok).toBe(false);
+    expect(baseline.records).toEqual({});
+    // 磁盘上不该凭空出现一个基线文件
+    await expect(fs.access(baselinePath(root, UID))).rejects.toThrow();
+  });
+
+  it("先写后删同一批：以最后一个 op 为准", async () => {
+    const { results, baseline } = await applySaveOps(root, UID, [
+      { op: "write", kind: "jd", id: "t1", data: { id: "t1" } },
+      { op: "delete", kind: "jd", id: "t1" },
+    ]);
+
+    expect(results.map((r) => r.ok)).toEqual([true, true]);
+    expect(baseline.records["jd:t1"]).toBeUndefined();
+    expect(await readSaveFile(root, UID, "jd", "t1")).toBeNull();
+  });
+
+  it("userId 非法 → 整批拒绝（不逐条失败）", async () => {
+    await expect(
+      applySaveOps(root, "../etc", [{ op: "write", kind: "profile", data: {} }])
+    ).rejects.toThrow(/^\[saves\]/);
+  });
+
+  it("删除不存在的条目也算成功（幂等）", async () => {
+    const { results } = await applySaveOps(root, UID, [
+      { op: "delete", kind: "resume", id: "nope" },
+    ]);
+    expect(results[0]).toEqual({ key: "resume:nope", ok: true });
+  });
+
+  /**
+   * 这一条对应一次**真实事故**：旧客户端每个文件发一个请求，首屏全量同步时 N 个
+   * 请求同时到同一个用户。没有串行化时，N 个请求各自「读基线 → 改 → 写回」，
+   * 结果是丢更新 + 两次 `writeFile` 交错把基线写坏（真实用户目录里出现过合法 JSON
+   * 后面跟着一段哈希碎片的文件，那个用户从此每次写盘都 500）。
+   */
+  it("并发写同一个用户：基线不丢条目、也不损坏", async () => {
+    const ops = Array.from({ length: 8 }, (_, i) => ({
+      op: "write" as const,
+      kind: "resume" as const,
+      id: `r${i}`,
+      data: { id: `r${i}` },
+    }));
+
+    // 完全并发，不 await 中间结果
+    await Promise.all(ops.map((op) => applySaveOps(root, UID, [op])));
+
+    // 文件坏了的话 readBaseline 会抛错 —— 这一步本身就是断言
+    const baseline = await readBaseline(root, UID);
+    expect(Object.keys(baseline.records).sort()).toEqual(ops.map((o) => `resume:${o.id}`).sort());
+
+    for (const op of ops) {
+      expect(await readSaveFile(root, UID, "resume", op.id)).toEqual({ id: op.id });
+    }
+  });
+
+  it("写盘不留 .tmp（rename 之后临时文件不该还在）", async () => {
+    await applySaveOps(root, UID, [
+      { op: "write", kind: "profile", data: { a: 1 } },
+      { op: "write", kind: "resume", id: "r1", data: { id: "r1" } },
+    ]);
+
+    const userDir = path.resolve(root, "saves", UID);
+    expect((await fs.readdir(userDir)).filter((n) => n.endsWith(".tmp"))).toEqual([]);
+    expect((await fs.readdir(path.join(userDir, "resumes"))).filter((n) => n.endsWith(".tmp"))).toEqual([]);
+  });
+
+  it("isSaveOp 拒绝形状不对的条目", () => {
+    expect(isSaveOp({ op: "write", kind: "resume", id: "r1", data: {} })).toBe(true);
+    expect(isSaveOp({ op: "delete", kind: "resume", id: "r1" })).toBe(true);
+    // 写却没带 data
+    expect(isSaveOp({ op: "write", kind: "resume", id: "r1" })).toBe(false);
+    // 未知 kind / 未知 op / id 类型不对 / 不是对象
+    expect(isSaveOp({ op: "write", kind: "nope", data: {} })).toBe(false);
+    expect(isSaveOp({ op: "drop", kind: "resume" })).toBe(false);
+    expect(isSaveOp({ op: "delete", kind: "resume", id: 42 })).toBe(false);
+    expect(isSaveOp(null)).toBe(false);
   });
 });

@@ -1,13 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
+  MAX_OPS_PER_REQUEST,
   SAVES_DIRNAME,
+  applySaveOps,
   isSaveKind,
+  isSaveOp,
   listUserIds,
   readSaveTree,
-  removeSaveFile,
+  removeUserDir,
+  resolveSavePath,
   savesEnabled,
   savesRoot,
-  writeSaveFile,
+  type SaveOp,
 } from "@/lib/server/saves";
 import path from "node:path";
 
@@ -17,7 +21,10 @@ import path from "node:path";
  * ⚠️ **这是全项目唯一按请求读写用户数据的端点。** 它既是存储后端也是泄露面 ——
  * 一旦部署到公网，任何能访问站点的人都能读到所有人的姓名、联系方式与经历。
  * 所以它由 `SAVES_ENABLED` 守着，**默认关**（见 `lib/server/saves.ts` 的头注释）。
- * 关了之后这里返回 404，与「这个路由不存在」不可区分。
+ * 关了之后这里返回 404，与「这个路由不存在」不可区分 —— ⚠️ **这是契约，不是巧合**：
+ * 客户端正是靠这个 404 判定「本次部署没有磁盘存档」并进入降级模式
+ * （`lib/saves/syncStatus.ts` 的 `disabled`）。改成 403 会让那个判定失效 ——
+ * 客户端会把它当成失败，重试到上限后在界面上报错。
  *
  * 路径校验全在 `lib/server/saves.ts` 里，这里只做请求形状的检查。
  */
@@ -30,6 +37,19 @@ const json = (body: unknown, status = 200) =>
 
 /** 关掉时一律 404 —— 不给出「有这个端点但你没权限」这种信息 */
 const disabled = () => json({ ok: false, error: "Not Found" }, 404);
+
+/**
+ * 校验失败是**调用方的错**（400），读写失败是环境问题（500）。
+ * 判据是 `lib/server/saves.ts` 里 `[saves]` 前缀的约定 —— 那边的基线错误刻意不带
+ * 这个前缀，就是为了落到 500。
+ */
+const statusOf = (message: string | undefined): number =>
+  message?.startsWith("[saves]") ? 400 : 500;
+
+const errorResponse = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  return json({ ok: false, error: message }, statusOf(message));
+};
 
 const readBody = async (request: Request): Promise<Record<string, unknown> | null> => {
   try {
@@ -79,10 +99,23 @@ export const Route = createFileRoute("/api/saves")({
       },
 
       /**
-       * 写一份存档。
+       * 写盘。支持两种请求形状：
        *
-       * 真相源在磁盘上，所以这里的失败**必须让调用方知道** —— 客户端会把没写成功的
-       * 改动留在 journal 里重试，而不是当它已经存好了。
+       * **批量（新，推荐）**
+       * ```
+       * { "userId": "…", "ops": [{ "op": "write", "kind": "resume", "id": "…", "data": {…} },
+       *                          { "op": "delete", "kind": "jd", "id": "…" }] }
+       * → { ok: true, results: [{ key, ok, hash? , error? }], baseline: {…} }
+       * ```
+       * 删除也走这里（`op: "delete"`）而不是 HTTP 的 DELETE 方法，因为页面隐藏时的
+       * 兜底提交只能用 `navigator.sendBeacon`，而**它发不了 DELETE**。
+       *
+       * **单条（旧，S3 客户端切换后删除）** —— 请求体与响应形状保持原样，只是内部
+       * 改走同一套 `applySaveOps`，免得两处实现漂移。
+       *
+       * 无论哪种形状，失败**都必须让调用方知道**：客户端据此把没写成功的条目放回
+       * 队列重试，并把状态显示在界面上（`lib/saves/syncStatus.ts`）。
+       * 没有 journal 重放 —— 刷新页面会丢掉队列，靠首屏那次全量补写兜回来。
        */
       POST: async ({ request }) => {
         if (!savesEnabled()) return disabled();
@@ -90,7 +123,31 @@ export const Route = createFileRoute("/api/saves")({
         const payload = await readBody(request);
         if (!payload) return json({ ok: false, error: "请求体不是合法 JSON 对象" }, 400);
 
-        const { userId, kind, id, data } = payload;
+        const root = savesRoot();
+        const { userId, kind, id, data, ops } = payload;
+
+        // ── 批量形状 ──
+        if (Array.isArray(ops)) {
+          if (ops.length === 0) return json({ ok: false, error: "ops 不能为空" }, 400);
+          if (ops.length > MAX_OPS_PER_REQUEST) {
+            return json(
+              { ok: false, error: `ops 最多 ${MAX_OPS_PER_REQUEST} 条，收到 ${ops.length}` },
+              400
+            );
+          }
+          if (!ops.every(isSaveOp)) {
+            // 形状不对的条目直接拒绝整批：放过它只会让某一条静默失败
+            return json({ ok: false, error: "ops 里有形状不对的条目" }, 400);
+          }
+          try {
+            const { results, baseline } = await applySaveOps(root, userId, ops);
+            return json({ ok: true, results, baseline });
+          } catch (error) {
+            return errorResponse(error);
+          }
+        }
+
+        // ── 单条形状（旧）──
         if (!isSaveKind(kind)) {
           return json({ ok: false, error: `未知的 kind：${String(kind)}` }, 400);
         }
@@ -98,24 +155,37 @@ export const Route = createFileRoute("/api/saves")({
           return json({ ok: false, error: "缺少 data" }, 400);
         }
 
+        const op: SaveOp = {
+          op: "write",
+          kind,
+          id: typeof id === "string" ? id : undefined,
+          data,
+        };
         try {
-          const full = await writeSaveFile(savesRoot(), userId, kind, id, data);
+          const { results } = await applySaveOps(root, userId, [op]);
+          const result = results[0];
+          if (!result?.ok) {
+            return json({ ok: false, error: result?.error ?? "写入失败" }, statusOf(result?.error));
+          }
           // 只回相对路径：绝对路径对调用方没用，而 `root` 已经在 GET 里给过了
-          const rel = path.relative(savesRoot(), full);
+          const rel = path.relative(root, resolveSavePath(root, userId, kind, id));
           return json({ ok: true, path: rel });
         } catch (error) {
-          // 校验失败是**调用方的错**（400），写盘失败是环境问题（500）
-          const message = error instanceof Error ? error.message : String(error);
-          const isValidation = message.startsWith("[saves]");
-          return json({ ok: false, error: message }, isValidation ? 400 : 500);
+          return errorResponse(error);
         }
       },
 
       /**
-       * 删掉一份存档 —— 删简历 / 删岗位时，磁盘上那份文件要跟着消失。
+       * 删存档。两种范围，**必须显式指定**：
        *
-       * 安全校验走的是同一个 `resolveSavePath`，所以能删的范围与能写的范围完全一致。
-       * 注意这里**没有**「删整个用户目录」这个操作，理由见 `removeUserDir`。
+       * - `{ userId, kind, id }` —— 删一份存档（删简历 / 删岗位时跟着删文件）
+       * - `{ userId, scope: "user" }` —— 删掉这个用户的**整个目录**（删用户时连带清理）
+       *
+       * `scope` 刻意要求显式给出：漏传 `kind` 的请求如果默认走递归删除，就会把整个
+       * 用户删掉。宁可报 400，也不要一个"少写一个字段"就变成全删的默认值。
+       *
+       * 两种范围的安全校验是同一套（`resolveSavePath` / `resolveUserDir`），所以能删的
+       * 范围仍与能写的范围一致 —— 客户端传的是 userId 这个**路径片段**，从来不是路径。
        */
       DELETE: async ({ request }) => {
         if (!savesEnabled()) return disabled();
@@ -123,18 +193,35 @@ export const Route = createFileRoute("/api/saves")({
         const payload = await readBody(request);
         if (!payload) return json({ ok: false, error: "请求体不是合法 JSON 对象" }, 400);
 
-        const { userId, kind, id } = payload;
+        const root = savesRoot();
+        const { userId, kind, id, scope } = payload;
+
+        if (scope === "user") {
+          try {
+            const full = await removeUserDir(root, userId);
+            return json({ ok: true, path: path.relative(root, full) });
+          } catch (error) {
+            return errorResponse(error);
+          }
+        }
+        if (scope !== undefined) {
+          return json({ ok: false, error: `未知的 scope：${String(scope)}` }, 400);
+        }
+
         if (!isSaveKind(kind)) {
           return json({ ok: false, error: `未知的 kind：${String(kind)}` }, 400);
         }
 
+        const op: SaveOp = { op: "delete", kind, id: typeof id === "string" ? id : undefined };
         try {
-          const full = await removeSaveFile(savesRoot(), userId, kind, id);
-          return json({ ok: true, path: path.relative(savesRoot(), full) });
+          const { results } = await applySaveOps(root, userId, [op]);
+          const result = results[0];
+          if (!result?.ok) {
+            return json({ ok: false, error: result?.error ?? "删除失败" }, statusOf(result?.error));
+          }
+          return json({ ok: true, path: path.relative(root, resolveSavePath(root, userId, kind, id)) });
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          const isValidation = message.startsWith("[saves]");
-          return json({ ok: false, error: message }, isValidation ? 400 : 500);
+          return errorResponse(error);
         }
       },
     },

@@ -135,7 +135,8 @@ export const UserSelectDialog = ({ open, onOpenChange }: UserSelectDialogProps =
 
   const handleConfirmDelete = () => {
     if (!pendingDelete) return;
-    deleteUser(pendingDelete);
+    // 不 await：弹窗立刻关掉，磁盘那步在后台跑完（失败会弹提示）
+    void deleteUser(pendingDelete);
     setPendingDelete(null);
   };
 

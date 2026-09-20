@@ -9,12 +9,18 @@ import {
   type MirrorOp,
   type UserSnapshot,
 } from "@/lib/saves/mirror";
+import { setSyncStatus } from "@/lib/saves/syncStatus";
 
 /**
  * 把改动防抖镜像到磁盘上的 `saves/<userId>/`。
  *
- * 真相源仍是 localStorage —— 这里只做**单向**同步，请求失败不影响应用继续用
- * （所以全程不弹 toast，只在控制台提示一次）。
+ * ⚠️ **这是当前机制，S3 会把它换成「手动保存 + 五个明确时机」**
+ * （见 `plan/saves-design.md`）。触发方式会变，但 diff / 队列 / 重试这几层的语义不变，
+ * 所以现在改的是**可见性**，不是模型。
+ *
+ * 现状：真相源是浏览器，这里只做**单向**镜像 —— 请求失败不影响应用继续用
+ * （所以全程不弹 toast）。但它**不再静默**：状态推给 `lib/saves/syncStatus.ts`，
+ * `SaveBar` 上看得见。
  *
  * 为什么是订阅 store 而不是包一层 action：三个 store 的写入路径太多了
  * （简历 35 个 action、档案十几个），挨个包会漏。订阅是结构上不会漏的做法。
@@ -27,7 +33,7 @@ import {
 /** 防抖窗口。与编辑器写文件的 1500ms 同一个手感 */
 const DEBOUNCE_MS = 1500;
 
-/** 连续失败到这个次数就停手：静态部署下端点根本不存在，没必要一直打 */
+/** 连续失败到这个次数就停止自动重试。**但仍会在界面上说出来**，且可手动重试 */
 const MAX_FAILURES = 3;
 
 /**
@@ -47,9 +53,13 @@ const synced = new Map<string, UserSnapshot>();
 const pending = new Map<string, Map<string, MirrorOp>>();
 
 let timer: ReturnType<typeof setTimeout> | null = null;
+/** 正在飞的那批请求。`discardUser` 要等它落地，否则会与删目录互相追赶 */
+let inFlight: Promise<void> | null = null;
 let started = false;
 let failures = 0;
 let gaveUp = false;
+/** 端点不存在（404）。与 gaveUp 分开：这不是故障，是部署形态，不需要"重试" */
+let disabled = false;
 
 const currentUserId = (): string | null => useCareerProfileStore.getState().currentUserId;
 
@@ -59,9 +69,25 @@ const snapshotOf = (userId: string): UserSnapshot => ({
   targets: useJobTargetStore.getState().targetsByUser[userId] ?? {},
 });
 
-const send = async (userId: string, op: MirrorOp): Promise<boolean> => {
+const countPending = (): number => {
+  let total = 0;
+  for (const ops of Array.from(pending.values())) total += ops.size;
+  return total;
+};
+
+const pushStatus = (patch: Parameters<typeof setSyncStatus>[0]): void => {
+  setSyncStatus({ pendingCount: countPending(), ...patch });
+};
+
+type SendResult =
+  | { kind: "ok" }
+  | { kind: "fail"; detail: string }
+  | { kind: "disabled" };
+
+const send = async (userId: string, op: MirrorOp): Promise<SendResult> => {
+  let res: Response;
   try {
-    const res = await fetch("/api/saves", {
+    res = await fetch("/api/saves", {
       method: op.op === "write" ? "POST" : "DELETE",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -71,59 +97,111 @@ const send = async (userId: string, op: MirrorOp): Promise<boolean> => {
         data: op.op === "write" ? op.data : undefined,
       }),
     });
-    return res.ok;
   } catch {
-    return false;
+    // 网络层失败（断网、服务没起来）
+    return { kind: "fail", detail: "网络请求失败" };
   }
+
+  // 404 = 本次部署没有磁盘存档（`SAVES_ENABLED` 未开、或静态托管下端点不存在）。
+  // 这是**正常的部署形态**，不是故障：不重试、不报错，只在界面上说明。
+  if (res.status === 404) return { kind: "disabled" };
+  if (res.ok) return { kind: "ok" };
+
+  // 服务端的错误原文（如「内容超过 4194304 字节上限」）比一个状态码有用得多
+  const detail = await res.text().catch(() => "");
+  return { kind: "fail", detail: detail.slice(0, 200) || `HTTP ${res.status}` };
 };
 
 const schedule = () => {
-  if (gaveUp) return;
+  if (gaveUp || disabled) return;
   if (timer) clearTimeout(timer);
   timer = setTimeout(flush, DEBOUNCE_MS);
 };
 
 const flush = () => {
   timer = null;
+  if (gaveUp || disabled) return;
 
+  // 先把队列整体取出来（而不是边遍历边删），失败时再放回去
+  const jobs: Array<Promise<{ userId: string; key: string; op: MirrorOp; result: SendResult }>> = [];
   for (const [userId, ops] of Array.from(pending)) {
-    if (ops.size === 0) {
-      pending.delete(userId);
-      continue;
-    }
     pending.delete(userId);
-
-    void Promise.all(
-      Array.from(ops).map(async ([key, op]) => ({ key, op, ok: await send(userId, op) }))
-    ).then((results) => {
-      const failed = results.filter((r) => !r.ok);
-      if (failed.length === 0) {
-        failures = 0;
-        return;
-      }
-
-      failures += 1;
-      if (failures >= MAX_FAILURES) {
-        if (!gaveUp) {
-          gaveUp = true;
-          console.warn(
-            "[saves] 同步到 saves/ 连续失败，已停止尝试。浏览器里的数据不受影响。"
-          );
-        }
-        return;
-      }
-
-      // 失败的放回队列 —— 否则磁盘停在旧内容上，而基线以为已经同步过了
-      const bucket = pending.get(userId) ?? new Map<string, MirrorOp>();
-      for (const { key, op } of failed) bucket.set(key, op);
-      pending.set(userId, bucket);
-      schedule();
-    });
+    for (const [key, op] of Array.from(ops)) {
+      jobs.push(send(userId, op).then((result) => ({ userId, key, op, result })));
+    }
   }
+
+  if (jobs.length === 0) {
+    pushStatus({ phase: "idle" });
+    return;
+  }
+
+  pushStatus({ phase: "syncing" });
+
+  inFlight = Promise.all(jobs).then((results) => {
+    // 端点不存在：整体停止，队列丢掉 —— 写不进去就是写不进去，留着只会越攒越多
+    if (results.some((r) => r.result.kind === "disabled")) {
+      disabled = true;
+      pending.clear();
+      pushStatus({ phase: "disabled", lastError: null });
+      return;
+    }
+
+    const failed = results.filter(
+      (r): r is typeof r & { result: { kind: "fail"; detail: string } } =>
+        r.result.kind === "fail"
+    );
+
+    if (failed.length === 0) {
+      failures = 0;
+      pushStatus({
+        phase: "idle",
+        failures: 0,
+        lastSuccessAt: Date.now(),
+        lastError: null,
+      });
+      return;
+    }
+
+    failures += 1;
+
+    // 失败的放回队列 —— 否则磁盘停在旧内容上，而基线以为已经同步过了
+    for (const { userId, key, op } of failed) {
+      const bucket = pending.get(userId) ?? new Map<string, MirrorOp>();
+      bucket.set(key, op);
+      pending.set(userId, bucket);
+    }
+
+    const lastError = failed[0]?.result.detail ?? null;
+
+    if (failures >= MAX_FAILURES) {
+      if (!gaveUp) {
+        gaveUp = true;
+        console.warn(
+          `[saves] 同步到 saves/ 连续失败 ${failures} 次，已停止自动重试。` +
+            `浏览器里的数据不受影响，可在界面上手动重试。原因：${lastError ?? "未知"}`
+        );
+      }
+      pushStatus({ phase: "stopped", failures, lastError });
+      return;
+    }
+
+    pushStatus({ phase: "failed", failures, lastError });
+    schedule();
+  });
 };
 
 const sync = (userId: string | null) => {
-  if (gaveUp || !userId) return;
+  // ⚠️ 这里**只挡 disabled，不挡 gaveUp**。
+  //
+  // 曾经的写法是 `if (gaveUp || disabled || !userId) return`，那会让「已停止自动重试」
+  // 状态下的新改动**进不了队列**：用户点「立即写入」时先 `touchProfile()`（触发 sync，
+  // 被 gaveUp 吞掉）再 `flushNow()`（冲一个空队列），结果是界面上显示「已写入磁盘」
+  // 而磁盘上还是旧内容 —— 正是这个状态层要消灭的那类假状态。
+  //
+  // 不挡 gaveUp 也不会让队列无限涨：`mergePending` 按 `kind:id` 去重，队列长度上限
+  // 就是一个用户的条目数。而 `schedule()` 仍然挡着 gaveUp，所以不会自动重试刷屏。
+  if (disabled || !userId) return;
 
   const prev = synced.get(userId) ?? EMPTY_SNAPSHOT;
   const next = snapshotOf(userId);
@@ -135,6 +213,7 @@ const sync = (userId: string | null) => {
   // 放回队列重试，所以基线与队列始终自洽。
   synced.set(userId, next);
   pending.set(userId, mergePending(pending.get(userId) ?? new Map(), ops));
+  pushStatus({});
   schedule();
 };
 
@@ -159,6 +238,42 @@ const start = () => {
 
   // 首屏补一次：升级上来的存量数据、或上次没同步成功时，磁盘上还是空的
   sync(currentUserId());
+};
+
+/**
+ * 立刻写盘，不等防抖。
+ *
+ * 用户点「立即写入」时调用。**重置放弃状态**再冲一次 —— 用户明确要求了，
+ * 就不该因为前三次自动重试失败而拒绝执行。
+ */
+export const flushNow = (): void => {
+  if (disabled) return;
+  if (timer) {
+    clearTimeout(timer);
+    timer = null;
+  }
+  gaveUp = false;
+  failures = 0;
+  flush();
+};
+
+/**
+ * 把一个用户从镜像里彻底抹掉：**等他正在飞的那批写盘落地**，再清掉队列与基线。
+ *
+ * 为什么不能只删磁盘目录：删用户时队列里可能还留着这个用户的 op（他在 1.5s 防抖窗口
+ * 内被删掉），那次 flush 会在目录删掉**之后**把文件写回来 —— 目录就复活了。
+ * 实测见到过这个顺序：`POST 200` 追在 `DELETE 200` 后面。
+ *
+ * 所以顺序是「等在飞的落地 → 丢掉没发出去的 → 才去删目录」。等在飞的那批是必需的：
+ * 它可能正带着这个用户的内容，删完再落地就等于白删。
+ * 等完之后不会再为这个用户产生新 op —— store 里的数据已经清了。
+ */
+export const discardUser = async (userId: string): Promise<void> => {
+  await inFlight?.catch(() => {
+    // 那批失败了也无所谓：下面就把这个用户的队列整个丢掉
+  });
+  pending.delete(userId);
+  synced.delete(userId);
 };
 
 /**

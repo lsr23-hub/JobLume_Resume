@@ -842,13 +842,12 @@
       "notImage": "\"{name}\" is not an image file"
     },
     "save": {
-      "saved": "Saved",
-      "saving": "Saving…",
-      "never": "No changes yet",
       "button": "Save",
-      "success": "Saved locally",
-      "failed": "Save failed — browser storage may be full",
-      "autoNote": "Changes persist as you type; switching sections won't lose anything."
+      "diskSynced": "All changes written to disk",
+      "diskWriting": "Writing to disk…",
+      "diskFailed": "Disk write failed — retrying…",
+      "diskStopped": "Automatic writing stopped. Your changes are still in this browser.",
+      "diskDisabled": "This deployment has no disk archive — data lives only in this browser"
     },
     "import": {
       "button": "Import data",
@@ -956,7 +955,13 @@
     "deleteTitle": "Delete “{name}”?",
     "deleteBody": "This person's career profile, their {count} resume(s), and their analyses on every job target will all be deleted. This cannot be undone.",
     "deleteConfirm": "Delete",
+    "deleteDiskFailed": "Deleted locally, but the on-disk archive folder could not be removed",
     "cancel": "Cancel"
+  },
+  "sync": {
+    "retrying": "Disk write failed — retrying",
+    "stopped": "Disk writing stopped",
+    "retryHint": "Click to retry now. Changes are still in this browser."
   },
   "backup": {
     "title": "Backup",

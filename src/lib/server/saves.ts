@@ -1,6 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { SaveKind } from "@/lib/saves/kinds";
+// 值导入 + 下面那行 re-export：`export { x } from "…"` 不引入本地绑定，
+// 所以这里要单独 import 一次才能在 `isSaveOp` 里用
+import { randomUUID } from "node:crypto";
+import { isSaveKind, type SaveKind } from "@/lib/saves/kinds";
+import { contentHash } from "@/lib/saves/hash";
 
 export { isSaveKind, SAVE_KINDS, type SaveKind } from "@/lib/saves/kinds";
 
@@ -14,6 +18,7 @@ export { isSaveKind, SAVE_KINDS, type SaveKind } from "@/lib/saves/kinds";
  *
  * 目录形状（`.bak` 是上一版，见 `writeSaveFile`）：
  * ```
+ * saves/<userId>/.baseline.json      ← 同步基线，见下面的「基线」一节
  * saves/<userId>/profile.json
  * saves/<userId>/resumes/<resumeId>.json
  * saves/<userId>/jds/<targetId>.json
@@ -110,6 +115,58 @@ export const resolveUserDir = (root: string, userId: unknown): string => {
 export const MAX_SAVE_BYTES = 4 * 1024 * 1024;
 
 /**
+ * 先写临时文件再 `rename`。
+ *
+ * **同目录 rename 是原子的**：读者要么看到旧的完整文件，要么看到新的完整文件，
+ * 不会看到写了一半的。直接 `writeFile` 做不到 —— 崩溃、断电、或**两个请求同时写
+ * 同一个路径**都会留下半截内容（最后那种实测踩到过，见下面的 `withUserLock`）。
+ *
+ * 临时名**必须每次唯一**：用固定名的话，两个写入者（哪怕不同文件、不同进程）会争
+ * 同一个临时路径 —— 先完成的那次把文件 rename 走，另一处紧接着就 ENOENT。
+ * 这个坑是在去掉串行化做反向验证时暴露出来的：串行化只是**掩盖**了它，而不是修好了它。
+ *
+ * 崩溃留下的 `.tmp` 是孤儿，但无害：`listSaveIds` 只认 `<合法片段>.json`，看不见它，
+ * 而它最多占一次写入的体积（上限见 `MAX_SAVE_BYTES`）。
+ */
+const writeFileAtomic = async (full: string, body: string): Promise<void> => {
+  const tmp = `${full}.${randomUUID()}.tmp`;
+  await fs.writeFile(tmp, body, "utf8");
+  await fs.rename(tmp, full);
+};
+
+/**
+ * 每个用户一条串行链。**这是正确性要求，不是优化。**
+ *
+ * 起因（实测踩到）：客户端一次 flush 会为**同一个用户**并发发出多个请求 ——
+ * 旧的单条形状是「每个文件一个请求」，首屏全量同步时 N 个请求同时到。
+ * 而写入路径是「读基线 → 改 → 写回」的读-改-写，于是：
+ *   1. **丢更新**：N 个请求都读到同一份旧基线，各自写回，只有最后一个的改动留下
+ *   2. **文件损坏**：两次 `writeFile` 交错 —— A 截断后写了 91 字节，而 B 先前写的
+ *      更长内容在 91 字节之后残留。真实用户目录里出现过这种文件：合法 JSON 后面
+ *      跟着一段 32 位哈希碎片，`readBaseline` 从此每次都抛错，那个用户的写盘全挂
+ *
+ * 单进程部署下这一层就够了（本项目就是）。多副本部署要另加文件锁 —— 不是本项目的形态。
+ */
+const userLocks = new Map<string, Promise<void>>();
+
+const withUserLock = async <T>(userId: string, task: () => Promise<T>): Promise<T> => {
+  // 无论前一个成功还是失败，都要接着往下走 —— 否则一次失败会把后面全堵死
+  const previous = userLocks.get(userId) ?? Promise.resolve();
+  const run = previous.then(task, task);
+  const tail = run.then(
+    () => undefined,
+    () => undefined
+  );
+  userLocks.set(userId, tail);
+  try {
+    return await run;
+  } finally {
+    // 队尾还是自己 → 没人排队了，清掉，别为每个用户常驻一个 Promise
+    if (userLocks.get(userId) === tail) userLocks.delete(userId);
+  }
+};
+
+/**
  * 写一份存档。返回写入的绝对路径（供调用方回显/日志）。
  *
  * 只接受能 JSON 序列化的对象 —— 图片那类二进制以 `idb:` 引用形式留在 JSON 里，
@@ -131,6 +188,23 @@ export const writeSaveFile = async (
 
   await fs.mkdir(path.dirname(full), { recursive: true });
 
+  // 内容与磁盘上一字不差就**不写**。两件事同时被这一条解决：
+  //
+  // 1. 省一次 IO。客户端首屏会把该用户的全部文件重算一遍 diff（基线从空开始），
+  //    照写不误的话，每次打开页面都把所有文件重写一次。
+  // 2. **保住 `.bak` 的意义。** 它是「上一次写坏了」的后悔药，而覆盖前会 copyFile ——
+  //    若每次开机都照写，`.bak` 就被替换成同一份内容，那它再也救不了任何东西。
+  //
+  // 读失败（权限、目录、半截文件）一律当作「内容不同」，照常往下写 ——
+  // 不引入新的失败方式，该报的错由后面那次写入如实报出来。
+  let existing: string | null = null;
+  try {
+    existing = await fs.readFile(full, "utf8");
+  } catch {
+    existing = null;
+  }
+  if (existing === body) return full;
+
   // 覆盖之前把上一版留一份。存档是**唯一副本**，所以「写进去的内容是坏的」这件事
   // 没有第二处能兜底 —— 一次写出空档案就真没了。多一个 4KB 的文件换一次后悔药。
   //
@@ -144,7 +218,7 @@ export const writeSaveFile = async (
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }
 
-  await fs.writeFile(full, body, "utf8");
+  await writeFileAtomic(full, body);
   return full;
 };
 
@@ -172,6 +246,103 @@ export const removeSaveFile = async (
     fs.rm(full, { force: true }),
     fs.rm(`${full}.bak`, { force: true }),
   ]);
+  return full;
+};
+
+// ─────────────────────────────── 基线 ───────────────────────────────
+
+/** 基线文件名。**点开头**，所以不会被 `listSaveIds` 当成一份存档（它只认 `<合法片段>.json`） */
+export const BASELINE_FILENAME = ".baseline.json";
+
+/**
+ * 存档 schema 版本。**不兼容的改动必须 +1。**
+ *
+ * 读侧遇到比本程序更高的版本会拒绝读写，而不是猜着读 —— 猜错的方向是静默丢数据。
+ * 版本 1 是「没有基线文件」的时代（本文件之前只有内容文件）。
+ */
+export const SAVES_SCHEMA_VERSION = 2;
+
+export interface Baseline {
+  schemaVersion: number;
+  /** 键形如 `profile` / `resume:<id>` / `jd:<id>`，值是上次写盘时的内容哈希 */
+  records: Record<string, string>;
+}
+
+export const emptyBaseline = (): Baseline => ({
+  schemaVersion: SAVES_SCHEMA_VERSION,
+  records: {},
+});
+
+/** 一条记录在基线里的键。profile 没有 id —— 一个用户只有一份 */
+export const recordKey = (kind: SaveKind, id?: unknown): string =>
+  kind === "profile" ? "profile" : `${kind}:${String(id)}`;
+
+export const baselinePath = (root: string, userId: unknown): string =>
+  path.join(resolveUserDir(root, userId), BASELINE_FILENAME);
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
+/**
+ * 读基线。
+ *
+ * - 文件不存在 → **空基线**（还没写过盘，或是从没有基线的版本升上来的目录）
+ * - 形状不对 / 版本比本程序新 → **抛错**
+ *
+ * ⚠️ 这里的错误消息**刻意不带 `[saves]` 前缀**。路由按那个前缀区分「调用方的错（400）」
+ * 与「环境的错（500）」，而基线坏了是服务端自己的状态问题 —— 带上前缀会让它被
+ * 报成 400，把排查方向指错。
+ */
+export const readBaseline = async (root: string, userId: unknown): Promise<Baseline> => {
+  const full = baselinePath(root, userId);
+
+  let text: string;
+  try {
+    text = await fs.readFile(full, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return emptyBaseline();
+    throw error;
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error(`基线文件不是合法 JSON：${BASELINE_FILENAME}`);
+  }
+  if (!isRecord(parsed)) {
+    throw new Error(`基线文件形状不对：${BASELINE_FILENAME}`);
+  }
+  if (typeof parsed.schemaVersion !== "number") {
+    throw new Error(`基线文件缺少 schemaVersion：${BASELINE_FILENAME}`);
+  }
+  if (parsed.schemaVersion > SAVES_SCHEMA_VERSION) {
+    throw new Error(
+      `存档版本 ${parsed.schemaVersion} 高于本程序支持的 ${SAVES_SCHEMA_VERSION}，拒绝读写这个目录`
+    );
+  }
+
+  const records: Record<string, string> = {};
+  if (isRecord(parsed.records)) {
+    for (const [key, value] of Object.entries(parsed.records)) {
+      if (typeof value === "string") records[key] = value;
+    }
+  }
+  return { schemaVersion: SAVES_SCHEMA_VERSION, records };
+};
+
+/**
+ * 写基线。**不备份**（没有 `.bak`）：它是**派生数据** —— 每个哈希都能从对应的内容
+ * 文件重新算出来。所以它坏了的补救办法是重算，而不是回滚到上一版。
+ */
+export const writeBaseline = async (
+  root: string,
+  userId: unknown,
+  baseline: Baseline
+): Promise<string> => {
+  const full = baselinePath(root, userId);
+  await fs.mkdir(path.dirname(full), { recursive: true });
+  await writeFileAtomic(full, JSON.stringify(baseline, null, 2));
   return full;
 };
 
@@ -295,15 +466,126 @@ export const listUserIds = async (root: string): Promise<string[]> => {
 /**
  * 删掉一个用户的整个存档目录。
  *
- * **这是全项目唯一一处递归删除**，所以单独写一段理由：存档成为唯一真相源之后，
- * 在应用里删掉一个用户却不删目录，下次启动他会从磁盘上**复活**（连同简历与岗位）。
- * 单文件删除做不到这件事。
+ * **这是全项目唯一一处递归删除**，所以单独写一段理由：在应用里删掉一个用户却不删
+ * 目录，那个目录会一直留着；而启动对账（S4，见 `plan/saves-design.md` §4）一旦上线，
+ * 用户会从磁盘上**复活**（连同简历与岗位）。单文件删除做不到这件事。
  *
- * 边界收得比别处更紧：只接受一个路径片段，仍走 `isSafeSegment` + `path.relative`
- * 复核；**不接受客户端直接传路径**，调用方只能是服务器自己。
+ * 边界：只接受一个路径片段，仍走 `isSafeSegment` + `path.relative` 复核。
+ * **客户端可以传 userId，但永远不能传路径** —— 与写盘路径是同一个信任级别
+ * （`writeSaveFile` 也接客户端给的 userId）。区别在于这里一次删掉整棵子树，
+ * 所以它是唯一接受"递归删除"这个动作的地方，校验不允许有一丝松动。
  */
 export const removeUserDir = async (root: string, userId: unknown): Promise<string> => {
   const full = resolveUserDir(root, userId);
   await fs.rm(full, { recursive: true, force: true });
   return full;
+};
+
+// ─────────────────────── 批量写入（编排） ───────────────────────
+
+export interface WriteOp {
+  op: "write";
+  kind: SaveKind;
+  id?: string;
+  data: unknown;
+}
+
+export interface DeleteOp {
+  op: "delete";
+  kind: SaveKind;
+  id?: string;
+}
+
+export type SaveOp = WriteOp | DeleteOp;
+
+export interface OpResult {
+  key: string;
+  ok: boolean;
+  /** 写入成功时的内容哈希（客户端拿它当新基线）。删除成功没有这个字段 */
+  hash?: string;
+  /** 失败原因原文，可直接用于排查 */
+  error?: string;
+}
+
+export interface ApplyResult {
+  results: OpResult[];
+  /** 全部处理完之后的最新基线 */
+  baseline: Baseline;
+}
+
+/** 单次请求的 op 数上限。挡的是「一个请求做几十万次写盘」这类滥用 */
+export const MAX_OPS_PER_REQUEST = 500;
+
+export const isSaveOp = (value: unknown): value is SaveOp => {
+  if (!isRecord(value)) return false;
+  if (!isSaveKind(value.kind)) return false;
+  if (value.id !== undefined && value.id !== null && typeof value.id !== "string") return false;
+  if (value.op === "delete") return true;
+  return value.op === "write" && value.data !== undefined;
+};
+
+/**
+ * 一批 op 逐个落到磁盘，最后统一更新基线。
+ *
+ * **逐条隔离，整批不原子。** 写多个文件做不到跨文件事务，所以这里不假装能：
+ * 每条独立成败由 `results` 如实报出，客户端只把成功的从待写队列里摘掉。
+ * 基线的更新放在**全部 op 处理完之后**（一次写），因为它是「哪些内容已经落盘」
+ * 的记录 —— 中途更新会让没写成功的条目被误记为已同步。
+ *
+ * 哈希由这里算，客户端直接采信返回值。算的是**刚写下去的那份内容**：调用方传进来的
+ * 对象与 `JSON.parse(文件内容)` 在本项目的序列化规则下哈希相同（键序无关、`undefined`
+ * 键丢弃、非有限数字变 `null`），所以客户端从磁盘重算也能得到同样的值 ——
+ * `saves.test.ts` 有一条专门钉这个往返不变量的用例。
+ */
+export const applySaveOps = async (
+  root: string,
+  userId: unknown,
+  ops: SaveOp[]
+): Promise<ApplyResult> => {
+  // userId 先一次性校验：它非法的话每条 op 都会失败，不如直接抛出去（路由映射成 400）。
+  // 校验放在锁外 —— 非法输入不必排队
+  const dir = resolveUserDir(root, userId);
+
+  // 同一个用户的写盘串行执行，理由见 `withUserLock`
+  return withUserLock(dir, () => runSaveOps(root, userId, ops));
+};
+
+const runSaveOps = async (
+  root: string,
+  userId: unknown,
+  ops: SaveOp[]
+): Promise<ApplyResult> => {
+  const baseline = await readBaseline(root, userId);
+  const results: OpResult[] = [];
+  let changed = false;
+
+  for (const op of ops) {
+    const key = recordKey(op.kind, op.id);
+    try {
+      if (op.op === "write") {
+        await writeSaveFile(root, userId, op.kind, op.id, op.data);
+        const hash = await contentHash(op.data);
+        baseline.records[key] = hash;
+        results.push({ key, ok: true, hash });
+      } else {
+        await removeSaveFile(root, userId, op.kind, op.id);
+        delete baseline.records[key];
+        results.push({ key, ok: true });
+      }
+      changed = true;
+    } catch (error) {
+      // 一条坏数据不该让整批白写 —— 好的那几条照常落盘
+      results.push({
+        key,
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  if (changed) {
+    baseline.schemaVersion = SAVES_SCHEMA_VERSION;
+    await writeBaseline(root, userId, baseline);
+  }
+  return { results, baseline };
 };

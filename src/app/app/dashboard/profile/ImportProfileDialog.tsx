@@ -6,6 +6,7 @@ import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { useJobTargetStore } from "@/store/useJobTargetStore";
 import { useResumeStore } from "@/store/useResumeStore";
 import { buildBackup, parseProfileArchive } from "@/lib/backup";
+import { hasUsableProfile } from "@/lib/profile/hasUsableProfile";
 import type { CareerProfile } from "@/types/profile";
 import { downloadBlob } from "@/utils/export";
 import { Button } from "@/components/ui/button";
@@ -19,10 +20,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-/** 当前数据库是否已有内容 —— 空库直接替换，不必打扰用户 */
-const hasContent = (profile: CareerProfile | null): boolean =>
-  Boolean(profile && (profile.basic.name.trim() || Object.keys(profile.entities).length > 0));
 
 /**
  * 导入职业数据库。
@@ -51,8 +48,13 @@ export const ImportProfileDialog = () => {
       toast.error(t("import.invalid"), { description: parsed.error });
       return;
     }
-    // 空库直接替换
-    if (!hasContent(profile)) {
+    // 空库直接替换，不必打扰用户。
+    //
+    // ⚠️ 判定必须用 `hasUsableProfile`（与 store 迁移、生成简历向导共用同一份）。
+    // 这里原本有一份只看「姓名 + 条目」的本地判定，于是**只有技能分组 / 证书奖项 /
+    // 语言能力 / 自我评价的库会被判成空库 → 直接替换、不问、也不给存档机会**，
+    // 而那几项恰恰是最难重建的（技能分组是手工排出来的）。
+    if (!hasUsableProfile(profile)) {
       applyImport(parsed.profile);
       return;
     }

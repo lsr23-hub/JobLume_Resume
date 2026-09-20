@@ -24,6 +24,7 @@ import Logo from "@/components/shared/Logo";
 import { useLocale, useTranslations } from "@/i18n/compat/client";
 import { CurrentUserChip } from "./CurrentUserChip";
 import { useSavesMirror } from "@/hooks/useSavesMirror";
+import { SyncStatusBadge } from "@/components/shared/SyncStatusBadge";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 
 interface MenuItem {
@@ -162,6 +163,8 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
               <div className="min-w-0 flex-1">
                 <CurrentUserChip />
               </div>
+              {/* 写盘出问题时才出现（见组件头注释） */}
+              <SyncStatusBadge />
               {/* 工作台此前没有任何明暗切换入口 —— 只有编辑器头部有 */}
               <ThemeToggle mode="toggle" />
             </div>

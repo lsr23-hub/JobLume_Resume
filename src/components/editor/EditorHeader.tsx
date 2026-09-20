@@ -18,6 +18,7 @@ import {
   TooltipTrigger
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { SyncStatusBadge } from "../shared/SyncStatusBadge";
 
 interface EditorHeaderProps {
   isMobile?: boolean;
@@ -112,6 +113,8 @@ export function EditorHeader({ isMobile }: EditorHeaderProps) {
         </div>
 
         <div className="flex items-center space-x-3">
+          {/* 编辑器不在 DashboardLayout 之下，写盘失败在这里也要看得见 */}
+          <SyncStatusBadge />
           <div className="hidden md:flex items-center gap-1">
             <TooltipProvider delayDuration={100}>
               <Tooltip>
