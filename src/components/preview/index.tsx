@@ -11,14 +11,12 @@ import { useTranslations } from "@/i18n/compat/client";
 import { normalizeFontFamily } from "@/utils/fonts";
 import ResumeTemplateComponent from "../templates";
 
-interface PreviewPanelProps {
-  sidePanelCollapsed: boolean;
-  editPanelCollapsed: boolean;
-  previewPanelCollapsed: boolean;
-  toggleSidePanel: () => void;
-  toggleEditPanel: () => void;
-  togglePreviewPanel: () => void;
-}
+/**
+ * 面板折叠状态**不在这里** —— 早期版本把 6 个折叠相关的 props 传进来，
+ * 但函数体从未读过它们（实测逐名 grep：只出现在声明与解构两处）。
+ * 折叠由外层 `workbench/[id]/page.tsx` 与 `MobileWorkbench` 自己控制。
+ */
+interface PreviewPanelProps {}
 
 const PageBreakLine = React.memo(
   ({
@@ -55,14 +53,7 @@ PageBreakLine.displayName = "PageBreakLine";
 
 const PreviewPanel = React.forwardRef<HTMLDivElement, PreviewPanelProps>(
   (
-    {
-      sidePanelCollapsed,
-      editPanelCollapsed,
-      previewPanelCollapsed,
-      toggleSidePanel,
-      toggleEditPanel,
-      togglePreviewPanel,
-    },
+    _props,
     ref
   ) => {
     const { activeResume, setActiveSection } = useResumeStore();
@@ -77,8 +68,6 @@ const PreviewPanel = React.forwardRef<HTMLDivElement, PreviewPanelProps>(
       );
     }, [activeResume?.templateId]);
 
-    const startRef = useRef<HTMLDivElement>(null);
-    const previewRef = useRef<HTMLDivElement>(null);
     const internalResumeContentRef = useRef<HTMLDivElement>(null);
     const resumeContentRef = (ref as React.MutableRefObject<HTMLDivElement>) || internalResumeContentRef;
     const [contentHeight, setContentHeight] = useState(0);
@@ -216,7 +205,6 @@ const PreviewPanel = React.forwardRef<HTMLDivElement, PreviewPanelProps>(
 
     return (
       <div
-        ref={previewRef}
         className="relative w-full h-full  bg-muted"
         style={{
           fontFamily: selectedFontFamily,
@@ -224,7 +212,6 @@ const PreviewPanel = React.forwardRef<HTMLDivElement, PreviewPanelProps>(
       >
         <div className="py-4 ml-4 px-4 min-h-screen flex justify-center scale-[58%] origin-top md:scale-90 md:origin-top-left">
           <div
-            ref={startRef}
             className={cn(
               "w-[210mm] min-w-[210mm] min-h-[297mm]",
               "bg-white",

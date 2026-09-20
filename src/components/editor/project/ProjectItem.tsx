@@ -18,8 +18,6 @@ import { Input } from "@/components/ui/input";
 interface ProjectEditorProps {
   project: Project;
   onSave: (project: Project) => void;
-  onDelete: () => void;
-  onCancel: () => void;
 }
 
 const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, onSave }) => {
@@ -285,11 +283,6 @@ const ProjectItem = ({ project }: { project: Project }) => {
                   onSave={(updatedProject) => {
                     updateProjects(updatedProject);
                   }}
-                  onDelete={() => {
-                    deleteProject(project.id);
-                    setExpandedId(null);
-                  }}
-                  onCancel={() => setExpandedId(null)}
                 />
               </div>
             </motion.div>

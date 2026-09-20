@@ -1,0 +1,15 @@
+{
+  "src 文件数": 302,
+  "src 行数": 38174,
+  "src 字节": 1427607,
+  "scripts 文件数": 20,
+  "scripts 行数": 3404,
+  "依赖数 (dependencies)": 49,
+  "依赖数 (devDependencies)": 22,
+  "dist/client 文件数": 74,
+  "dist/client 字节": 20391358,
+  "dist/client JS 字节": 3159122,
+  "dist/client CSS 字节": 317342,
+  "dist/client 字体字节": 15067620,
+  "dist/client 图片字节": 1838641
+}

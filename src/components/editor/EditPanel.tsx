@@ -1,4 +1,3 @@
-import React from "react";
 import { Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 import { useResumeStore } from "@/store/useResumeStore";

@@ -17,8 +17,6 @@ import { useTranslations } from "@/i18n/compat/client";
 interface ProjectEditorProps {
   experience: Experience;
   onSave: (experience: Experience) => void;
-  onDelete: () => void;
-  onCancel: () => void;
 }
 
 const ProjectEditor: React.FC<ProjectEditorProps> = ({
@@ -238,11 +236,6 @@ const ExperienceItem = ({ experience }: { experience: Experience }) => {
                 <ProjectEditor
                   experience={experience}
                   onSave={updateExperience}
-                  onDelete={() => {
-                    deleteExperience(experience.id);
-                    setExpandedId(null);
-                  }}
-                  onCancel={() => setExpandedId(null)}
                 />
               </div>
             </motion.div>

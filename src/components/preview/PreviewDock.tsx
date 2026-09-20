@@ -1,25 +1,10 @@
-import React, { useCallback, useState } from "react";
-import {
-  Edit2,
-  PanelRightClose,
-  PanelRightOpen,
-  Home,
-  Copy,
-  Download,
-  Printer,
-  FileJson,
-  Loader2,
-  Eye,
-  FileText,
-  EyeOff
-} from "lucide-react";
-import { RiMarkdownLine } from "@remixicon/react";
+import React, { useCallback } from "react";
+import { Edit2, PanelRightClose, PanelRightOpen, Home, Copy, Download, Eye, FileText, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useTranslations } from "@/i18n/compat/client";
 import { useRouter } from "@/lib/navigation";
 import { Dock, DockIcon } from "@/components/magicui/dock";
-import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,

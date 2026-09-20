@@ -112,15 +112,10 @@
       "importError": "配置导入失败，请检查文件格式",
       "importDialog": {
         "title": "导入",
+        "description": "从文件导入已导出的简历配置。",
         "jsonTitle": "导入 JSON",
         "jsonDescription": "导入已导出的简历配置文件（.json）",
-        "pdfTitle": "导入 PDF",
-        "pdfDescription": "用 AI 识别 PDF 简历，把教育 / 工作 / 项目**存进职业数据库** —— 之后可以反复生成不同岗位的简历",
-        "importing": "正在导入，请稍候...",
-        "aiConfigRequired": "请先在 AI 设置页填入 DeepSeek API Key",
-        "pdfSuccess": "已把 {count} 条经历导入职业数据库",
-        "pdfError": "PDF 导入失败，请检查 PDF 内容或 AI 配置",
-        "pdfNothingExtracted": "没从这份 PDF 里识别出可用内容"
+        "importing": "正在导入，请稍候..."
       },
       "deleteConfirmTitle": "确认删除简历？",
       "deleteConfirmDescription": "此操作无法撤销。这将永久删除此简历，并从设备中移除数据。",
@@ -208,7 +203,8 @@
       "longPageImageDesc": "将整份简历导出为单张 PNG 长图。适合移动端预览、作品集展示和图片上传，不建议用于正式投递或打印。",
       "jsonDesc": "保存您的配置档案副本。日后更换设备或清理缓存后，可使用此文件一键无损导入恢复进度。",
       "markdownDesc": "转换为极简的文本标记语言文件，方便快速粘贴给各种 AI 模型或是其他文本编辑器。",
-      "privacyNotice": "职光简历承诺绝不收集、上传或存储您的任何简历数据，您的隐私完全受到保护。"
+      "privacyNotice": "职光简历承诺绝不收集、上传或存储您的任何简历数据，您的隐私完全受到保护。",
+        "credentialNotice": "导出与备份都不包含 GitHub Access Token 等凭据 —— 文件会离开本机，凭据不该跟着走。重新导入后需在编辑器里重填一次。"
     },
     "button": {
       "export": "导出",
@@ -730,6 +726,7 @@
     "generatedTitle": "通用简历",
     "generateSuccess": "已生成简历，正在打开工作台",
     "untitled": "未命名",
+    "empty": "这里还没有内容。点下方「添加条目」录入第一条。",
     "newEntityTitle": "新条目",
     "addEntity": "添加条目",
     "delete": "删除",
@@ -759,7 +756,7 @@
       "title": "匹配提示（可选）",
       "why": "这些信息不会出现在简历上，仅用于后续的岗位匹配分析。全部留空也能正常使用。",
       "category": "类别",
-      "category.placeholder": "如：金融、计算机、运营 —— 回车确认",
+      "categoryPlaceholder": "如：金融、计算机、运营 —— 回车确认",
       "categoryNote": "第一个标签是「类别」。通用简历排序时，同类经历过多会被依次降权，避免简历变成单一领域。",
       "skills": "技能关键词",
       "metrics": "量化成果",
@@ -872,6 +869,7 @@
       "success": "职业数据库已另存为文件"
     },
     "certificatesLabel": "证书奖项",
+    "languageLabel": "语言能力",
     "autoTag": {
       "button": "自动归类",
       "done": "已为 {count} 条经历归类",

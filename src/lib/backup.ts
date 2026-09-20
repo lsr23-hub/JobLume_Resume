@@ -38,13 +38,37 @@ export interface BuildBackupInput {
   ownerName?: string;
 }
 
+/**
+ * 把简历里的凭据摘掉。
+ *
+ * 目前只有 `basic.githubKey`（GitHub personal access token，用于拉贡献日历）。
+ *
+ * **为什么导出必须摘**：这个字段跟着简历走，而简历是要给别人的 ——
+ * 导出的 JSON 会发给招聘方、贴进 gist、存进公开仓库。带上 token 等于把
+ * 一把能读写该用户仓库的钥匙一起送出去。备份文件同理，它落在下载目录、
+ * 云盘、同步文件夹里，同样是明文静态存放。
+ *
+ * **为什么是摘掉而不是加密**：token 是用户随时能从 GitHub 重新生成的，
+ * 丢了只是要重填一次，代价明确且可恢复；而泄漏是不可撤销的。
+ *
+ * ⚠️ **只在导出路径调用，不要用在 store 写入或存档镜像上** ——
+ * 那两条路径上的 token 必须留着，否则贡献日历会当场失效。
+ */
+export const stripResumeCredentials = (
+  resume: ResumeData
+): ResumeData => ({
+  ...resume,
+  basic: { ...resume.basic, githubKey: "" },
+});
+
 export const buildBackup = (input: BuildBackupInput): BackupPayload => ({
   app: BACKUP_APP_ID,
   version: BACKUP_VERSION,
   exportedAt: input.now,
   profileOwner: input.ownerName?.trim() || undefined,
   profile: input.profile,
-  resumes: Object.values(input.resumes),
+  // 简历里带 GitHub token，备份文件会被下载、云同步、发给同事 —— 摘掉
+  resumes: Object.values(input.resumes).map(stripResumeCredentials),
   targets: Object.values(input.targets),
 });
 

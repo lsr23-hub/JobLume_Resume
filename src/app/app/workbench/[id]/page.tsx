@@ -1,7 +1,5 @@
 
-import { useState, useEffect, memo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Eye, Edit2, Menu, PanelLeft, Minimize2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { EditorHeader } from "@/components/editor/EditorHeader";
 import { SidePanel } from "@/components/editor/SidePanel";
 import { EditPanel } from "@/components/editor/EditPanel";
@@ -9,31 +7,14 @@ import PreviewPanel from "@/components/preview";
 import PreviewDock from "@/components/preview/PreviewDock";
 import { MobileWorkbench } from "@/components/mobile/MobileWorkbench";
 import { PanelResizeHandle } from "react-resizable-panels";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
+import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useSavesMirror } from "@/hooks/useSavesMirror";
 
-const LAYOUT_CONFIG = {
-  DEFAULT: [20, 32, 48],
-  SIDE_COLLAPSED: [50, 50],
-  EDIT_FOCUSED: [20, 80],
-  PREVIEW_FOCUSED: [20, 80],
-};
+/** 三栏初始宽度百分比。折叠/聚焦的尺寸由下面的 effect 现算，不再预置常量 */
+const DEFAULT_PANEL_SIZES = [20, 32, 48];
 
-const DragHandle = ({ show = true }) => {
-  if (!show) return null;
-
+const DragHandle = () => {
   return (
     <PanelResizeHandle className="relative flex w-px items-center justify-center outline-none group cursor-col-resize">
       {/* 垂直分割线 - 最底层 */}
@@ -60,106 +41,6 @@ const DragHandle = ({ show = true }) => {
   );
 };
 
-const LayoutControls = memo(
-  ({
-    sidePanelCollapsed,
-    editPanelCollapsed,
-    previewPanelCollapsed,
-    toggleSidePanel,
-    toggleEditPanel,
-    togglePreviewPanel,
-  }: {
-    sidePanelCollapsed: boolean;
-    editPanelCollapsed: boolean;
-    previewPanelCollapsed: boolean;
-    toggleSidePanel: () => void;
-    toggleEditPanel: () => void;
-    togglePreviewPanel: () => void;
-  }) => (
-    <div
-      className={cn(
-        "absolute bottom-6 left-1/2 -translate-x-1/2",
-        "flex items-center gap-2 z-10 p-2 rounded-full",
-        "flex items-center gap-2 z-10 p-2 rounded-full",
-        "bg-background/80 border border-border",
-        "backdrop-blur-sm shadow-lg"
-      )}
-    >
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant={sidePanelCollapsed ? "secondary" : "ghost"}
-              size="icon"
-              className="h-9 w-9 rounded-full"
-              onClick={toggleSidePanel}
-            >
-              <PanelLeft className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="text-xs">
-              {sidePanelCollapsed ? "展开侧边栏" : "收起侧边栏"}
-            </p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
-      <div className={cn("h-5 w-px mx-1", "bg-border")} />
-
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant={editPanelCollapsed ? "secondary" : "ghost"}
-              size="icon"
-              className="h-9 w-9 rounded-full"
-              onClick={toggleEditPanel}
-            >
-              {editPanelCollapsed ? (
-                <Edit2 className="h-4 w-4" />
-              ) : (
-                <Minimize2 className="h-4 w-4" />
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="text-xs">
-              {editPanelCollapsed ? "展开编辑面板" : "收起编辑面板"}
-            </p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant={previewPanelCollapsed ? "secondary" : "ghost"}
-              size="icon"
-              className="h-9 w-9 rounded-full"
-              onClick={togglePreviewPanel}
-            >
-              {previewPanelCollapsed ? (
-                <Eye className="h-4 w-4" />
-              ) : (
-                <Minimize2 className="h-4 w-4" />
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="text-xs">
-              {previewPanelCollapsed ? "展开预览面板" : "收起预览面板"}
-            </p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </div>
-  )
-);
-
-LayoutControls.displayName = "LayoutControls";
-
 export const runtime = "edge";
 
 export default function Home() {
@@ -169,7 +50,7 @@ export default function Home() {
   const [sidePanelCollapsed, setSidePanelCollapsed] = useState(false);
   const [editPanelCollapsed, setEditPanelCollapsed] = useState(false);
   const [previewPanelCollapsed, setPreviewPanelCollapsed] = useState(false);
-  const [panelSizes, setPanelSizes] = useState<number[]>(LAYOUT_CONFIG.DEFAULT);
+  const [panelSizes, setPanelSizes] = useState<number[]>(DEFAULT_PANEL_SIZES);
 
   const toggleSidePanel = () => {
     setSidePanelCollapsed(!sidePanelCollapsed);
@@ -344,14 +225,7 @@ export default function Home() {
                 className="h-full overflow-y-auto"
                 data-preview-scroll-container="true"
               >
-                <PreviewPanel
-                  sidePanelCollapsed={sidePanelCollapsed}
-                  editPanelCollapsed={editPanelCollapsed}
-                  previewPanelCollapsed={previewPanelCollapsed}
-                  toggleSidePanel={toggleSidePanel}
-                  toggleEditPanel={toggleEditPanel}
-                  togglePreviewPanel={togglePreviewPanel}
-                />
+                <PreviewPanel />
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>

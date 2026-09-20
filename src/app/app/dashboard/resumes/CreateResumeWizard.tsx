@@ -1,14 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Target,
-  FileText,
-  ChevronLeft,
-  X,
-  Plus,
-  TriangleAlert,
-  Loader2,
-} from "lucide-react";
+import { Target, FileText, ChevronLeft, X, Plus } from "lucide-react";
 import { useTranslations } from "@/i18n/compat/client";
 import { useRouter } from "@/lib/navigation";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
@@ -46,7 +38,7 @@ interface Props {
   onComplete: (choice: WizardChoice) => void;
 }
 
-type Step = "mode" | "target" | "template" | "fit" | "content";
+type Step = "mode" | "target" | "template" | "content";
 
 /**
  * 新建简历向导。

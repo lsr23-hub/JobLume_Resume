@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslations } from "@/i18n/compat/client";
-import { Download, Loader2, ChevronDown, ShieldCheck } from "lucide-react";
+import { Download, Loader2, ChevronDown, KeyRound, ShieldCheck } from "lucide-react";
 import { useResumeStore } from "@/store/useResumeStore";
 import { Button } from "@/components/ui/button";
 import {
@@ -301,6 +301,18 @@ const PdfExport = ({ children }: { children?: React.ReactNode }) => {
             <ShieldCheck className="w-4 h-4 shrink-0" />
             <p className="text-[13px] font-medium">
               {t("modal.privacyNotice")}
+            </p>
+          </div>
+
+          {/*
+            凭据说明。存在的理由：导出时会把 GitHub Access Token 摘掉
+            （见 `lib/backup.ts` 的 stripResumeCredentials），而这是**静默**的 ——
+            不说一句，用户重新导入后会以为贡献日历坏了。
+          */}
+          <div className="mt-2 flex items-start gap-2 p-3 sm:px-4 rounded-xl bg-muted/40 border border-border/50 text-muted-foreground">
+            <KeyRound className="w-4 h-4 shrink-0 mt-0.5" />
+            <p className="text-[13px] leading-relaxed">
+              {t("modal.credentialNotice")}
             </p>
           </div>
         </div>

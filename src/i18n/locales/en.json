@@ -112,15 +112,10 @@
       "importError": "Import failed, please check the file format",
       "importDialog": {
         "title": "Import",
+        "description": "Import an exported resume config from a file.",
         "jsonTitle": "Import JSON",
         "jsonDescription": "Import an exported resume config file (.json)",
-        "pdfTitle": "Import PDF",
-        "pdfDescription": "Use AI to read a PDF resume and **save education / work / projects into your career database** — so you can generate résumés for different roles later",
-        "importing": "Importing, please wait...",
-        "aiConfigRequired": "Please configure your DeepSeek API Key in AI settings first",
-        "pdfSuccess": "Imported {count} entries into your career database",
-        "pdfError": "PDF import failed. Check the PDF content or your AI configuration",
-        "pdfNothingExtracted": "Nothing usable was recognised in this PDF"
+        "importing": "Importing, please wait..."
       },
       "deleteConfirmTitle": "Confirm Delete Resume?",
       "deleteConfirmDescription": "This action cannot be undone. This will permanently delete this resume and remove the data from your device.",
@@ -208,7 +203,8 @@
       "longPageImageDesc": "Exports the entire resume as a single tall PNG. Best for mobile preview, portfolios, and image uploads; not recommended for formal applications or printing.",
       "jsonDesc": "Export your resume data as JSON to backup or transfer between devices.",
       "markdownDesc": "Convert to plain Markdown text for easy sharing with AI models.",
-      "privacyNotice": "JobLume promise never to collect, upload, or store any of your resume data. Your privacy is fully protected."
+      "privacyNotice": "JobLume promise never to collect, upload, or store any of your resume data. Your privacy is fully protected.",
+        "credentialNotice": "Exports and backups never include credentials such as your GitHub access token \u2014 these files leave your machine, and credentials should not travel with them. You will need to re-enter it in the editor after importing."
     },
     "button": {
       "export": "Export",
@@ -729,6 +725,7 @@
     "generatedTitle": "General Resume",
     "generateSuccess": "Resume generated, opening workbench",
     "untitled": "Untitled",
+    "empty": "Nothing here yet. Use \u201cAdd entry\u201d below to create your first one.",
     "newEntityTitle": "New entry",
     "addEntity": "Add entry",
     "delete": "Delete",
@@ -758,7 +755,7 @@
       "title": "Matching hints (optional)",
       "why": "These never appear on the resume. They only feed the future job-matching analysis. Leaving all of them empty is fine.",
       "category": "Category",
-      "category.placeholder": "e.g. Finance, Engineering, Operations — press Enter",
+      "categoryPlaceholder": "e.g. Finance, Engineering, Operations — press Enter",
       "categoryNote": "The first tag is the category. In general-resume ranking, too many entries from one category get down-weighted so the resume doesn't collapse into a single field.",
       "skills": "Skill keywords",
       "metrics": "Quantified results",
@@ -871,6 +868,7 @@
       "success": "Career database saved to a file"
     },
     "certificatesLabel": "Certificates",
+    "languageLabel": "Languages",
     "autoTag": {
       "button": "Auto-categorise",
       "done": "Categorised {count} entries",

@@ -125,15 +125,7 @@ export function MobileWorkbench() {
               className="h-full overflow-y-auto bg-muted"
               data-preview-scroll-container="true"
             >
-              <PreviewPanel
-                sidePanelCollapsed={true}
-                editPanelCollapsed={true}
-                previewPanelCollapsed={false}
-                toggleSidePanel={() => {}}
-                toggleEditPanel={() => {}}
-                // 移动端把预览单独占一屏，没有「折叠预览」这个动作
-                togglePreviewPanel={() => {}}
-              />
+              <PreviewPanel />
             </motion.div>
           )}
         </AnimatePresence>

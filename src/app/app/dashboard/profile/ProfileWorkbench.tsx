@@ -50,7 +50,6 @@ const ProfileWorkbenchInner = () => {
       return <EntityList sectionId={activeSection} />;
     }
 
-    return <Placeholder title={t("unknownSection")} body="" />;
   };
 
   return (
@@ -105,13 +104,6 @@ const ProfileWorkbenchInner = () => {
     </div>
   );
 };
-
-const Placeholder = ({ title, body }: { title: string; body: string }) => (
-  <div className="rounded-xl border border-dashed border-border/60 p-10 text-center">
-    <p className="font-medium">{title}</p>
-    {body && <p className="mt-2 text-sm text-muted-foreground">{body}</p>}
-  </div>
-);
 
 /**
  * 进「职业数据库」之前必须先有当前用户：没有就渲染用户选择弹窗，

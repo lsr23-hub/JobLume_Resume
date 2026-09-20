@@ -7,6 +7,7 @@
   "scripts": {
     "build": "vite build",
     "canary": "tsx scripts/match-canary.ts",
+    "audit:i18n-ui": "node scripts/audit/i18n-ui-check.mjs",
     "dev": "SAVES_ENABLED=1 vite dev",
     "e2e:acceptance": "tsx scripts/e2e/acceptance.ts",
     "e2e:core": "node scripts/e2e/core-flow.mjs",
@@ -28,8 +29,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@heroui/react": "^2.8.8",
-    "@heroui/theme": "^2.4.26",
     "@radix-ui/react-accordion": "^1.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.2",
     "@radix-ui/react-dialog": "^1.1.2",

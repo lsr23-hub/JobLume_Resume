@@ -6,24 +6,19 @@ import zhCN from "antd/locale/zh_CN";
 import "dayjs/locale/zh-cn";
 import "dayjs/locale/en";
 import { ThemeProvider, useTheme } from "next-themes";
-import { HeroUIProvider } from "@heroui/react";
 import { useLocale } from "@/i18n/compat/client";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const locale = useLocale();
-
   return (
-    <HeroUIProvider locale={locale}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="light"
-        enableSystem
-        disableTransitionOnChange
-        storageKey="joblume-theme"
-      >
-        <AntdProvider>{children}</AntdProvider>
-      </ThemeProvider>
-    </HeroUIProvider>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="light"
+      enableSystem
+      disableTransitionOnChange
+      storageKey="joblume-theme"
+    >
+      <AntdProvider>{children}</AntdProvider>
+    </ThemeProvider>
   );
 }
 

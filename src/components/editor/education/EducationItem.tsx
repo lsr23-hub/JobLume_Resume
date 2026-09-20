@@ -17,8 +17,6 @@ import { useTranslations } from "@/i18n/compat/client";
 interface EducationEditorProps {
   education: Education;
   onSave: (education: Education) => void;
-  onDelete: () => void;
-  onCancel: () => void;
 }
 
 const EducationEditor: React.FC<EducationEditorProps> = ({
@@ -276,11 +274,6 @@ const EducationItem = ({ education }: { education: Education }) => {
                 <EducationEditor
                   education={education}
                   onSave={updateEducation}
-                  onDelete={() => {
-                    deleteEducation(education.id);
-                    setExpandedId(null);
-                  }}
-                  onCancel={() => setExpandedId(null)}
                 />
               </div>
             </motion.div>

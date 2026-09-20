@@ -3,6 +3,7 @@ import type { jsPDF as JsPDF } from "jspdf";
 import { getFontFaceCss, normalizeFontFamily } from "@/utils/fonts";
 import { ResumeData } from "@/types/resume";
 import { generateResumeMarkdown, ResumeMarkdownOptions } from "@/utils/markdown";
+import { stripResumeCredentials } from "@/lib/backup";
 
 const INVALID_FILE_NAME_CHAR_REGEX = /[\\/:*?"<>|]/g;
 
@@ -118,7 +119,8 @@ export const exportResumeAsJson = ({
       throw new Error("No active resume");
     }
 
-    const json = JSON.stringify(resume, null, 2);
+    // 摘掉 GitHub token 再序列化 —— 这份文件是要给别人的（见 stripResumeCredentials）
+    const json = JSON.stringify(stripResumeCredentials(resume), null, 2);
     const fileName = `${getSafeFileName(title || resume.title)}.json`;
     downloadTextFile(json, fileName, "application/json;charset=utf-8");
     if (successMessage) toast.success(successMessage);

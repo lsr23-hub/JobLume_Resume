@@ -1,16 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { CalendarIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { useTranslations } from "@/i18n/compat/client";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import RichTextEditor from "../shared/rich-editor/RichEditor";
 import { UnifiedDateInput } from "../ui/unified-date-input";

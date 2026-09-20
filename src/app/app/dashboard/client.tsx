@@ -31,7 +31,6 @@ interface MenuItem {
   url?: string;
   href?: string;
   icon: any;
-  items?: { title: string; href: string }[];
 }
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
@@ -77,30 +76,19 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const locale = useLocale();
   const [open, setOpen] = useState(true);
-  const [collapsible, setCollapsible] = useState<"offcanvas" | "icon" | "none">(
-    "icon"
-  );
 
   const handleItemClick = (item: MenuItem) => {
-    if (item.items) {
-
-    } else {
-      router.push(item.url || item.href || "/");
-    }
+    router.push(item.url || item.href || "/");
   };
 
-  const isItemActive = (item: MenuItem) => {
-    if (item.items) {
-      return item.items.some((subItem) => pathname === subItem.href);
-    }
-    return item.url === pathname || item.href === pathname;
-  };
+  const isItemActive = (item: MenuItem) =>
+    item.url === pathname || item.href === pathname;
 
   return (
     <div className="flex h-screen bg-background">
       <SidebarProvider open={open} onOpenChange={setOpen}>
         <Sidebar
-          collapsible={collapsible}
+          collapsible="icon"
           className="border-r border-border/40 bg-card/50 backdrop-blur-xl"
         >
           <SidebarHeader className="h-16 flex items-center justify-center border-b border-border/40">
@@ -154,22 +142,6 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
                                   )}
                                 </div>
                               </SidebarMenuButton>
-                              {item.items && open && (
-                                <div className="ml-9 mt-1 space-y-1 border-l-2 border-muted pl-2">
-                                  {item.items.map((subItem) => (
-                                    <div
-                                      key={subItem.href}
-                                      className={`cursor-pointer px-3 py-2 rounded-md text-sm transition-colors ${pathname === subItem.href
-                                        ? "text-primary font-medium bg-primary/10"
-                                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                                        }`}
-                                      onClick={() => router.push(subItem.href)}
-                                    >
-                                      {subItem.title}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
                             </SidebarMenuItem>
                           </TooltipTrigger>
                           {!open && (
