@@ -76,6 +76,28 @@ for (const seg of ["resumes", "targets"]) {
 await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
 await page.waitForTimeout(1200);
 
+// ── 1b. 门禁可以跳过，且跳过之后有落点 ──
+//
+// 钉的是「没有用户时不是死胡同」。回归风险很具体：X 按钮的显隐由
+// `UserSelectDialog` 的 `hideClose={!dismissible}` 决定，而 `dismissible` 取决于
+// `RequireUser` 有没有传 `onOpenChange` —— 哪天有人把那两个 prop 去掉，X 会**静默消失**，
+// 弹窗重新变成关不掉，而且侧边栏的「切换用户」在没有当前用户时也是死的
+// （`CurrentUserChip` 里 `currentUserId &&` 那个守卫让弹窗根本不挂载）。
+step(
+  (await page.getByRole("button", { name: "Close" }).count()) > 0,
+  "门禁弹窗有 X 按钮（可以跳过，不是死胡同）"
+);
+await page.getByRole("button", { name: "Close" }).first().click();
+await page.waitForTimeout(700);
+step(!(await picker(page).isVisible().catch(() => false)), "点 X 后弹窗关闭");
+step(
+  await page.locator("text=还没有选择用户").isVisible().catch(() => false),
+  "跳过之后显示占位（不是一片空白）"
+);
+await page.getByRole("button", { name: "选择用户" }).first().click();
+await page.waitForTimeout(700);
+step(await picker(page).isVisible().catch(() => false), "占位上的「选择用户」能回到门禁");
+
 // ════════════════ 2. 新建 → 进入 → 刷新记住 ════════════════
 await page.getByRole("button", { name: "新建用户" }).first().click();
 await page.waitForTimeout(1500);

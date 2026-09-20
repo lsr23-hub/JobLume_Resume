@@ -957,7 +957,10 @@
     "deleteBody": "该用户的职业档案、名下 {count} 份简历，以及他在各投递目标上的分析都会被一并删除，**无法恢复**。",
     "deleteConfirm": "删除",
     "deleteDiskFailed": "本地已删除，但磁盘上的存档目录没删掉",
-    "cancel": "取消"
+    "cancel": "取消",
+    "skippedTitle": "还没有选择用户",
+    "skippedHint": "这个板块的数据按用户分开存放。选一个用户，或新建一个，才能开始。",
+    "pick": "选择用户"
   },
   "sync": {
     "retrying": "写入磁盘失败，正在重试",

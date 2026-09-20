@@ -956,7 +956,10 @@
     "deleteBody": "This person's career profile, their {count} resume(s), and their analyses on every job target will all be deleted. This cannot be undone.",
     "deleteConfirm": "Delete",
     "deleteDiskFailed": "Deleted locally, but the on-disk archive folder could not be removed",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "skippedTitle": "No user selected",
+    "skippedHint": "This section stores its data per user. Pick one or create one to get started.",
+    "pick": "Select user"
   },
   "sync": {
     "retrying": "Disk write failed — retrying",
