@@ -169,6 +169,8 @@ describe("读取", () => {
       profile: null,
       resumes: {},
       targets: {},
+      // 基线跟着数据一起回传：客户端靠它算「哪些改动还没落盘」
+      baseline: { schemaVersion: SAVES_SCHEMA_VERSION, records: {} },
       problems: [],
     });
   });
@@ -410,6 +412,8 @@ describe("同步基线", () => {
       profile: null,
       resumes: {},
       targets: {},
+      // 基线跟着数据一起回传：客户端靠它算「哪些改动还没落盘」
+      baseline: { schemaVersion: SAVES_SCHEMA_VERSION, records: {} },
       problems: [],
     });
     // 但目录本身仍然是一个用户 —— 它出现在磁盘上了

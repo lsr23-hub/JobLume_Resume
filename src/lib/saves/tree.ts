@@ -3,6 +3,7 @@ import {
   normalizeResumeState,
   normalizeTargetStateV2,
 } from "@/store/userScope";
+import { parseBaseline, type Baseline } from "./baseline";
 import { EMPTY_SNAPSHOT, type UserSnapshot } from "./mirror";
 
 /**
@@ -10,8 +11,11 @@ import { EMPTY_SNAPSHOT, type UserSnapshot } from "./mirror";
  *
  * **纯函数**：不做 IO、不碰 store，所以形状守卫可以脱离浏览器直接测。
  *
- * ⚠️ **尚未接线。** 现在唯一的调用方是 `tree.test.ts` —— 不要以为「从磁盘读回」
- * 这条路径已经生效。消费它的是 `plan/saves-design.md` §4 的启动对账（S4）。
+ * 消费它的是两条路径：S3 用它拿**基线**（判断哪些改动还没落盘），S4 用它做
+ * 完整的启动对账（连数据一起读回来）。
+ *
+ * ⚠️ 目前只接了基线那一半 —— 数据那一半（`snapshot`）还没有消费者，不要以为
+ * 「从磁盘读回数据」已经生效。
  *
  * schema 的唯一权威是 `userScope.ts` 那三个归一化器（它们同时管旧版本迁移），
  * 这里只负责「喂进去、比对前后差集」，把**被丢掉的条目报出来**。静默丢弃是危险的：
@@ -23,6 +27,12 @@ const PROBE_KEY = "_";
 
 export interface ParsedUser {
   snapshot: UserSnapshot;
+  /**
+   * 同步基线：每条记录上次写盘时的内容哈希。客户端靠它算「哪些改动还没落盘」。
+   *
+   * 服务端读不出来时会给空基线 + 一条 `baseline` 的 problem，这里照原样传下去。
+   */
+  baseline: Baseline;
   /** 读不出来的条目：服务端报的（不是合法 JSON）+ 客户端归一化时丢掉的（形状不对） */
   problems: string[];
 }
@@ -70,6 +80,7 @@ const parseUser = (raw: Record<string, unknown>): ParsedUser => {
 
   return {
     snapshot: { ...EMPTY_SNAPSHOT, profile, resumes, targets },
+    baseline: parseBaseline(raw.baseline),
     problems: problems.sort(),
   };
 };

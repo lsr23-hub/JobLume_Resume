@@ -5,6 +5,13 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { isSaveKind, type SaveKind } from "@/lib/saves/kinds";
 import { contentHash } from "@/lib/saves/hash";
+// 同 kinds：值导入 + 下面的 re-export 各来一次 —— `export { x } from` 不引入本地绑定
+import {
+  SAVES_SCHEMA_VERSION,
+  emptyBaseline,
+  recordKey,
+  type Baseline,
+} from "@/lib/saves/baseline";
 
 export { isSaveKind, SAVE_KINDS, type SaveKind } from "@/lib/saves/kinds";
 
@@ -251,31 +258,19 @@ export const removeSaveFile = async (
 
 // ─────────────────────────────── 基线 ───────────────────────────────
 
+/**
+ * 基线的定义（版本号、形状、键规则）在 `lib/saves/baseline.ts` —— 客户端也要读它，
+ * 而那个模块不含 node 依赖。这里只做 re-export，不另立一套。
+ */
+export {
+  SAVES_SCHEMA_VERSION,
+  emptyBaseline,
+  recordKey,
+  type Baseline,
+} from "@/lib/saves/baseline";
+
 /** 基线文件名。**点开头**，所以不会被 `listSaveIds` 当成一份存档（它只认 `<合法片段>.json`） */
 export const BASELINE_FILENAME = ".baseline.json";
-
-/**
- * 存档 schema 版本。**不兼容的改动必须 +1。**
- *
- * 读侧遇到比本程序更高的版本会拒绝读写，而不是猜着读 —— 猜错的方向是静默丢数据。
- * 版本 1 是「没有基线文件」的时代（本文件之前只有内容文件）。
- */
-export const SAVES_SCHEMA_VERSION = 2;
-
-export interface Baseline {
-  schemaVersion: number;
-  /** 键形如 `profile` / `resume:<id>` / `jd:<id>`，值是上次写盘时的内容哈希 */
-  records: Record<string, string>;
-}
-
-export const emptyBaseline = (): Baseline => ({
-  schemaVersion: SAVES_SCHEMA_VERSION,
-  records: {},
-});
-
-/** 一条记录在基线里的键。profile 没有 id —— 一个用户只有一份 */
-export const recordKey = (kind: SaveKind, id?: unknown): string =>
-  kind === "profile" ? "profile" : `${kind}:${String(id)}`;
 
 export const baselinePath = (root: string, userId: unknown): string =>
   path.join(resolveUserDir(root, userId), BASELINE_FILENAME);
@@ -308,10 +303,12 @@ export const readBaseline = async (root: string, userId: unknown): Promise<Basel
   try {
     parsed = JSON.parse(text);
   } catch {
-    throw new Error(`基线文件不是合法 JSON：${BASELINE_FILENAME}`);
+    throw new Error(
+      `基线文件不是合法 JSON：${BASELINE_FILENAME}（删掉它，程序会按内容文件重建）`
+    );
   }
   if (!isRecord(parsed)) {
-    throw new Error(`基线文件形状不对：${BASELINE_FILENAME}`);
+    throw new Error(`基线文件形状不对：${BASELINE_FILENAME}（删掉它，程序会按内容文件重建）`);
   }
   if (typeof parsed.schemaVersion !== "number") {
     throw new Error(`基线文件缺少 schemaVersion：${BASELINE_FILENAME}`);
@@ -410,6 +407,16 @@ export interface RawSaveTree {
   profile: unknown;
   resumes: Record<string, unknown>;
   targets: Record<string, unknown>;
+  /**
+   * 同步基线（每条记录上次写盘时的内容哈希）。
+   *
+   * 客户端靠它算「哪些改动还没落盘」，所以它必须跟数据一起回来 —— 让客户端自己存一份
+   * 基线就会出现"哪份才算数"的问题，而那正是这套设计要避免的。
+   *
+   * 读不出来时给**空基线**并记进 `problems`：空基线意味着"什么都不知道已同步"，
+   * 也就是所有记录都会被当成待写 —— 多存一次，不丢数据。
+   */
+  baseline: Baseline;
   /** 读不出来的条目（不是合法 JSON / 读失败）。客户端据此提示，绝不静默覆盖 */
   problems: string[];
 }
@@ -435,10 +442,22 @@ export const readSaveTree = async (root: string, userId: unknown): Promise<RawSa
     return out;
   };
 
+  // 基线自己也有读不出来的可能（被手改、写了一半、版本比本程序新）。这里不往上抛：
+  // 一次读取失败不该让整个存档树读不出来 —— 记进 problems，给空基线。
+  let baseline = emptyBaseline();
+  try {
+    baseline = await readBaseline(root, userId);
+  } catch (error) {
+    problems.push("baseline");
+    baseline = emptyBaseline();
+    void error;
+  }
+
   return {
     profile: await readOne("profile"),
     resumes: await readCollection("resume"),
     targets: await readCollection("jd"),
+    baseline,
     problems,
   };
 };
