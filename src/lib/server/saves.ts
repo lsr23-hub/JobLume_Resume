@@ -482,6 +482,43 @@ export const listUserIds = async (root: string): Promise<string[]> => {
   return ids.sort();
 };
 
+export interface DiskUserSummary {
+  id: string;
+  /** 档案里的姓名。读不出来给 `null`，**不跳过这个用户**（见下） */
+  name: string | null;
+}
+
+/**
+ * 存档目录下有哪些用户、各自叫什么。给「选择用户」弹窗用。
+ *
+ * 为什么需要它：清掉浏览器数据之后 `currentUserId` 也没了，而 store 刻意不保留
+ * 「指向一个不存在的用户」的 id —— 于是盘上的数据**在界面上够不着**。
+ * 这个列表就是那条回去的路。
+ *
+ * 名字读不出来（文件坏了、还没写过档案）时给 `null` 而**不是跳过这个用户**：
+ * 目录在那里就说明有数据，"因为名字读不出来就当它不存在"会让用户彻底看不到它。
+ */
+export const listDiskUsers = async (root: string): Promise<DiskUserSummary[]> => {
+  const ids = await listUserIds(root);
+  const out: DiskUserSummary[] = [];
+
+  for (const id of ids) {
+    let name: string | null = null;
+    try {
+      const profile = (await readSaveFile(root, id, "profile")) as
+        | { basic?: { name?: unknown } }
+        | null;
+      const raw = profile?.basic?.name;
+      if (typeof raw === "string" && raw.trim()) name = raw.trim();
+    } catch {
+      // 档案坏了也照样把这个人报出去 —— 他能被选中才有机会被修
+      name = null;
+    }
+    out.push({ id, name });
+  }
+  return out;
+};
+
 /**
  * 删掉一个用户的整个存档目录。
  *

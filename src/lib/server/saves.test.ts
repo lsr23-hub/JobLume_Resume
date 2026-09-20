@@ -10,6 +10,7 @@ import {
   emptyBaseline,
   isSaveOp,
   isSafeSegment,
+  listDiskUsers,
   listSaveIds,
   listUserIds,
   readBaseline,
@@ -310,6 +311,60 @@ describe("写前备份 .bak", () => {
     await writeSaveFile(root, UID, "profile", undefined, { basic: { name: "二" } });
     await removeUserDir(root, UID);
     expect(await listUserIds(root)).toEqual([]);
+  });
+});
+
+describe("磁盘用户列表（给「选择用户」弹窗用）", () => {
+  let root: string;
+
+  beforeEach(async () => {
+    root = await fs.mkdtemp(path.join(os.tmpdir(), "joblume-saves-"));
+  });
+
+  afterEach(async () => {
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  const lay = async (userId: string, rel: string, body: unknown) => {
+    const full = path.join(root, "saves", userId, rel);
+    await fs.mkdir(path.dirname(full), { recursive: true });
+    await fs.writeFile(full, JSON.stringify(body), "utf8");
+  };
+
+  it("列出目录下的用户，带上档案里的姓名", async () => {
+    await lay("aaa", "profile.json", { basic: { name: "甲同学" } });
+    await lay("bbb", "profile.json", { basic: { name: "乙同学" } });
+
+    expect(await listDiskUsers(root)).toEqual([
+      { id: "aaa", name: "甲同学" },
+      { id: "bbb", name: "乙同学" },
+    ]);
+  });
+
+  it("**档案读不出来 → 姓名给 null，但用户照样在列表里**", async () => {
+    await lay("aaa", "profile.json", { basic: { name: "甲同学" } });
+    const broken = path.join(root, "saves", "bbb", "profile.json");
+    await fs.mkdir(path.dirname(broken), { recursive: true });
+    await fs.writeFile(broken, "{ 不是 JSON", "utf8");
+
+    const users = await listDiskUsers(root);
+    // 目录在那里就说明有数据 —— "因为名字读不出来就当它不存在"会让用户彻底看不到它
+    expect(users.map((u) => u.id)).toEqual(["aaa", "bbb"]);
+    expect(users[1].name).toBeNull();
+  });
+
+  it("没有档案、只有简历的用户也在列表里", async () => {
+    await lay("aaa", "resumes/r1.json", { id: "r1" });
+    expect(await listDiskUsers(root)).toEqual([{ id: "aaa", name: null }]);
+  });
+
+  it("姓名是空白字符串 → 也算没有名字", async () => {
+    await lay("aaa", "profile.json", { basic: { name: "   " } });
+    expect((await listDiskUsers(root))[0].name).toBeNull();
+  });
+
+  it("存档目录还不存在 → 空数组，不抛", async () => {
+    expect(await listDiskUsers(root)).toEqual([]);
   });
 });
 

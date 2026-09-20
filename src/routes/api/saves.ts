@@ -5,6 +5,7 @@ import {
   applySaveOps,
   isSaveKind,
   isSaveOp,
+  listDiskUsers,
   listUserIds,
   readSaveTree,
   removeUserDir,
@@ -79,6 +80,16 @@ export const Route = createFileRoute("/api/saves")({
         const url = new URL(request.url);
         const userId = url.searchParams.get("userId");
         const root = savesRoot();
+
+        // 只回用户列表（**不含任何内容**）：清掉浏览器数据之后，用户得能看见盘上都有谁，
+        // 否则他的数据"在盘上但选不出来"（`plan/saves-design.md` §4）
+        if (url.searchParams.get("list") === "1") {
+          try {
+            return json({ ok: true, users: await listDiskUsers(root) });
+          } catch (error) {
+            return errorResponse(error);
+          }
+        }
 
         try {
           const ids = userId ? [userId] : await listUserIds(root);

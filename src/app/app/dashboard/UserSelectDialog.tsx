@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, Trash2, UserRound } from "lucide-react";
+import { HardDrive, Plus, Trash2, UserRound } from "lucide-react";
 import { useTranslations } from "@/i18n/compat/client";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { useResumeStore } from "@/store/useResumeStore";
@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useDeleteUser } from "@/hooks/useDeleteUser";
 import { canLeave } from "@/lib/saves/session";
+import { adoptDiskUser, fetchDiskUsers, type DiskUser } from "@/lib/saves/diskUsers";
 import { toast } from "sonner";
 
 /** 一张用户卡：证件照铺满，底部渐变遮罩上写名字 —— 与「我的简历」卡片同一套视觉语言 */
@@ -127,6 +128,33 @@ export const UserSelectDialog = ({ open, onOpenChange }: UserSelectDialogProps =
   const setCurrentUser = useCareerProfileStore((s) => s.setCurrentUser);
   const [busy, setBusy] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [diskUsers, setDiskUsers] = useState<DiskUser[]>([]);
+
+  // 盘上还有谁。清掉浏览器数据之后，这里就是把人找回来的唯一入口
+  useEffect(() => {
+    let alive = true;
+    void fetchDiskUsers().then((list) => {
+      if (alive) setDiskUsers(list);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  /** 只在盘上、浏览器里没有的那些 —— 已经在列表里的不必重复显示 */
+  const missingOnDisk = diskUsers.filter((user) => !userIds.includes(user.id));
+
+  const handleAdopt = async (userId: string) => {
+    if (busy) return;
+    setBusy(true);
+    const ok = await adoptDiskUser(userId);
+    setBusy(false);
+    if (!ok) {
+      toast.error(t("adoptFailed"));
+      return;
+    }
+    if (dismissible) onOpenChange?.(false);
+  };
   const deleteUser = useDeleteUser();
 
   const pendingProfile = pendingDelete
@@ -215,6 +243,30 @@ export const UserSelectDialog = ({ open, onOpenChange }: UserSelectDialogProps =
                 />
               ))}
             </AnimatePresence>
+
+            {missingOnDisk.length > 0 && (
+              <div className="mt-8 space-y-3 border-t border-border/40 pt-6">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold">{t("fromDisk")}</p>
+                  <p className="text-xs text-muted-foreground">{t("fromDiskHint")}</p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {missingOnDisk.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => void handleAdopt(user.id)}
+                      className="flex items-center gap-3 rounded-xl border border-dashed border-border/60 p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/50"
+                    >
+                      <HardDrive className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 truncate text-sm">
+                        {user.name ?? t("unnamed")}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 与「我的简历」的空位新建卡同构 */}
             <motion.div

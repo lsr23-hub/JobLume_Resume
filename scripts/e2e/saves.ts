@@ -314,6 +314,32 @@ try {
   step((await uiName(page)) === "磁盘也改了", "「保留磁盘」→ 以磁盘那份为准，且对话框关闭");
   await page.unroute("**/api/saves");
 
+  // ════════════════ 11. 清掉浏览器数据 → 从磁盘读回来（缺口 1）════════════════
+  console.log("\n── 11. 清缓存后从磁盘读回 ──");
+  await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(1500);
+  const lostUid = await currentUserId(page);
+  await page.locator("input:visible").first().fill("被清掉的用户");
+  await saveNow(page);
+  step((await diskName(profilePath(lostUid))) === "被清掉的用户", "前置：数据已落盘");
+
+  // 清掉**全部**浏览器数据 —— 这正是"清缓存"那件事
+  await page.evaluate(() => localStorage.clear());
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(2000);
+  step(await seen(page, "选择用户"), "清缓存后回到「选择用户」弹窗（本地一个用户都没有）");
+  step(await seen(page, "磁盘上发现的用户"), "**弹窗列出「磁盘上发现的用户」** —— 把人找回的唯一入口");
+  step(await seen(page, "被清掉的用户"), "而且显示档案里的姓名，不是一串 id");
+
+  await page.getByRole("button", { name: /被清掉的用户/ }).first().click();
+  await page.waitForTimeout(2500);
+  step(!(await seen(page, "选择用户")), "采纳后弹窗关闭");
+  step((await uiName(page)) === "被清掉的用户", "**数据从磁盘读回来了**");
+
+  await page.locator("input:visible").first().fill("读回来之后改的");
+  await saveNow(page);
+  step((await diskName(profilePath(lostUid))) === "读回来之后改的", "读回来之后编辑 + 保存照常工作");
+
   // ════════════════ 8. 删用户 → 目录消失且不复现 ════════════════
   console.log("\n── 8. 删用户 → 目录不复现 ──");
   await page.getByRole("button", { name: /切换用户/ }).first().click();

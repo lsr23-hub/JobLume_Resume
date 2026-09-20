@@ -95,6 +95,14 @@ interface ProfileStore {
   /** 建一个空档案并设为当前用户，返回新 userId */
   createUser: () => string;
   setCurrentUser: (userId: string | null) => void;
+  /**
+   * 把一批档案装进 `profiles`（启动读回 / 带回磁盘上发现的用户时用）。
+   *
+   * **刻意不走 `put()`**：那个入口只写"当前用户"，而这里要装的恰恰是**还没有归属**的
+   * 用户 —— 从磁盘读回来的那份可能属于一个浏览器里根本没有的人。而 `setCurrentUser`
+   * 又会拒绝一个 `profiles` 里不存在的 id，所以"先装档案、再设当前用户"这个顺序是必需的。
+   */
+  loadProfiles: (profiles: Record<string, CareerProfile>) => void;
   /** 删除用户及其档案。若删的是当前用户，currentUserId 置空（回到选择弹窗） */
   removeUser: (userId: string) => void;
 
@@ -327,6 +335,12 @@ export const useCareerProfileStore = create<ProfileStore>()(
         const profiles = get().profiles;
         const next = userId && profiles[userId] ? userId : null;
         set({ currentUserId: next, profile: deriveProfile(profiles, next) });
+      },
+
+      loadProfiles: (incoming) => {
+        const merged = { ...get().profiles, ...incoming };
+        const currentUserId = get().currentUserId;
+        set({ profiles: merged, profile: deriveProfile(merged, currentUserId) });
       },
 
       removeUser: (userId) => {

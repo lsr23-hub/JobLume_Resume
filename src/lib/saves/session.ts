@@ -6,7 +6,7 @@ import {
   recordKey,
   type Baseline,
 } from "./baseline";
-import { parseSaveTreeResponse } from "./tree";
+import { parseSaveTreeResponse, type ParsedUser } from "./tree";
 import { EMPTY_SNAPSHOT } from "./mirror";
 import { flattenSnapshot, reconcile, type ConflictItem, type PullItem } from "./reconcile";
 import type { MirrorOp } from "./mirror";
@@ -229,6 +229,22 @@ const alignBaseline = async (
     } else {
       delete baseline.records[key];
     }
+  }
+};
+
+/**
+ * 只读地取回某个用户的树（**不碰 store**）。
+ *
+ * `loadTree` 与「带回磁盘上发现的用户」都要用它：前者落地写、后者要先看看盘上有什么。
+ * 拿不到（端点不在、网络失败、没有这个人）一律给 `null` —— 调用方按"没有"处理。
+ */
+export const fetchUserTree = async (userId: string): Promise<ParsedUser | null> => {
+  try {
+    const res = await fetch(`/api/saves?userId=${encodeURIComponent(userId)}`);
+    if (!res.ok) return null;
+    return parseSaveTreeResponse(await res.json()).users[userId] ?? null;
+  } catch {
+    return null;
   }
 };
 

@@ -962,7 +962,10 @@
     "skippedTitle": "还没有选择用户",
     "skippedHint": "这个板块的数据按用户分开存放。选一个用户，或新建一个，才能开始。",
     "pick": "选择用户",
-    "saveBeforeSwitchFailed": "没能写入磁盘，先不切换用户。数据还在浏览器里。"
+    "saveBeforeSwitchFailed": "没能写入磁盘，先不切换用户。数据还在浏览器里。",
+    "fromDisk": "磁盘上发现的用户",
+    "fromDiskHint": "这些是在存档目录里找到的，这个浏览器里没有记录 —— 点一下把它们读回来。",
+    "adoptFailed": "没能从磁盘读回这个用户"
   },
   "sync": {
     "failed": "写入磁盘失败",

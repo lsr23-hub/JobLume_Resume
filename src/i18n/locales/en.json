@@ -961,7 +961,10 @@
     "skippedTitle": "No user selected",
     "skippedHint": "This section stores its data per user. Pick one or create one to get started.",
     "pick": "Select user",
-    "saveBeforeSwitchFailed": "Could not write to disk, so the user was not switched. Your data is still in this browser."
+    "saveBeforeSwitchFailed": "Could not write to disk, so the user was not switched. Your data is still in this browser.",
+    "fromDisk": "Users found on disk",
+    "fromDiskHint": "These were found in the archive folder but this browser does not know about them. Click one to read it back.",
+    "adoptFailed": "Could not read this user back from disk"
   },
   "sync": {
     "failed": "Disk write failed",
