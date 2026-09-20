@@ -9,6 +9,7 @@ import {
   IMAGE_MIME_BY_EXT,
   MAX_IMAGE_BYTES,
   isImageFileName,
+  isImageRef,
 } from "@/lib/saves/images";
 import { contentHash } from "@/lib/saves/hash";
 // 同 kinds：值导入 + 下面的 re-export 各来一次 —— `export { x } from` 不引入本地绑定
@@ -585,6 +586,91 @@ export const listImageNames = async (root: string, userId: unknown): Promise<str
     throw error;
   }
   return names.filter(isImageFileName).sort();
+};
+
+/**
+ * 孤儿图片的宽限期。
+ *
+ * **为什么必需**：图片是"选中即上传"的 —— 字节先落盘，引用要等用户保存数据才写进
+ * `*.json`。这中间那段时间里，这张图在磁盘的数据看来就是**孤儿**，而它其实是用户
+ * 刚选的。所以刚写进来的文件一律不动。
+ *
+ * 一小时足够覆盖"选了照片但还没保存"的窗口（关页面时 `pagehide` 会把数据刷下去，
+ * 所以那个窗口通常只有几秒），又足以让换过照片的旧文件在下一次保存时被清掉。
+ */
+export const ORPHAN_IMAGE_GRACE_MS = 60 * 60 * 1000;
+
+/** 存档里被引用的所有图片名。`images/` 之外的字段没有图片，见下面的注释 */
+export const collectReferencedImages = async (
+  root: string,
+  userId: unknown
+): Promise<Set<string>> => {
+  const refs = new Set<string>();
+  const add = (value: unknown) => {
+    if (isImageRef(value)) refs.add(value);
+  };
+
+  // 图片只可能出现在三处：档案照片、简历照片、证书 url。
+  // 富文本里插不了图（tiptap 的依赖里没有 extension-image），所以正文不用扫。
+  //
+  // ⚠️ **读不出来就抛，不要吞成"没有引用"**：一份坏掉的 `resume.json` 会让它引用的
+  // 图片全部变成"孤儿"被删掉。宁可这次不回收 —— 路由那边是 best effort，
+  // 下次保存还会再来一次。
+  const profile = (await readSaveFile(root, userId, "profile")) as
+    | { basic?: { photo?: unknown } }
+    | null;
+  add(profile?.basic?.photo);
+
+  for (const id of await listSaveIds(root, userId, "resume")) {
+    const resume = (await readSaveFile(root, userId, "resume", id)) as
+      | { basic?: { photo?: unknown }; certificates?: Array<{ url?: unknown }> }
+      | null;
+    if (!resume) continue;
+    add(resume.basic?.photo);
+    for (const certificate of resume.certificates ?? []) add(certificate?.url);
+  }
+
+  return refs;
+};
+
+/**
+ * 删掉 `images/` 里**没被任何数据引用**的文件。
+ *
+ * 时机是**保存成功之后**（由路由调用），不做定时任务 —— 只在明确的时刻跑，行为可预测。
+ * 不回收的话，换过照片、删过证书的旧文件会永远留在盘上越攒越多。
+ *
+ * 两条防线，缺一不可：
+ * 1. **只删没被引用的** —— 扫描的是磁盘上那份数据（刚写下去的那份）
+ * 2. **刚写进来的不动**（`ORPHAN_IMAGE_GRACE_MS`）—— 见那个常量的注释
+ *
+ * 返回删掉的文件名，便于日志与测试。
+ */
+export const pruneOrphanImages = async (
+  root: string,
+  userId: unknown,
+  graceMs: number = ORPHAN_IMAGE_GRACE_MS
+): Promise<string[]> => {
+  const referenced = await collectReferencedImages(root, userId);
+  const names = await listImageNames(root, userId);
+  const removed: string[] = [];
+  const now = Date.now();
+
+  for (const name of names) {
+    if (referenced.has(name)) continue;
+
+    const full = path.join(resolveImageDir(root, userId), name);
+    const stat = await fs.stat(full).catch(() => null);
+    if (!stat) continue;
+    // 太新的不动。**显式比较时间点而不是算差值**：文件的 mtime 可能比 `now` 晚
+    // 一毫秒（时间戳粒度），差值成了负数，`< graceMs` 反而把刚写的保护起来 ——
+    // 传 `graceMs = 0` 时尤其明显（单测抓到的）
+    if (graceMs > 0 && stat.mtimeMs >= now - graceMs) continue;
+
+    await removeImageFile(root, userId, name);
+    removed.push(name);
+  }
+
+  return removed;
 };
 
 export interface DiskUserSummary {

@@ -7,6 +7,7 @@ import {
   SAVES_SCHEMA_VERSION,
   applySaveOps,
   baselinePath,
+  collectReferencedImages,
   emptyBaseline,
   isSaveOp,
   isSafeSegment,
@@ -21,6 +22,7 @@ import {
   listDiskUsers,
   listSaveIds,
   listUserIds,
+  pruneOrphanImages,
   readBaseline,
   readSaveFile,
   readSaveTree,
@@ -492,6 +494,104 @@ describe("图片：读写与列举", () => {
     await writeImageFile(root, UID, "img_a.jpg", bytes(1));
     const names = await fs.readdir(path.resolve(root, "saves", UID, "images"));
     expect(names.filter((n) => n.endsWith(".tmp"))).toEqual([]);
+  });
+});
+
+describe("孤儿图片回收", () => {
+  let root: string;
+
+  beforeEach(async () => {
+    root = await fs.mkdtemp(path.join(os.tmpdir(), "joblume-saves-"));
+  });
+
+  afterEach(async () => {
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  const bytes = (n: number) => new Uint8Array([0xff, 0xd8, 0xff, n]);
+  /** 把修改时间推到过去，绕过宽限期 */
+  const ageFile = async (name: string, msAgo: number) => {
+    const full = path.resolve(root, "saves", UID, "images", name);
+    const when = new Date(Date.now() - msAgo);
+    await fs.utimes(full, when, when);
+  };
+
+  it("扫描三处引用：档案照片 / 简历照片 / 证书 url", async () => {
+    await writeSaveFile(root, UID, "profile", undefined, { basic: { photo: "img_p.jpg" } });
+    await writeSaveFile(root, UID, "resume", "r1", {
+      id: "r1",
+      basic: { photo: "img_r.jpg" },
+      certificates: [{ url: "img_c1.png" }, { url: "img_c2.webp" }, { url: "https://x/y.png" }],
+    });
+
+    expect(Array.from(await collectReferencedImages(root, UID)).sort()).toEqual([
+      "img_c1.png",
+      "img_c2.webp",
+      "img_p.jpg",
+      "img_r.jpg",
+    ]);
+  });
+
+  it("非引用（外链 / 内联 base64 / 静态路径）不算引用", async () => {
+    await writeSaveFile(root, UID, "profile", undefined, {
+      basic: { photo: "data:image/png;base64,AAAA" },
+    });
+    await writeSaveFile(root, UID, "resume", "r1", {
+      id: "r1",
+      basic: { photo: "/avatar.png" },
+      certificates: [],
+    });
+    expect(Array.from(await collectReferencedImages(root, UID))).toEqual([]);
+  });
+
+  it("**删掉没被引用的旧文件**，被引用的留着", async () => {
+    await writeImageFile(root, UID, "img_used.jpg", bytes(1));
+    await writeImageFile(root, UID, "img_orphan.jpg", bytes(2));
+    await writeSaveFile(root, UID, "profile", undefined, { basic: { photo: "img_used.jpg" } });
+    await ageFile("img_used.jpg", 2 * 60 * 60 * 1000);
+    await ageFile("img_orphan.jpg", 2 * 60 * 60 * 1000);
+
+    const removed = await pruneOrphanImages(root, UID);
+
+    expect(removed).toEqual(["img_orphan.jpg"]);
+    expect(await readImageFile(root, UID, "img_used.jpg")).not.toBeNull();
+    expect(await readImageFile(root, UID, "img_orphan.jpg")).toBeNull();
+  });
+
+  /**
+   * 安全阀之一：图片是"选中即上传"的 —— 字节先落盘，引用要等用户保存数据才写进 json。
+   * 这中间它在磁盘的数据看来就是孤儿，而它其实是用户刚选的。
+   */
+  it("**刚写进来的不删**（宽限期）", async () => {
+    await writeImageFile(root, UID, "img_fresh.jpg", bytes(1));
+
+    expect(await pruneOrphanImages(root, UID)).toEqual([]);
+    expect(await readImageFile(root, UID, "img_fresh.jpg")).not.toBeNull();
+  });
+
+  it("宽限期可以调（传 0 就等于不保护）", async () => {
+    await writeImageFile(root, UID, "img_fresh.jpg", bytes(1));
+    expect(await pruneOrphanImages(root, UID, 0)).toEqual(["img_fresh.jpg"]);
+  });
+
+  /**
+   * 安全阀之二：**一份坏掉的数据文件会让它引用的图片全变成"孤儿"**。
+   * 所以读不出来时必须放弃这次回收，而不是当成"没有引用"。
+   */
+  it("**数据读不出来时放弃回收**（不把它的图片当孤儿删掉）", async () => {
+    await writeImageFile(root, UID, "img_x.jpg", bytes(1));
+    await ageFile("img_x.jpg", 2 * 60 * 60 * 1000);
+    const broken = path.resolve(root, "saves", UID, "resumes", "r1.json");
+    await fs.mkdir(path.dirname(broken), { recursive: true });
+    await fs.writeFile(broken, "{ 不是 JSON", "utf8");
+
+    await expect(pruneOrphanImages(root, UID)).rejects.toThrow();
+    expect(await readImageFile(root, UID, "img_x.jpg")).not.toBeNull();
+  });
+
+  it("没有图片目录时是空操作", async () => {
+    await writeSaveFile(root, UID, "profile", undefined, { basic: { photo: "" } });
+    expect(await pruneOrphanImages(root, UID)).toEqual([]);
   });
 });
 

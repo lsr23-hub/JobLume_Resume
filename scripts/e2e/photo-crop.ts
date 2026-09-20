@@ -222,6 +222,42 @@ await drawer.getByRole("button", { name: "小", exact: true }).click();
 await page.waitForTimeout(700);
 step((await storedResume(page, (r: any) => r.basic?.photoConfig?.width)) === 72, "「小」把照片宽度设为 72");
 
+// ─────────── 孤儿图片回收 ───────────
+//
+// 换一张照片之后旧的那张就没人引用了。**保存成功时**服务端扫一遍引用、把孤儿的清掉
+// （`pruneOrphanImages`）。这里钉的是"路由真的接上了那一刀"——逻辑本身有单测。
+//
+// 先把旧文件的修改时间推早两小时，绕过"刚写进来的不动"那个宽限期：图片是选中即上传的，
+// 字节先落盘、引用要等保存才写进 json，所以刚上传的必须先保护起来。
+console.log("\n── 孤儿图片回收 ──");
+// 前一节在编辑器里，这里要回档案页换档案照片
+await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
+await page.waitForTimeout(1500);
+const imagesDir = path.join(process.cwd(), "saves", photoUid, "images");
+const oldPhoto = profilePhoto;
+const past = new Date(Date.now() - 2 * 60 * 60 * 1000);
+await fs.utimes(path.join(imagesDir, oldPhoto), past, past);
+
+await page.getByRole("button", { name: /基本信息/ }).click();
+await page.waitForTimeout(400);
+await page.locator('input[type="file"][accept="image/*"]').first().setInputFiles(PHOTO);
+await page.waitForTimeout(1200);
+await cropper(page).getByRole("button", { name: "确认裁剪" }).click();
+await page.waitForTimeout(1200);
+// 触发一次保存 —— 回收挂在"保存成功之后"
+const gcBadge = page.getByRole("button", { name: /未保存|写入磁盘失败/ }).first();
+if ((await gcBadge.count()) > 0) {
+  await gcBadge.click();
+  await page.waitForTimeout(1800);
+}
+
+const after = await fs.readdir(imagesDir).catch(() => [] as string[]);
+step(!after.includes(oldPhoto), `换过照片之后，旧的那张被回收了（${oldPhoto}）`);
+step(
+  after.length >= 1 && after.every((n) => /^img_.+\.(jpg|png|webp|gif|avif)$/.test(n)),
+  `留下来的都是合法图片（${after.join(", ")}）`
+);
+
 // ─────────── 缓存被清掉后，照片要从磁盘拉回来 ───────────
 //
 // S5 之后二进制在磁盘上、IndexedDB 只是**缓存**。把缓存清空再打开，照片必须还能显示 ——

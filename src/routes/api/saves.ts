@@ -6,6 +6,7 @@ import {
   isSaveKind,
   isSaveOp,
   listDiskUsers,
+  pruneOrphanImages,
   listUserIds,
   readSaveTree,
   removeUserDir,
@@ -152,6 +153,13 @@ export const Route = createFileRoute("/api/saves")({
           }
           try {
             const { results, baseline } = await applySaveOps(root, userId, ops);
+            // 保存成功之后顺手回收孤儿图片（见 `pruneOrphanImages`）。
+            // **只在全部 op 都成功时跑**：有失败的话磁盘上的数据不是最新的，
+            // 拿它当"引用了哪些图"的依据会把失败那条的图误判成孤儿。
+            // best effort —— 回收失败不该让这次保存变成失败
+            if (results.every((result) => result.ok)) {
+              await pruneOrphanImages(root, userId).catch(() => undefined);
+            }
             return json({ ok: true, results, baseline });
           } catch (error) {
             return errorResponse(error);
@@ -178,6 +186,7 @@ export const Route = createFileRoute("/api/saves")({
           if (!result?.ok) {
             return json({ ok: false, error: result?.error ?? "写入失败" }, statusOf(result?.error));
           }
+          await pruneOrphanImages(root, userId).catch(() => undefined);
           // 只回相对路径：绝对路径对调用方没用，而 `root` 已经在 GET 里给过了
           const rel = path.relative(root, resolveSavePath(root, userId, kind, id));
           return json({ ok: true, path: rel });
