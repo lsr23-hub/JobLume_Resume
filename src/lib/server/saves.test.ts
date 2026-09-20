@@ -10,6 +10,14 @@ import {
   emptyBaseline,
   isSaveOp,
   isSafeSegment,
+  imageFileName,
+  isImageFileName,
+  MAX_IMAGE_BYTES,
+  listImageNames,
+  readImageFile,
+  removeImageFile,
+  resolveImagePath,
+  writeImageFile,
   listDiskUsers,
   listSaveIds,
   listUserIds,
@@ -365,6 +373,125 @@ describe("磁盘用户列表（给「选择用户」弹窗用）", () => {
 
   it("存档目录还不存在 → 空数组，不抛", async () => {
     expect(await listDiskUsers(root)).toEqual([]);
+  });
+});
+
+describe("图片：文件名与路径校验", () => {
+  it("**id 与扩展名分开校验** —— 整个文件名过 isSafeSegment 会把合法的拒掉", () => {
+    // SAFE_SEGMENT 刻意不含点（那一条堵死了 `..`），所以 `img_x.jpg` 整串是非法的，
+    // 而按最后一个点切开之后两半都合法 —— 这正是这组测试要钉住的
+    expect(isSafeSegment("img_x.jpg")).toBe(false);
+    expect(isImageFileName("img_x.jpg")).toBe(true);
+  });
+
+  it("只放行白名单里的扩展名", () => {
+    for (const ok of ["img_a.jpg", "img_a.png", "img_a.webp", "img_a.gif", "img_a.avif"]) {
+      expect(isImageFileName(ok)).toBe(true);
+    }
+    for (const bad of ["img_a.svg", "img_a.exe", "img_a.JPG", "img_a.jpeg", "img_a", "img_a.", ".jpg"]) {
+      expect(isImageFileName(bad)).toBe(false);
+    }
+  });
+
+  it.each([
+    "../etc/passwd",
+    "..",
+    "../../x.jpg",
+    "img/../x.jpg",
+    "/etc/passwd.jpg",
+    "a/b.jpg",
+    "img_a.jpg/../../x",
+    "",
+    " ",
+  ])("拒绝非法文件名：%s", (bad) => {
+    expect(() => resolveImagePath(ROOT, UID, bad)).toThrow();
+  });
+
+  it("非字符串一律拒绝", () => {
+    for (const bad of [undefined, null, 42, {}, [], true]) {
+      expect(() => resolveImagePath(ROOT, UID, bad)).toThrow();
+    }
+  });
+
+  it("拼出来的路径永远在 saves/<uid>/images/ 之内", () => {
+    expect(resolveImagePath(ROOT, UID, "img_a.jpg")).toBe(
+      path.resolve("/repo/saves", UID, "images", "img_a.jpg")
+    );
+  });
+
+  it("**扩展名由 MIME 决定，客户端传不了**", () => {
+    expect(imageFileName("img_a", "image/jpeg")).toBe("img_a.jpg");
+    expect(imageFileName("img_a", "image/png")).toBe("img_a.png");
+    // 带参数的 content-type 也认
+    expect(imageFileName("img_a", "image/png; charset=binary")).toBe("img_a.png");
+    // 不支持的格式直接拒绝 —— 不"尽量兼容"
+    expect(() => imageFileName("img_a", "image/svg+xml")).toThrow(/不支持的图片格式/);
+    expect(() => imageFileName("img_a", "text/html")).toThrow();
+    expect(() => imageFileName("img_a", "")).toThrow();
+  });
+
+  it("id 不合法也拒绝", () => {
+    for (const bad of ["../x", "a/b", ".hidden", "", 42, null]) {
+      expect(() => imageFileName(bad, "image/png")).toThrow();
+    }
+  });
+});
+
+describe("图片：读写与列举", () => {
+  let root: string;
+
+  beforeEach(async () => {
+    root = await fs.mkdtemp(path.join(os.tmpdir(), "joblume-saves-"));
+  });
+
+  afterEach(async () => {
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  const bytes = (n: number) => new Uint8Array([0xff, 0xd8, 0xff, n]);
+
+  it("写进去能原样读回来", async () => {
+    await writeImageFile(root, UID, "img_a.jpg", bytes(1));
+    const back = await readImageFile(root, UID, "img_a.jpg");
+    expect(Array.from(back ?? [])).toEqual([0xff, 0xd8, 0xff, 1]);
+  });
+
+  it("不存在给 null（不是抛错）", async () => {
+    expect(await readImageFile(root, UID, "img_none.jpg")).toBeNull();
+  });
+
+  it("超过上限拒绝写入", async () => {
+    await expect(
+      writeImageFile(root, UID, "img_a.jpg", new Uint8Array(MAX_IMAGE_BYTES + 1))
+    ).rejects.toThrow(/上限/);
+  });
+
+  it("删是幂等的：不存在也算成功", async () => {
+    await expect(removeImageFile(root, UID, "img_none.jpg")).resolves.toBeTruthy();
+    await writeImageFile(root, UID, "img_a.jpg", bytes(1));
+    await removeImageFile(root, UID, "img_a.jpg");
+    expect(await readImageFile(root, UID, "img_a.jpg")).toBeNull();
+  });
+
+  it("列举只认合法文件名，别的忽略", async () => {
+    await writeImageFile(root, UID, "img_a.jpg", bytes(1));
+    await writeImageFile(root, UID, "img_b.png", bytes(2));
+    const dir = path.resolve(root, "saves", UID, "images");
+    await fs.writeFile(path.join(dir, ".DS_Store"), "x");
+    await fs.writeFile(path.join(dir, "note.txt"), "x");
+    await fs.writeFile(path.join(dir, "img_c.svg"), "x");
+
+    expect(await listImageNames(root, UID)).toEqual(["img_a.jpg", "img_b.png"]);
+  });
+
+  it("目录不存在给空数组，不抛", async () => {
+    expect(await listImageNames(root, UID)).toEqual([]);
+  });
+
+  it("写图不留 .tmp", async () => {
+    await writeImageFile(root, UID, "img_a.jpg", bytes(1));
+    const names = await fs.readdir(path.resolve(root, "saves", UID, "images"));
+    expect(names.filter((n) => n.endsWith(".tmp"))).toEqual([]);
   });
 });
 

@@ -482,6 +482,141 @@ export const listUserIds = async (root: string): Promise<string[]> => {
   return ids.sort();
 };
 
+// ─────────────────────────────── 图片 ───────────────────────────────
+
+/** 图片子目录。与 `resumes` / `jds` 并列 */
+export const IMAGE_DIRNAME = "images";
+
+/**
+ * MIME → 扩展名。
+ *
+ * **扩展名由服务端从请求的 `Content-Type` 推出来，客户端不传** —— 所以存下来的路径
+ * 永远由服务端拼，客户端左右不了它。这份白名单同时就是"允许哪些格式"的定义。
+ *
+ * 覆盖的是这个应用真能产出的：`compressImage` 走 canvas 重编码，`file.type` 是什么就
+ * 编成什么（jpeg/png/webp/gif/avif 是浏览器支持的几种）；裁剪器固定输出 jpeg。
+ * SVG 进不了这份名单：它过一遍 canvas 出来就是 PNG 了。
+ */
+export const IMAGE_EXT_BY_MIME: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "image/avif": "avif",
+};
+
+export const IMAGE_MIME_BY_EXT: Record<string, string> = {
+  jpg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  avif: "image/avif",
+};
+
+/** 单张图片上限。存档是给人看/进 git 的镜像，不该被塞进几十兆的原图 */
+export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+
+/**
+ * 文件名长这样：`img_<uuid>.jpg`。
+ *
+ * ⚠️ **id 与扩展名必须分开校验**：`SAFE_SEGMENT` 刻意不含 `.`（那一条堵死了 `..`），
+ * 所以拿整个文件名去过 `isSafeSegment` 会把合法文件名一并拒掉。这里按**最后一个点**
+ * 切开，两半各校验一次，再拼回去做 `path.relative` 复核。
+ */
+export const isImageFileName = (name: unknown): name is string => {
+  if (typeof name !== "string") return false;
+  const at = name.lastIndexOf(".");
+  if (at <= 0) return false;
+  const id = name.slice(0, at);
+  const ext = name.slice(at + 1);
+  return isSafeSegment(id) && Object.prototype.hasOwnProperty.call(IMAGE_MIME_BY_EXT, ext);
+};
+
+/** 由 id 与 MIME 拼出文件名。MIME 不在白名单里就抛错（不"尽量兼容"） */
+export const imageFileName = (id: unknown, mime: string): string => {
+  if (!isSafeSegment(id)) throw new Error(`[saves] 非法的图片 id：${String(id).slice(0, 40)}`);
+  const ext = IMAGE_EXT_BY_MIME[mime.split(";")[0].trim().toLowerCase()];
+  if (!ext) throw new Error(`[saves] 不支持的图片格式：${mime.slice(0, 40)}`);
+  return `${id}.${ext}`;
+};
+
+const resolveImageDir = (root: string, userId: unknown): string =>
+  path.join(resolveUserDir(root, userId), IMAGE_DIRNAME);
+
+/** 图片的绝对路径。校验与内容文件同一套纪律，只是多了一步"id 与扩展名分开" */
+export const resolveImagePath = (root: string, userId: unknown, name: unknown): string => {
+  if (!isImageFileName(name)) {
+    throw new Error(`[saves] 非法的图片名：${String(name).slice(0, 40)}`);
+  }
+  const dir = resolveImageDir(root, userId);
+  const full = path.resolve(dir, name);
+
+  // 纵深防御：上面的字符集已经堵死了 `..` 与分隔符，这里再确认最终路径落在 images/ 之内
+  const rel = path.relative(dir, full);
+  if (rel.startsWith("..") || path.isAbsolute(rel)) {
+    throw new Error("[saves] 图片路径跑出了 images/ 目录");
+  }
+  return full;
+};
+
+/** 写一张图片。复用内容文件那套原子写 —— 半张图比半份 JSON 更难发现 */
+export const writeImageFile = async (
+  root: string,
+  userId: unknown,
+  name: unknown,
+  bytes: Uint8Array
+): Promise<string> => {
+  if (bytes.byteLength > MAX_IMAGE_BYTES) {
+    throw new Error(`[saves] 图片超过 ${MAX_IMAGE_BYTES} 字节上限`);
+  }
+  const full = resolveImagePath(root, userId, name);
+  await fs.mkdir(path.dirname(full), { recursive: true });
+  // 这里不能用 `writeFileAtomic`（它收字符串）：图片是原始字节
+  const tmp = `${full}.${randomUUID()}.tmp`;
+  await fs.writeFile(tmp, bytes);
+  await fs.rename(tmp, full);
+  return full;
+};
+
+/** 读一张图片。不存在给 `null`；内容读不出来交给调用方当 500 */
+export const readImageFile = async (
+  root: string,
+  userId: unknown,
+  name: unknown
+): Promise<Uint8Array | null> => {
+  const full = resolveImagePath(root, userId, name);
+  try {
+    return await fs.readFile(full);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+};
+
+/** 删一张图片。幂等：不存在不算错 */
+export const removeImageFile = async (
+  root: string,
+  userId: unknown,
+  name: unknown
+): Promise<string> => {
+  const full = resolveImagePath(root, userId, name);
+  await fs.rm(full, { force: true });
+  return full;
+};
+
+/** 列出这个用户存了哪些图片。只认合法文件名，`.DS_Store` 之类忽略 */
+export const listImageNames = async (root: string, userId: unknown): Promise<string[]> => {
+  const dir = resolveImageDir(root, userId);
+  let names: string[];
+  try {
+    names = await fs.readdir(dir);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+  return names.filter(isImageFileName).sort();
+};
+
 export interface DiskUserSummary {
   id: string;
   /** 档案里的姓名。读不出来给 `null`，**不跳过这个用户**（见下） */

@@ -30,7 +30,7 @@
 | **S2** | 数据层：`hash.ts` + `.baseline.json` + 批量 ops 端点 | 无 | **✅ 已完成** |
 | **S3** | 客户端：`session.ts` + 五个写盘时机 + 未保存状态 UI | S2 | **✅ 已完成**（五个时机全部接线） |
 | **S4** | 启动对账 + 冲突对话框 + 磁盘用户列表 | S3 | **✅ 已完成** —— **缺口 1 闭合**（清缓存不丢数据） |
-| **S5** | 图片落盘 + 三处形态统一 + GC | S3 | ⬜ |
+| **S5** | 图片落盘 + 三处形态统一 + GC | S3 | 🟡 **S5a 已完成**（服务端端点）；客户端接线与 GC 待做 |
 | **S6** | 备份改 zip（含图片） | S5 | ⬜ |
 | **S7** | 开源分发：compose bind mount + 回环 + CI + README + schemaVersion | S4 | ⬜ |
 | **S8** | 文档：`docs/02` 追加 D36、README 数据章节重写 | 全部 | ⬜ |
@@ -682,3 +682,53 @@ S4b 的验证脚本里那段"清掉本地数据再从盘恢复"跑不通。原�
 → 点它 → 数据读回来 → **读回来之后编辑 + 保存照常工作**。
 
 至此 `plan/saves-design.md` 的 §4 全部落地，缺口 1（清浏览器数据后读不回来）闭合。
+
+---
+
+## S5a 记录（已完成）：图片端点
+
+S5 拆三步：**S5a 只做服务端**，S5b 客户端接线（选中即上传 / IndexedDB 降级为缓存 /
+`imageEpoch`），S5c 孤儿 GC。
+
+### 为什么图片要单独一条路
+
+base64 内联会撑爆 localStorage 约 5MB 的配额（设计文档 §6 记着：2-3 张证书就够），
+而它同时挡住"备份含图 / 换机器 / 清缓存"三件事。二进制搬出去，数据里只留文件名引用。
+
+### 端点
+
+```
+POST   /api/saves/images?userId=&id=   请求体是原始字节，Content-Type 是真实 MIME
+GET    /api/saves/images?userId=&name= 回字节 + 正确的 content-type + 长缓存
+DELETE /api/saves/images               幂等，供孤儿回收用
+```
+
+与 `/api/saves` 同一套 `SAVES_ENABLED` 开关（关掉时 404，同一个契约）与路径校验纪律。
+
+### 两个关键约束
+
+1. **id 与扩展名必须分开校验**。`SAFE_SEGMENT` 刻意不含点（那一条堵死了 `..`），
+   所以拿整个 `img_x.jpg` 去过 `isSafeSegment` 会把合法文件名一并拒掉 ——
+   按最后一个点切开、两半各校验一次、再拼回去做 `path.relative` 复核。有测试钉住
+   （`isSafeSegment("img_x.jpg") === false` 而 `isImageFileName("img_x.jpg") === true`）
+2. **扩展名由服务端从 `Content-Type` 推出来，客户端不传**。所以存下来的路径永远由
+   服务端拼，客户端左右不了它。白名单只收 jpeg/png/webp/gif/avif（canvas 能编出来的），
+   SVG 不在内 —— 它过一遍 canvas 出来就是 PNG
+
+另：客户端传 `id`（`img_<uuid>`）而不是让服务端生成 —— 它要**先把引用写进数据**、
+界面才能立刻显示，上传是随后的事。
+
+### 检测结果
+
+| 检测 | 改前 | 改后 |
+|---|---|---|
+| 单元测试 | 27 文件 / 482 用例 | **27 文件 / 504 用例**（+22 图片） |
+| `tsc --noEmit` | 0 错 | **0 错** |
+| `vite build` | 通过 | **通过**（路由树自动收录 `/api/saves/images`） |
+| 9 套 e2e + 界面审计 | 全绿 | **全绿** |
+
+### 实测（curl 打真实 HTTP，不是单测）
+
+上传 → 盘上出现 `saves/<uid>/images/img_test1.png` → 读回 **HTTP 200、content-type 正确、
+69 字节与原文件逐字节一致** → 路径穿越 `../x.jpg` / 不支持格式 `image/svg+xml` /
+非法 userId 全部 400 → 删除成功。
