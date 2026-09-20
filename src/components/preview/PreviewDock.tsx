@@ -14,6 +14,7 @@ import {
 import TemplateSheet from "@/components/shared/TemplateSheet";
 import { cn } from "@/lib/utils";
 import { useResumeStore } from "@/store/useResumeStore";
+import { guardLeave } from "@/lib/saves/leaveGuard";
 import { FAQDialog } from "./FAQDialog";
 import PdfExport from "@/components/shared/PdfExport";
 
@@ -300,7 +301,7 @@ const PreviewDock = ({
                         "flex cursor-pointer h-7 w-7 items-center justify-center rounded-lg",
                         "hover:bg-accent/50 dark:hover:bg-neutral-800/50"
                       )}
-                      onClick={() => router.push("/app/dashboard")}
+                      onClick={() => void guardLeave(() => router.push("/app/dashboard"))}
                     >
                       <Home className="h-4 w-4" />
                     </div>

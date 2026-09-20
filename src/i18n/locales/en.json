@@ -965,7 +965,13 @@
   },
   "sync": {
     "failed": "Disk write failed",
-    "retryHint": "Click to save now. Changes are still in this browser."
+    "retryHint": "Click to save now. Changes are still in this browser.",
+    "cancel": "Cancel",
+    "leaveTitle": "{count} change(s) not yet written to disk",
+    "leaveHint": "If you leave now, the disk still has the old content — your changes stay in this browser and are not lost.",
+    "saveAndLeave": "Save and leave",
+    "leaveWithoutSaving": "Leave anyway",
+    "leaveBlocked": "Could not write to disk, so you were not navigated away. Your data is still in this browser."
   },
   "backup": {
     "title": "Backup",

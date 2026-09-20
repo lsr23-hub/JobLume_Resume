@@ -56,16 +56,30 @@ const currentUserId = (page: Page) =>
 /** 点全局徽标上的保存入口 —— 工作台侧边栏与编辑器头部都挂着它 */
 const saveNow = async (page: Page) => {
   const badge = page.getByRole("button", { name: /未保存|写入磁盘失败/ }).first();
-  if ((await badge.count()) === 0) {
-    // 已经干净了：不点也算成功
-    return;
-  }
+  // ⚠️ **要等它出现**：脏集是防抖刷新的（300ms），改完立刻查会误判成"没有要保存的"，
+  // 于是这一保存被静默跳过 —— 后面所有读盘的断言就都在看旧内容（实测踩过）
+  const appeared = await badge
+    .waitFor({ state: "visible", timeout: 3000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!appeared) return; // 真的干净
   await badge.click();
   await page.waitForTimeout(SETTLE);
 };
 
 const seen = (page: Page, text: string) =>
   page.getByText(text, { exact: false }).first().isVisible().catch(() => false);
+
+/** 点侧边栏切板块。**有未落盘改动时会弹离开对话框**，这里默认选「直接离开」 */
+const navTo = async (page: Page, label: string, choice = "直接离开") => {
+  await page.getByText(label, { exact: true }).first().click();
+  await page.waitForTimeout(900);
+  const button = page.getByRole("button", { name: choice }).first();
+  if ((await button.count()) > 0) {
+    await button.click();
+    await page.waitForTimeout(1300);
+  }
+};
 
 const browser = await chromium.launch();
 const page = await browser.newContext({ viewport: { width: 1500, height: 1000 } }).then((c) => c.newPage());
@@ -213,13 +227,59 @@ try {
     "甲的档案仍是甲的内容"
   );
 
+  // ════════════════ 9. 离开守卫（时机 ⑤）════════════════
+  console.log("\n── 9. 离开守卫 ──");
+  // ⚠️ 这里**不能假设当前是甲** —— §7 结束时当前用户已经是乙了。
+  // 按当前用户动态取，否则断言会读到别人的文件（写这段时踩过一次）
+  await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(1500);
+  const guardUid = await currentUserId(page);
+  const guardPath = profilePath(guardUid);
+  const nameBefore = (await readJson(guardPath)).basic?.name;
+  await page.locator("input:visible").first().fill("离开守卫测试");
+  await page.waitForTimeout(700);
+
+  await page.getByText("投递目标", { exact: true }).first().click();
+  await page.waitForTimeout(1000);
+  step(await seen(page, "还有 1 处改动没写入磁盘"), "有未落盘改动时切板块 → 弹出对话框并报出数量");
+  step(!/\/targets/.test(page.url()), "还没跳走（在等用户选择）");
+  step(await seen(page, "改动仍在浏览器里"), "文案说清了磁盘上还是旧内容");
+
+  await page.getByRole("button", { name: "取消" }).first().click();
+  await page.waitForTimeout(700);
+  step(/\/profile/.test(page.url()) && (await seen(page, "未保存")), "取消 → 留在原页且改动还在");
+
+  await navTo(page, "投递目标");
+  step(/\/targets/.test(page.url()), "「直接离开」跳走了");
+  step(
+    (await readJson(guardPath)).basic?.name === nameBefore,
+    `磁盘上仍是旧内容（这次没写盘，还是「${nameBefore}」）`
+  );
+  const localAfterLeave = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("career-profile-storage")!).state;
+    return state.profiles[state.currentUserId]?.basic?.name;
+  });
+  step(localAfterLeave === "离开守卫测试", "**改动留在浏览器里** —— 「直接离开」不是「丢弃」");
+
+  await navTo(page, "职业数据库");
+  await page.locator("input:visible").first().fill("保存后离开测试");
+  await page.waitForTimeout(700);
+  await page.getByText("投递目标", { exact: true }).first().click();
+  await page.waitForTimeout(1000);
+  await page.getByRole("button", { name: "保存并离开" }).first().click();
+  await page.waitForTimeout(1800);
+  step(/\/targets/.test(page.url()), "「保存并离开」跳走了");
+  step((await readJson(guardPath)).basic?.name === "保存后离开测试", "而且盘上确实是新内容");
+
   // ════════════════ 8. 删用户 → 目录消失且不复现 ════════════════
   console.log("\n── 8. 删用户 → 目录不复现 ──");
   await page.getByRole("button", { name: /切换用户/ }).first().click();
   await page.waitForTimeout(900);
+  // 按当前用户的名字找卡片：写死名字的话，前面哪一节改了名就会找不到（踩过）
+  const victimName = (await readJson(profilePath(yi))).basic?.name;
   const card = page
     .locator('[role="dialog"] [role="button"]')
-    .filter({ hasText: "乙同学" })
+    .filter({ hasText: victimName })
     .first();
   await card.hover();
   await page.waitForTimeout(200);

@@ -3,6 +3,7 @@ import { Loader2, Tags } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "@/i18n/compat/client";
 import { useRouter } from "@/lib/navigation";
+import { guardLeave } from "@/lib/saves/leaveGuard";
 import { Button } from "@/components/ui/button";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { useAIConfigStore } from "@/store/useAIConfigStore";
@@ -32,7 +33,7 @@ export const AutoCategorizeButton = () => {
   const handleClick = async () => {
     if (!ai.isConfigured()) {
       toast.error(t("autoTag.needKey"));
-      router.push("/app/dashboard/ai");
+      void guardLeave(() => router.push("/app/dashboard/ai"));
       return;
     }
 

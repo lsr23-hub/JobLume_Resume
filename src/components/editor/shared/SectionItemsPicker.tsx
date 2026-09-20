@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { getSectionDef } from "@/config/sections";
 import { useTranslations } from "@/i18n/compat/client";
 import { useRouter } from "@/lib/navigation";
+import { guardLeave } from "@/lib/saves/leaveGuard";
 import { cn } from "@/lib/utils";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import type { ProfileEntity } from "@/types/profile";
@@ -125,7 +126,7 @@ export const SectionItemsPicker = ({
                       size="sm"
                       onClick={() => {
                         setOpen(false);
-                        router.push("/app/dashboard/profile");
+                        void guardLeave(() => router.push("/app/dashboard/profile"));
                       }}
                     >
                       <Database className="mr-2 h-4 w-4" />

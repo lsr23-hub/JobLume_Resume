@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { SyncStatusBadge } from "../shared/SyncStatusBadge";
+import { guardLeave } from "@/lib/saves/leaveGuard";
 
 interface EditorHeaderProps {
   isMobile?: boolean;
@@ -89,7 +90,8 @@ export function EditorHeader({ isMobile }: EditorHeaderProps) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => {
-              router.push("/app/dashboard");
+              // 时机 ③/⑤：关编辑器也是"离开"，有未落盘的改动就问一句
+              void guardLeave(() => router.push("/app/dashboard"));
             }}
           >
             <span className="text-lg font-semibold">{t("common.title")}</span>

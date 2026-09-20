@@ -24,6 +24,8 @@ import Logo from "@/components/shared/Logo";
 import { useLocale, useTranslations } from "@/i18n/compat/client";
 import { CurrentUserChip } from "./CurrentUserChip";
 import { useSavesSession } from "@/hooks/useSavesSession";
+import { guardLeave } from "@/lib/saves/leaveGuard";
+import { LeaveDialog } from "@/components/shared/LeaveDialog";
 import { SyncStatusBadge } from "@/components/shared/SyncStatusBadge";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 
@@ -79,7 +81,8 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const [open, setOpen] = useState(true);
 
   const handleItemClick = (item: MenuItem) => {
-    router.push(item.url || item.href || "/");
+    // 时机 ⑤：有未落盘的改动就先问一句。**干净的导航直接放行**，没有等待感
+    void guardLeave(() => router.push(item.url || item.href || "/"));
   };
 
   const isItemActive = (item: MenuItem) =>
@@ -93,7 +96,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
           className="border-r border-border/40 bg-card/50 backdrop-blur-xl"
         >
           <SidebarHeader className="h-16 flex items-center justify-center border-b border-border/40">
-            <div className="w-full cursor-pointer justify-center flex items-center gap-2.5" onClick={() => router.push(`/${locale}`)}
+            <div className="w-full cursor-pointer justify-center flex items-center gap-2.5" onClick={() => void guardLeave(() => router.push(`/${locale}`))}
             >
               {/* 新标识是通体填满画布的三角+J，同样的盒子比原来的方形徽标
                   视觉重量大得多；36px 让它与 18px 的品牌名保持导航栏的
@@ -182,6 +185,8 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
               而多出来的那段露在 html 上，不是 body 的背景。
               职业数据库内容一多就能看见底部漏出一条白。 */}
           <div className="flex-1 min-h-0">{children}</div>
+          {/* 离开守卫的对话框。挂在这里：侧边栏的导航都从这个外壳发起 */}
+          <LeaveDialog />
         </main>
       </SidebarProvider>
     </div>

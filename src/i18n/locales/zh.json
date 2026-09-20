@@ -966,7 +966,13 @@
   },
   "sync": {
     "failed": "写入磁盘失败",
-    "retryHint": "点一下立即保存。改动仍在浏览器里，不会丢。"
+    "retryHint": "点一下立即保存。改动仍在浏览器里，不会丢。",
+    "cancel": "取消",
+    "leaveTitle": "还有 {count} 处改动没写入磁盘",
+    "leaveHint": "现在离开的话，磁盘上还是旧内容 —— 改动仍在浏览器里，不会丢。",
+    "saveAndLeave": "保存并离开",
+    "leaveWithoutSaving": "直接离开",
+    "leaveBlocked": "没能写入磁盘，先不离开。数据还在浏览器里。"
   },
   "backup": {
     "title": "数据备份",
