@@ -50,3 +50,7 @@ pnpm e2e:legacy               # 老简历用了已删模板时的回退
 - 这两个脚本**不进 `pnpm test`**：它们要一个跑着的服务端，且单次要几十秒。
   它们是「改完主链路后手工跑一遍」的验收工具，不是单元测试。
 - 每个脚本自建浏览器上下文，`localStorage` 从空开始灌数据，因此可以独立重跑。
+- ⚠️ **会新建用户的脚本必须 `import` 一次 `./userScope.mjs`** —— 那个 import 顺带注册了
+  退出时的清扫钩子（`process.on("exit", sweepNewSaves)`），它只删本次运行新建的
+  `saves/<uid>/` 目录。少了这行 import，脚本建的目录会**留在盘上变成孤儿**，
+  而且界面上看不出来（应用只从 `localStorage` 读用户，不看磁盘），只能靠 `ls saves/` 发现。
