@@ -53,6 +53,15 @@ const currentUserId = (page: Page) =>
     () => JSON.parse(localStorage.getItem("career-profile-storage")!).state.currentUserId as string
   );
 
+/** 手改磁盘上那份档案的名字 —— 模拟"用户直接在编辑器里改了文件" */
+const renameOnDisk = async (file: string, name: string) => {
+  const data = JSON.parse(await fs.readFile(file, "utf8"));
+  data.basic.name = name;
+  await fs.writeFile(file, JSON.stringify(data, null, 2), "utf8");
+};
+const diskName = async (file: string) => (await readJson(file)).basic?.name;
+const uiName = (page: Page) => page.locator("input:visible").first().inputValue();
+
 /** 点全局徽标上的保存入口 —— 工作台侧边栏与编辑器头部都挂着它 */
 const saveNow = async (page: Page) => {
   const badge = page.getByRole("button", { name: /未保存|写入磁盘失败/ }).first();
@@ -270,6 +279,40 @@ try {
   await page.waitForTimeout(1800);
   step(/\/targets/.test(page.url()), "「保存并离开」跳走了");
   step((await readJson(guardPath)).basic?.name === "保存后离开测试", "而且盘上确实是新内容");
+
+  // ════════════════ 10. 启动读回：手改文件生效 · 冲突（S4）════════════════
+  console.log("\n── 10. 启动读回 ──");
+  await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(1500);
+  const readUid = await currentUserId(page);
+  const readPath = profilePath(readUid);
+  await page.locator("input:visible").first().fill("读回测试");
+  await saveNow(page);
+  step((await diskName(readPath)) === "读回测试", "前置：保存成功，盘上是「读回测试」");
+
+  // 手改磁盘文件 → 重新打开应当生效。**这是 S4 存在的理由**：
+  // 「文件夹就是我的数据」—— 在编辑器里改它，应用要认
+  await renameOnDisk(readPath, "磁盘上手改的");
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(1800);
+  step((await uiName(page)) === "磁盘上手改的", "**手改 `profile.json` 后重新打开 → 界面显示磁盘上的内容**");
+
+  // 两边都改 → 冲突。拦掉 POST 来模拟"本地这一笔没存上"
+  await page.route("**/api/saves", (route) =>
+    route.request().method() === "POST" ? route.abort() : route.continue()
+  );
+  await page.locator("input:visible").first().fill("浏览器改的");
+  await page.waitForTimeout(800);
+  await renameOnDisk(readPath, "磁盘也改了");
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(2000);
+  step(await seen(page, "处冲突"), "两边都改过 → 弹出冲突对话框");
+  step((await uiName(page)) === "浏览器改的", "冲突期间**两边都不动**：界面保持本地那份");
+  step((await diskName(readPath)) === "磁盘也改了", "磁盘那份也原样没动（等用户选）");
+  await page.getByRole("button", { name: "保留磁盘" }).first().click();
+  await page.waitForTimeout(1300);
+  step((await uiName(page)) === "磁盘也改了", "「保留磁盘」→ 以磁盘那份为准，且对话框关闭");
+  await page.unroute("**/api/saves");
 
   // ════════════════ 8. 删用户 → 目录消失且不复现 ════════════════
   console.log("\n── 8. 删用户 → 目录不复现 ──");

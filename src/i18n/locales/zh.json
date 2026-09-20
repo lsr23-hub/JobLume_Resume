@@ -972,7 +972,15 @@
     "leaveHint": "现在离开的话，磁盘上还是旧内容 —— 改动仍在浏览器里，不会丢。",
     "saveAndLeave": "保存并离开",
     "leaveWithoutSaving": "直接离开",
-    "leaveBlocked": "没能写入磁盘，先不离开。数据还在浏览器里。"
+    "leaveBlocked": "没能写入磁盘，先不离开。数据还在浏览器里。",
+    "loadingTree": "正在读回磁盘上的数据…",
+    "conflictTitle": "有 {count} 处冲突",
+    "conflictHint": "磁盘上的版本和浏览器里的版本都改过，而且不一样。逐条选一个保留 —— 没选之前两边都不会被动。",
+    "keepDisk": "保留磁盘",
+    "keepLocal": "保留浏览器",
+    "recordProfile": "职业数据库",
+    "recordResume": "简历",
+    "recordJd": "投递目标"
   },
   "backup": {
     "title": "数据备份",

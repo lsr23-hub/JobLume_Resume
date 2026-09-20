@@ -55,7 +55,7 @@ export interface ReconcileResult {
 }
 
 /** 把快照摊成「键 → 内容」，好做逐键比对 */
-const flatten = (snapshot: SavableSnapshot): Map<string, unknown> => {
+export const flattenSnapshot = (snapshot: SavableSnapshot): Map<string, unknown> => {
   const out = new Map<string, unknown>();
   if (snapshot.profile !== null && snapshot.profile !== undefined) {
     out.set(recordKey("profile"), snapshot.profile);
@@ -74,8 +74,8 @@ export const reconcile = async ({
   disk,
   baseline,
 }: ReconcileInput): Promise<ReconcileResult> => {
-  const localByKey = flatten(local);
-  const diskByKey = flatten(disk);
+  const localByKey = flattenSnapshot(local);
+  const diskByKey = flattenSnapshot(disk);
 
   // 键取自三边的并集：任何一边有它，这一条就要有结论
   const keys = new Set<string>([

@@ -26,6 +26,7 @@ import { CurrentUserChip } from "./CurrentUserChip";
 import { useSavesSession } from "@/hooks/useSavesSession";
 import { guardLeave } from "@/lib/saves/leaveGuard";
 import { LeaveDialog } from "@/components/shared/LeaveDialog";
+import { ConflictDialog } from "@/components/shared/ConflictDialog";
 import { SyncStatusBadge } from "@/components/shared/SyncStatusBadge";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 
@@ -187,6 +188,8 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
           <div className="flex-1 min-h-0">{children}</div>
           {/* 离开守卫的对话框。挂在这里：侧边栏的导航都从这个外壳发起 */}
           <LeaveDialog />
+          {/* 对账冲突。启动时读回磁盘数据后可能弹出来 */}
+          <ConflictDialog />
         </main>
       </SidebarProvider>
     </div>

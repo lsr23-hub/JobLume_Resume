@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { useJobTargetStore } from "@/store/useJobTargetStore";
 import { useResumeStore } from "@/store/useResumeStore";
+import { applyPull } from "@/lib/saves/applyPull";
 import {
   getSession,
   refreshDirty,
@@ -50,6 +51,7 @@ const start = (): void => {
       resumes: useResumeStore.getState().byUser[userId] ?? {},
       targets: useJobTargetStore.getState().targetsByUser[userId] ?? {},
     }),
+    applyPull,
   });
 
   useCareerProfileStore.subscribe((state, prev) => {

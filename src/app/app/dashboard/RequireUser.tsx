@@ -1,5 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { Loader2 } from "lucide-react";
+import { useTranslations } from "@/i18n/compat/client";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
+import { useSavesSession } from "@/hooks/useSavesSession";
 import { UserSelectDialog } from "./UserSelectDialog";
 import { NoUserPlaceholder } from "./NoUserPlaceholder";
 
@@ -22,7 +25,9 @@ import { NoUserPlaceholder } from "./NoUserPlaceholder";
  * 风险是用户从此再也见不到门禁、只剩空状态。
  */
 export const RequireUser = ({ children }: { children: ReactNode }) => {
+  const t = useTranslations();
   const currentUserId = useCareerProfileStore((s) => s.currentUserId);
+  const session = useSavesSession();
   const [skipped, setSkipped] = useState(false);
 
   // 选到用户后复位：下次真的又没有用户时（比如把它删了），门禁应当照常先问一句
@@ -30,7 +35,22 @@ export const RequireUser = ({ children }: { children: ReactNode }) => {
     if (currentUserId) setSkipped(false);
   }, [currentUserId]);
 
-  if (currentUserId) return <>{children}</>;
+  if (currentUserId) {
+    // **读回磁盘之前不渲染数据面板。** 不拦的话会先闪一下浏览器里那份旧数据，
+    // 而对账的拉取随后到（磁盘上被手改的内容要生效），界面再变一次 —— 用户看到的是
+    // "页面自己跳了一下"。而且如果他在那几十毫秒里开始编辑，拉取会把它盖掉。
+    //
+    // 只在 `loading` 拦：`local-only`（本次部署没有磁盘存档）没有东西可读，直接放行。
+    if (session.phase === "loading") {
+      return (
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <p className="text-sm">{t("sync.loadingTree")}</p>
+        </div>
+      );
+    }
+    return <>{children}</>;
+  }
 
   return (
     <>

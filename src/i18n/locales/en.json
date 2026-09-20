@@ -971,7 +971,15 @@
     "leaveHint": "If you leave now, the disk still has the old content — your changes stay in this browser and are not lost.",
     "saveAndLeave": "Save and leave",
     "leaveWithoutSaving": "Leave anyway",
-    "leaveBlocked": "Could not write to disk, so you were not navigated away. Your data is still in this browser."
+    "leaveBlocked": "Could not write to disk, so you were not navigated away. Your data is still in this browser.",
+    "loadingTree": "Reading data back from disk…",
+    "conflictTitle": "{count} conflict(s)",
+    "conflictHint": "The disk copy and the browser copy were both changed, and they differ. Pick one to keep for each — until you do, neither side is touched.",
+    "keepDisk": "Keep disk",
+    "keepLocal": "Keep browser",
+    "recordProfile": "Career profile",
+    "recordResume": "Resume",
+    "recordJd": "Job target"
   },
   "backup": {
     "title": "Backup",

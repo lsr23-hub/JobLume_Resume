@@ -11,6 +11,7 @@ import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
 import { useSavesSession } from "@/hooks/useSavesSession";
 import { LeaveDialog } from "@/components/shared/LeaveDialog";
+import { ConflictDialog } from "@/components/shared/ConflictDialog";
 
 /** 三栏初始宽度百分比。折叠/聚焦的尺寸由下面的 effect 现算，不再预置常量 */
 const DEFAULT_PANEL_SIZES = [20, 32, 48];
@@ -242,8 +243,9 @@ export default function Home() {
         />
       </div>
 
-      {/* 离开守卫的对话框（编辑器不在 DashboardLayout 之下，得自己挂） */}
+      {/* 离开守卫与冲突对话框（编辑器不在 DashboardLayout 之下，得自己挂） */}
       <LeaveDialog />
+      <ConflictDialog />
 
       {/* 移动端布局 */}
       <div className="md:hidden h-[calc(100vh-64px)]">

@@ -6,6 +6,9 @@ import {
   recordKey,
   type Baseline,
 } from "./baseline";
+import { parseSaveTreeResponse } from "./tree";
+import { EMPTY_SNAPSHOT } from "./mirror";
+import { flattenSnapshot, reconcile, type ConflictItem, type PullItem } from "./reconcile";
 import type { MirrorOp } from "./mirror";
 
 /**
@@ -97,6 +100,13 @@ export interface SessionState {
   phase: SessionPhase;
   /** 还没落盘的条目（点保存时提交的就是它们） */
   dirtyOps: MirrorOp[];
+  /**
+   * 两边都改了、互不相等的条目。
+   *
+   * 它们**不在 `dirtyOps` 里** —— 否则点保存会把磁盘那份冲掉。要等用户在对话框上
+   * 明确选「保留浏览器」才放开。
+   */
+  conflicts: ConflictItem[];
   saving: boolean;
   lastSavedAt: number | null;
   error: string | null;
@@ -105,6 +115,7 @@ export interface SessionState {
 const INITIAL_SESSION: SessionState = {
   phase: "loading",
   dirtyOps: [],
+  conflicts: [],
   saving: false,
   lastSavedAt: null,
   error: null,
@@ -126,6 +137,7 @@ export const subscribeSession = (listener: () => void): (() => void) => {
 const sameSession = (a: SessionState, b: SessionState): boolean =>
   a.phase === b.phase &&
   a.dirtyOps === b.dirtyOps &&
+  a.conflicts === b.conflicts &&
   a.saving === b.saving &&
   a.lastSavedAt === b.lastSavedAt &&
   a.error === b.error;
@@ -141,6 +153,7 @@ const setSession = (patch: Partial<SessionState>): void => {
 export const resetSession = (): void => {
   setSession(INITIAL_SESSION);
   baselines.clear();
+  diskTrees.clear();
   activeUserId = null;
   inFlight = null;
 };
@@ -149,6 +162,14 @@ export const resetSession = (): void => {
 
 /** 每个用户一份基线缓存。基线的权威在磁盘，这里只是本会话的副本 */
 const baselines = new Map<string, Baseline>();
+
+/**
+ * 每个用户**从磁盘读回来的那棵树**。
+ *
+ * 要留着它，因为冲突解决时"保留磁盘那份"得知道磁盘上到底是什么 —— 重新拉一次
+ * 会让用户在对话框上做决定的过程中内容又变了一次。
+ */
+const diskTrees = new Map<string, SavableSnapshot>();
 
 let activeUserId: string | null = null;
 /** 正在飞的那次保存。`discardUser` 要等它落地，否则会与删目录互相追赶 */
@@ -160,6 +181,11 @@ export interface SessionDeps {
   readUserId: () => string | null;
   /** 读某个用户的数据快照 */
   readSnapshot: (userId: string) => SavableSnapshot;
+  /**
+   * 把**拉取**的结果写回 store。由接线层实现 —— 本模块刻意不 import 三个 store，
+   * 那样 `collectDirty` 与对账这两半才能脱离浏览器直接测。
+   */
+  applyPull: (userId: string, pull: PullItem[]) => void;
 }
 
 let deps: SessionDeps | null = null;
@@ -179,34 +205,83 @@ export const refreshDirty = async (): Promise<void> => {
   if (state.phase !== "ready") return;
 
   const ops = await collectDirty(deps.readSnapshot(userId), baselineOf(userId));
-  setSession({ dirtyOps: ops });
+  // **冲突的条目不算待写**：它们两边都改过，点保存会把磁盘那份冲掉。
+  // 要等用户在对话框上明确选"保留浏览器"才放它进脏集
+  const blocked = new Set(state.conflicts.map((c) => c.key));
+  setSession({
+    dirtyOps: blocked.size === 0
+      ? ops
+      : ops.filter((op) => !blocked.has(recordKey(op.kind, op.id))),
+  });
 };
 
-/** 取基线。失败（或端点不存在）→ `local-only`，界面上不再谈"未保存" */
-const loadBaseline = async (userId: string): Promise<void> => {
+/** 让某个用户的客户端基线追上磁盘（`settled` 的那些：两边其实一致，只是基线过期了） */
+const alignBaseline = async (
+  disk: SavableSnapshot,
+  baseline: Baseline,
+  settledKeys: string[]
+): Promise<void> => {
+  if (settledKeys.length === 0) return;
+  const diskByKey = flattenSnapshot(disk);
+  for (const key of settledKeys) {
+    if (diskByKey.has(key)) {
+      baseline.records[key] = await contentHash(diskByKey.get(key));
+    } else {
+      delete baseline.records[key];
+    }
+  }
+};
+
+/**
+ * **从磁盘读回整棵树**（数据 + 基线），然后对账 —— S4 的核心。
+ *
+ * 读回来的东西会**真的写进 store**：磁盘上被手改过的内容从此生效（"文件夹就是我的
+ * 数据"那件事正式成立）。冲突的条目两边都不动，交给用户。
+ *
+ * 端点不存在（静态部署）或读失败 → `local-only`：界面上不再谈"未保存"，
+ * 也不做任何拉取 —— 没有磁盘可读时，本地就是全部。
+ */
+const loadTree = async (userId: string): Promise<void> => {
+  let payload: unknown;
   try {
     const res = await fetch(`/api/saves?userId=${encodeURIComponent(userId)}`);
-    // 404 = 本次部署没有磁盘存档。与 `syncStatus` 那套一样，这是**正常部署形态**，
-    // 不是故障：不重试、不报错，只是没有地方可存
+    // 404 = 本次部署没有磁盘存档。这是**正常部署形态**，不是故障：
+    // 不重试、不报错，只是没有地方可存、也没有东西可读
     if (res.status === 404) {
-      setSession({ phase: "local-only", dirtyOps: [], error: null });
+      setSession({ phase: "local-only", dirtyOps: [], conflicts: [], error: null });
       return;
     }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const payload = (await res.json()) as { ok?: boolean; users?: Record<string, unknown> };
-    const raw = payload.users?.[userId];
-    const parsed = parseBaseline((raw as { baseline?: unknown } | undefined)?.baseline);
-    baselines.set(userId, parsed);
-    setSession({ phase: "ready", error: null });
-    await refreshDirty();
+    payload = await res.json();
   } catch (error) {
     setSession({
       phase: "local-only",
       dirtyOps: [],
+      conflicts: [],
       error: error instanceof Error ? error.message : String(error),
     });
+    return;
   }
+
+  const parsed = parseSaveTreeResponse(payload);
+  const mine = parsed.users[userId];
+  const baseline = mine?.baseline ?? emptyBaseline();
+  const disk = (mine?.snapshot ?? EMPTY_SNAPSHOT) as SavableSnapshot;
+
+  baselines.set(userId, baseline);
+  diskTrees.set(userId, disk);
+
+  const outcome = await reconcile({
+    local: deps ? deps.readSnapshot(userId) : { profile: null, resumes: {}, targets: {} },
+    disk,
+    baseline,
+  });
+
+  if (outcome.pull.length > 0 && deps) deps.applyPull(userId, outcome.pull);
+  await alignBaseline(disk, baseline, outcome.settled);
+
+  setSession({ phase: "ready", conflicts: outcome.conflicts, error: null });
+  await refreshDirty();
 };
 
 /**
@@ -319,7 +394,7 @@ export const startSession = (sessionDeps: SessionDeps): void => {
   started = true;
 
   activeUserId = sessionDeps.readUserId();
-  if (activeUserId) void loadBaseline(activeUserId);
+  if (activeUserId) void loadTree(activeUserId);
 
   window.addEventListener("pagehide", flushOnHide);
   window.addEventListener("beforeunload", (event) => {
@@ -331,13 +406,47 @@ export const startSession = (sessionDeps: SessionDeps): void => {
   });
 };
 
-/** 当前用户换了（或首次确定）：装新用户的基线并重算脏集 */
+/**
+ * 解决一条冲突。
+ *
+ * - `"disk"`：采纳磁盘那份 —— 直接拉取（写回 store），并从冲突集里摘掉
+ * - `"local"`：保留浏览器这份 —— 从冲突集里放开，它随即变成"待写"，
+ *   用户点保存时会把磁盘那份覆盖掉（那是他明确选的）
+ */
+export const resolveConflict = async (
+  key: string,
+  choice: "disk" | "local"
+): Promise<void> => {
+  const remaining = state.conflicts.filter((c) => c.key !== key);
+  const target = state.conflicts.find((c) => c.key === key);
+  setSession({ conflicts: remaining });
+  if (!target) return;
+
+  if (choice === "local") {
+    await refreshDirty();
+    return;
+  }
+
+  const userId = activeUserId;
+  const disk = userId ? diskTrees.get(userId) : undefined;
+  if (!userId || !deps || !disk) return;
+
+  const data = flattenSnapshot(disk).get(key);
+  if (data === undefined) return; // 磁盘上没这条了：交给 refreshDirty 当删除处理
+  deps.applyPull(userId, [{ key, kind: target.kind, id: target.id, data }]);
+  // 拉取之后两边一致，基线还没更新 —— 对齐一下，免得它被当成待写
+  const baseline = baselines.get(userId);
+  if (baseline) baseline.records[key] = await contentHash(data);
+  await refreshDirty();
+};
+
+/** 当前用户换了（或首次确定）：读新用户的树、对账、重算脏集 */
 export const switchTo = async (userId: string | null): Promise<void> => {
   activeUserId = userId;
   // 一律先回 `loading`：此时"能不能存"还不知道。**不要**用 `local-only` ——
   // 界面把那读成「本次部署没有磁盘存档」，而没有当前用户只是"还没选人"
   setSession({ dirtyOps: [], error: null, phase: "loading" });
-  if (userId) await loadBaseline(userId);
+  if (userId) await loadTree(userId);
 };
 
 /**
@@ -351,6 +460,7 @@ export const discardUser = async (userId: string): Promise<void> => {
     // 那批失败了也无所谓：下面就把这个用户的痕迹清掉
   });
   baselines.delete(userId);
+  diskTrees.delete(userId);
   if (activeUserId === userId) {
     activeUserId = null;
     setSession({ dirtyOps: [], phase: "loading" });
