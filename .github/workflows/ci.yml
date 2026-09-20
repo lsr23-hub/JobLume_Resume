@@ -1,0 +1,37 @@
+name: CI
+
+# PR 与主分支的常驻门禁：类型、单测、构建。
+#
+# **不跑 e2e**：那 9 套脚本要一个跑着的 dev server 加真实 Chromium，单次几分钟 ——
+# 它们是「改完主链路后手工跑一遍」的验收工具（见 scripts/e2e/README.md），
+# 放在这里会让每个 PR 都等很久，而它们要抓的问题（真实渲染、PDF 文字层、
+# 图片解码）在 CI 里也更容易因为环境差异变成假红。
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build

@@ -8,6 +8,7 @@ import {
   savesRoot,
   writeImageFile,
 } from "@/lib/server/saves";
+import { guardRequest } from "@/lib/server/rateLimit";
 
 /**
  * 图片端点：`saves/<userId>/images/<imageId>.<ext>`。
@@ -47,6 +48,8 @@ export const Route = createFileRoute("/api/saves/images")({
       /** 取一张图片的原始字节 */
       GET: async ({ request }) => {
         if (!savesEnabled()) return disabled();
+        const limited = guardRequest(request, "saves");
+        if (limited) return limited;
 
         const url = new URL(request.url);
         const userId = url.searchParams.get("userId");
@@ -77,6 +80,8 @@ export const Route = createFileRoute("/api/saves/images")({
        */
       POST: async ({ request }) => {
         if (!savesEnabled()) return disabled();
+        const limited = guardRequest(request, "saves");
+        if (limited) return limited;
 
         const url = new URL(request.url);
         const userId = url.searchParams.get("userId");
@@ -95,6 +100,8 @@ export const Route = createFileRoute("/api/saves/images")({
       /** 删一张图片（孤儿回收用）。幂等：不存在也算成功 */
       DELETE: async ({ request }) => {
         if (!savesEnabled()) return disabled();
+        const limited = guardRequest(request, "saves");
+        if (limited) return limited;
 
         let payload: Record<string, unknown> | null = null;
         try {

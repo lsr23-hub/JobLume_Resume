@@ -15,6 +15,7 @@ import {
   savesRoot,
   type SaveOp,
 } from "@/lib/server/saves";
+import { guardRequest } from "@/lib/server/rateLimit";
 import path from "node:path";
 
 /**
@@ -77,6 +78,9 @@ export const Route = createFileRoute("/api/saves")({
        */
       GET: async ({ request }) => {
         if (!savesEnabled()) return disabled();
+        // 限流放在开关之后：关掉时本来就 404，没必要为它计数
+        const limited = guardRequest(request, "saves");
+        if (limited) return limited;
 
         const url = new URL(request.url);
         const userId = url.searchParams.get("userId");
@@ -131,6 +135,8 @@ export const Route = createFileRoute("/api/saves")({
        */
       POST: async ({ request }) => {
         if (!savesEnabled()) return disabled();
+        const limited = guardRequest(request, "saves");
+        if (limited) return limited;
 
         const payload = await readBody(request);
         if (!payload) return json({ ok: false, error: "请求体不是合法 JSON 对象" }, 400);
@@ -209,6 +215,8 @@ export const Route = createFileRoute("/api/saves")({
        */
       DELETE: async ({ request }) => {
         if (!savesEnabled()) return disabled();
+        const limited = guardRequest(request, "saves");
+        if (limited) return limited;
 
         const payload = await readBody(request);
         if (!payload) return json({ ok: false, error: "请求体不是合法 JSON 对象" }, 400);

@@ -20,12 +20,21 @@
 
 const WINDOW_MS = 60_000;
 
-/** 各桶的每分钟额度。AI 路由会真花钱，图片代理只是取图 */
-export type BucketName = "ai" | "image";
+/**
+ * 各桶的每分钟额度。
+ *
+ * - `ai`：会真花钱，收得最紧
+ * - `image`：只是取图
+ * - `saves`：存档读写。**额度必须宽松** —— 它承载的是正常使用（导入一个带几十张图的
+ *   备份就会连着发几十个请求），限制太紧会把用户自己的正常操作挡住。这里挡的是
+ *   脚本刷盘，不是人
+ */
+export type BucketName = "ai" | "image" | "saves";
 
 const LIMITS: Record<BucketName, number> = {
   ai: 30,
   image: 120,
+  saves: 300,
 };
 
 /** 桶数量的上限。过期条目在这个阈值之上才清理，避免每次请求都扫一遍 */
