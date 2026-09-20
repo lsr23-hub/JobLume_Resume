@@ -846,9 +846,10 @@
       "button": "保存",
       "diskSynced": "改动已写入磁盘",
       "diskWriting": "正在写入磁盘…",
-      "diskFailed": "写入磁盘失败，正在重试…",
-      "diskStopped": "自动写入已停止。改动仍在浏览器里，不会丢。",
-      "diskDisabled": "本次部署没有磁盘存档，数据只在这个浏览器里"
+      "diskFailed": "写入磁盘失败",
+      "diskDisabled": "本次部署没有磁盘存档，数据只在这个浏览器里",
+      "unsavedCount": "未保存 {count} 处",
+      "saveNow": "立即保存"
     },
     "import": {
       "button": "导入数据",
@@ -960,12 +961,12 @@
     "cancel": "取消",
     "skippedTitle": "还没有选择用户",
     "skippedHint": "这个板块的数据按用户分开存放。选一个用户，或新建一个，才能开始。",
-    "pick": "选择用户"
+    "pick": "选择用户",
+    "saveBeforeSwitchFailed": "没能写入磁盘，先不切换用户。数据还在浏览器里。"
   },
   "sync": {
-    "retrying": "写入磁盘失败，正在重试",
-    "stopped": "已停止写入磁盘",
-    "retryHint": "点一下立即重试。改动仍在浏览器里，不会丢。"
+    "failed": "写入磁盘失败",
+    "retryHint": "点一下立即保存。改动仍在浏览器里，不会丢。"
   },
   "backup": {
     "title": "数据备份",

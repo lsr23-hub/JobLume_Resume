@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { useDeleteUser } from "@/hooks/useDeleteUser";
+import { canLeave } from "@/lib/saves/session";
+import { toast } from "sonner";
 
 /** 一张用户卡：证件照铺满，底部渐变遮罩上写名字 —— 与「我的简历」卡片同一套视觉语言 */
 const UserCard = ({
@@ -142,16 +144,37 @@ export const UserSelectDialog = ({ open, onOpenChange }: UserSelectDialogProps =
 
   const dismissible = onOpenChange !== undefined;
 
-  const handleCreate = () => {
+  /**
+   * 切人之前，先把当前用户的改动落盘。**存不上就不切。**
+   *
+   * 旧的自动镜像没有这个问题（它一直在后台写）；S3 去掉自动写盘之后，"切用户"
+   * 成了必须自己兜住的时机之一（`plan/saves-design.md` §5 的时机 ②）。
+   * 不兜的话那些改动会跟着落到新用户名下，而用户以为已经存好了。
+   *
+   * `canLeave` 会**先重算再回答**：脏集是防抖刷新的，打完字立刻点切换时它还落后
+   * 几百毫秒 —— 而那正是这个判定最该准的时候。
+   */
+  const saveBeforeSwitch = async (): Promise<boolean> => {
+    if (await canLeave()) return true;
+    toast.error(t("saveBeforeSwitchFailed"));
+    return false;
+  };
+
+  const handleCreate = async () => {
     if (busy) return;
     setBusy(true);
+    if (!(await saveBeforeSwitch())) {
+      setBusy(false);
+      return;
+    }
     // 新建即选中：用户接下来会去职业数据库填名字和证件照，卡片随之更新
     createUser();
     setBusy(false);
     if (dismissible) onOpenChange?.(false);
   };
 
-  const handlePick = (userId: string) => {
+  const handlePick = async (userId: string) => {
+    if (!(await saveBeforeSwitch())) return;
     setCurrentUser(userId);
     if (dismissible) onOpenChange?.(false);
   };

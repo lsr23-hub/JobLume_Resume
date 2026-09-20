@@ -9,7 +9,7 @@ import { MobileWorkbench } from "@/components/mobile/MobileWorkbench";
 import { PanelResizeHandle } from "react-resizable-panels";
 import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
-import { useSavesMirror } from "@/hooks/useSavesMirror";
+import { useSavesSession } from "@/hooks/useSavesSession";
 
 /** 三栏初始宽度百分比。折叠/聚焦的尺寸由下面的 effect 现算，不再预置常量 */
 const DEFAULT_PANEL_SIZES = [20, 32, 48];
@@ -45,7 +45,7 @@ export const runtime = "edge";
 
 export default function Home() {
   // 编辑器不在 DashboardLayout 之下，镜像得在这里也挂一次（start 是幂等的）
-  useSavesMirror();
+  useSavesSession();
 
   const [sidePanelCollapsed, setSidePanelCollapsed] = useState(false);
   const [editPanelCollapsed, setEditPanelCollapsed] = useState(false);

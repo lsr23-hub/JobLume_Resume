@@ -845,9 +845,10 @@
       "button": "Save",
       "diskSynced": "All changes written to disk",
       "diskWriting": "Writing to disk…",
-      "diskFailed": "Disk write failed — retrying…",
-      "diskStopped": "Automatic writing stopped. Your changes are still in this browser.",
-      "diskDisabled": "This deployment has no disk archive — data lives only in this browser"
+      "diskFailed": "Disk write failed",
+      "diskDisabled": "This deployment has no disk archive — data lives only in this browser",
+      "unsavedCount": "{count} unsaved change(s)",
+      "saveNow": "Save now"
     },
     "import": {
       "button": "Import data",
@@ -959,12 +960,12 @@
     "cancel": "Cancel",
     "skippedTitle": "No user selected",
     "skippedHint": "This section stores its data per user. Pick one or create one to get started.",
-    "pick": "Select user"
+    "pick": "Select user",
+    "saveBeforeSwitchFailed": "Could not write to disk, so the user was not switched. Your data is still in this browser."
   },
   "sync": {
-    "retrying": "Disk write failed — retrying",
-    "stopped": "Disk writing stopped",
-    "retryHint": "Click to retry now. Changes are still in this browser."
+    "failed": "Disk write failed",
+    "retryHint": "Click to save now. Changes are still in this browser."
   },
   "backup": {
     "title": "Backup",

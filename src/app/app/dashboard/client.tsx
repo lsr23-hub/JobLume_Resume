@@ -23,7 +23,7 @@ import {
 import Logo from "@/components/shared/Logo";
 import { useLocale, useTranslations } from "@/i18n/compat/client";
 import { CurrentUserChip } from "./CurrentUserChip";
-import { useSavesMirror } from "@/hooks/useSavesMirror";
+import { useSavesSession } from "@/hooks/useSavesSession";
 import { SyncStatusBadge } from "@/components/shared/SyncStatusBadge";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 
@@ -36,7 +36,7 @@ interface MenuItem {
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   // 把 store 的改动防抖镜像到磁盘上的 saves/<userId>/（编辑器那边另挂一次）
-  useSavesMirror();
+  useSavesSession();
 
   const t = useTranslations("dashboard");
   const sidebarItems: MenuItem[] = [

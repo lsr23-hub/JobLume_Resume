@@ -1,25 +1,27 @@
 /**
- * 默认存档目录 `saves/<userId>/` —— 镜像接线的端到端实测。
+ * 存档的端到端实测 —— **S3 之后的模型：手动保存为主。**
  *
- * 覆盖：首屏补同步 · 增量写 · 删条目跟着删文件 · 用户之间互不串目录。
+ * 覆盖：编辑不自动写盘 · 点保存才落盘 · 未保存状态跨刷新 · 删条目跟着删文件 ·
+ * 切用户前自动落盘 · 用户之间互不串目录 · 删用户后目录不复现。
  *
  * ⚠️ 这个脚本会**真的往仓库根下的 `saves/` 写文件**（那正是被测的行为）。
  * 所以它只用自己新建的用户 id，跑完把自己建的目录删掉，绝不碰别人的。
+ * 为此**必须 import `./userScope.mjs`** —— 那一行顺带注册了退出时的清扫钩子。
  *
- * 前置：需要一个**从仓库根启动**的服务端（`process.cwd()` 就是存档根）。
- *   pnpm dev &
- *   pnpm e2e:saves
+ * 前置：需要一个**从仓库根启动**的服务端，且带 `SAVES_ENABLED=1`（`pnpm dev` 自带）。
  */
 import { chromium, type Page } from "playwright";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { ensureCurrentUser, seedSaves } from "./userScope.mjs";
+import { ensureCurrentUser } from "./userScope.mjs";
 
 const BASE = process.env.E2E_BASE ?? "http://localhost:3000";
 const SAVES_ROOT = path.join(process.cwd(), "saves");
 
-/** 防抖 1500ms + 往返，留足余量 —— 这是等文件出现，不是在赌时序 */
-const SETTLE = 2600;
+/** 一次保存的往返 + 状态刷新，留足余量（这是在等落盘，不是赌时序） */
+const SETTLE = 1400;
+/** 比"旧的自动防抖 1500ms"更长：用来证明编辑之后**不会**自己写盘 */
+const NO_AUTO_SAVE_WAIT = 2200;
 
 const results: Array<{ ok: boolean; msg: string }> = [];
 const step = (ok: boolean, msg: string) => {
@@ -36,16 +38,34 @@ const listDir = async (p: string) => {
     return [];
   }
 };
+/** 文件的写入时刻 + 内容。用来断言"这个文件**没有**被动过" */
+const stamp = async (p: string) => {
+  const st = await fs.stat(p);
+  return { mtime: st.mtimeMs, text: await fs.readFile(p, "utf8") };
+};
 
 const profilePath = (uid: string) => path.join(SAVES_ROOT, uid, "profile.json");
-const resumePath = (uid: string, rid: string) => path.join(SAVES_ROOT, uid, "resumes", `${rid}.json`);
 const targetPath = (uid: string, tid: string) => path.join(SAVES_ROOT, uid, "jds", `${tid}.json`);
+const userDir = (uid: string) => path.join(SAVES_ROOT, uid);
 
-/** 当前用户的 id，从盘上读（不经内存别名，测的就是落盘的那份） */
 const currentUserId = (page: Page) =>
   page.evaluate(
     () => JSON.parse(localStorage.getItem("career-profile-storage")!).state.currentUserId as string
   );
+
+/** 点全局徽标上的保存入口 —— 工作台侧边栏与编辑器头部都挂着它 */
+const saveNow = async (page: Page) => {
+  const badge = page.getByRole("button", { name: /未保存|写入磁盘失败/ }).first();
+  if ((await badge.count()) === 0) {
+    // 已经干净了：不点也算成功
+    return;
+  }
+  await badge.click();
+  await page.waitForTimeout(SETTLE);
+};
+
+const seen = (page: Page, text: string) =>
+  page.getByText(text, { exact: false }).first().isVisible().catch(() => false);
 
 const browser = await chromium.launch();
 const page = await browser.newContext({ viewport: { width: 1500, height: 1000 } }).then((c) => c.newPage());
@@ -55,48 +75,82 @@ page.on("pageerror", (e) => errors.push("pageerror: " + e.message));
 const created: string[] = [];
 
 try {
-  // ════════════════ 1. 首屏补同步 ════════════════
-  console.log("\n── 1. 首屏补同步 ──");
+  // ════════════════ 1. 首屏不写盘 ════════════════
+  console.log("\n── 1. 首屏不写盘（旧的全量重写已消失）──");
   await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
   await page.evaluate(() => localStorage.clear());
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(1500);
   await ensureCurrentUser(page);
-  // **建完人立刻记下 id**：后面任何一步抛错，finally 里都还能把这个目录清掉。
-  // （第一版是等断言跑完才记，中间一失败就在盘上留了个孤儿目录）
+  // **建完人立刻记下 id**：后面任何一步抛错，finally 里都还能把这个目录清掉
   const jia = await currentUserId(page);
   created.push(jia);
+
   await page.locator("input:visible").first().fill("甲同学");
-  await page.waitForTimeout(SETTLE);
+  await saveNow(page);
+  step(await exists(profilePath(jia)), `点保存后落盘：saves/<甲>/profile.json（${jia.slice(0, 8)}…）`);
+  step((await readJson(profilePath(jia))).basic?.name === "甲同学", "档案内容与浏览器一致");
 
-  step(await exists(profilePath(jia)), `新建用户后落盘：saves/<甲>/profile.json（${jia.slice(0, 8)}…）`);
-
-  const jiaProfile = await readJson(profilePath(jia)).catch(() => null);
-  step(jiaProfile?.basic?.name === "甲同学", `档案内容与浏览器一致（name=${jiaProfile?.basic?.name}）`);
-
-  // ════════════════ 2. 增量写：简历与岗位各自成文件 ════════════════
-  console.log("\n── 2. 增量写 ──");
-  // 先种两段经历，生成简历才有内容可放
-  await page.evaluate(() => {
-    const KEY = "career-profile-storage";
-    const raw = JSON.parse(localStorage.getItem(KEY)!);
-    const p = raw.state.profiles[raw.state.currentUserId];
-    const base = { tags: [], skills: [], metrics: [], hidden: false, order: 0, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z" };
-    p.entities = {
-      exp1: { ...base, id: "exp1", type: "experience", sectionId: "experience",
-              title: "星图智能", subtitle: "前端工程师", dateRange: "2021.07 - 2024.03",
-              description: "<ul><li>把首屏加载从 3.2s 压到 1.1s</li></ul>" },
-    };
-    localStorage.setItem(KEY, JSON.stringify(raw));
-  });
-  // 种子也要写盘：应用改成从磁盘读之后，只灌 localStorage 会失效
-  await seedSaves(page);
+  const afterFirstSave = await stamp(profilePath(jia));
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(SETTLE);
-  step((await readJson(profilePath(jia)).catch(() => null))?.entities?.exp1?.title === "星图智能",
-    "改档案后 profile.json 里的条目跟着更新");
+  await page.waitForTimeout(NO_AUTO_SAVE_WAIT);
+  const afterReload = await stamp(profilePath(jia));
+  step(
+    afterReload.mtime === afterFirstSave.mtime,
+    "**重新打开页面没有重写文件** —— 旧模型下每次开机都会把全部文件重写一遍"
+  );
 
-  // 岗位：走真实 UI 建一条
+  // ════════════════ 2. 编辑不自动写盘 ════════════════
+  console.log("\n── 2. 编辑不自动写盘 ──");
+  await page.locator("input:visible").first().fill("甲同学改");
+  await page.waitForTimeout(NO_AUTO_SAVE_WAIT);
+  step(
+    (await stamp(profilePath(jia))).mtime === afterFirstSave.mtime,
+    `编辑后等 ${NO_AUTO_SAVE_WAIT}ms，磁盘**没有**被动过（自动写盘已退役）`
+  );
+  step(await seen(page, "未保存"), "界面如实显示「未保存 N 处」");
+
+  // ════════════════ 3. 点保存才落盘 ════════════════
+  console.log("\n── 3. 点保存才落盘 ──");
+  await saveNow(page);
+  step((await readJson(profilePath(jia))).basic?.name === "甲同学改", "点保存后盘上是新内容");
+  step(await seen(page, "改动已写入磁盘"), "状态回到「改动已写入磁盘」");
+  step(!(await seen(page, "未保存")), "「未保存」消失");
+
+  // ════════════════ 4. 关页面时的兜底刷盘（时机 ④）════════════════
+  console.log("\n── 4. 关页面时尽力刷一次 ──");
+  await page.locator("input:visible").first().fill("甲同学再改");
+  await page.waitForTimeout(700);
+  await page.reload({ waitUntil: "networkidle" }); // 刷新会触发 pagehide
+  await page.waitForTimeout(1500);
+  step(
+    (await readJson(profilePath(jia))).basic?.name === "甲同学再改",
+    "刷新时 `pagehide` 用 sendBeacon 把改动送下去了（没点保存也没丢）"
+  );
+  step(!(await seen(page, "未保存")), "而且它是真存上了 —— 重新打开是干净的，不是「以为存了」");
+
+  // ════════════════ 4b. 卸载时刷不上去，下次打开仍认得它没存 ════════════════
+  console.log("\n── 4b. 卸载刷盘失败 → 下次打开仍显示未保存 ──");
+  await page.locator("input:visible").first().fill("甲同学第三改");
+  await page.waitForTimeout(700);
+  // 模拟"卸载那一刻刷不上去"：离线 / 服务端挂了 / 载荷超过 sendBeacon 的上限。
+  // 这时脏集必须能从**服务端的基线 + 本地内容**重新算出来，而不是靠内存里剩下的
+  await page.route("**/api/saves", (route) =>
+    route.request().method() === "POST" ? route.abort() : route.continue()
+  );
+  await page.reload({ waitUntil: "networkidle" });
+  await page.unroute("**/api/saves");
+  await page.waitForTimeout(1800);
+  step(await seen(page, "未保存"), "仍显示「未保存」—— 脏集是重算的，不是内存残留");
+  step(
+    (await readJson(profilePath(jia))).basic?.name !== "甲同学第三改",
+    "盘上确实还是旧的（这一笔没送出去）"
+  );
+  await saveNow(page);
+  step((await readJson(profilePath(jia))).basic?.name === "甲同学第三改", "再点保存就补上了");
+
+  // ════════════════ 5. 删条目跟着删文件 ════════════════
+  console.log("\n── 5. 删条目跟着删文件 ──");
   await page.goto(`${BASE}/app/dashboard/targets`, { waitUntil: "networkidle" });
   await page.waitForTimeout(1500);
   await page.getByRole("button", { name: /新建岗位|新建投递目标/ }).first().click();
@@ -104,102 +158,87 @@ try {
   const boxes = page.locator("input:visible");
   await boxes.nth(0).fill("华泰证券");
   await boxes.nth(1).fill("高级前端工程师");
-  await page.locator("textarea:visible").first().fill("任职要求：\n1. 三年以上前端经验\n2. 熟悉 React 与性能优化");
-  await page.getByRole("button", { name: /^创建$/ }).first().click();
-  await page.waitForTimeout(SETTLE);
-
-  const jdFiles = await listDir(path.join(SAVES_ROOT, jia, "jds"));
-  step(jdFiles.length === 1, `新建岗位后 jds/ 下出现 1 个文件（${jdFiles.join(", ") || "无"}）`);
-  const jdContent = jdFiles[0] ? await readJson(path.join(SAVES_ROOT, jia, "jds", jdFiles[0])) : null;
-  step(jdContent?.company === "华泰证券" && jdContent?.matchAnalysis === null,
-    `岗位内容落盘且是单槽形状（company=${jdContent?.company}）`);
-
-  // ════════════════ 3. 删条目跟着删文件 ════════════════
-  console.log("\n── 3. 删条目跟着删文件 ──");
-  const theJd = jdFiles[0]!;
-  await page.getByRole("button", { name: /^删除$/ }).first().click();
-  await page.waitForTimeout(SETTLE);
-  step(!(await exists(path.join(SAVES_ROOT, jia, "jds", theJd))),
-    "删掉岗位后，磁盘上那份文件也消失了（不留孤儿）");
-
-  // ════════════════ 4. 用户之间互不串目录 ════════════════
-  console.log("\n── 4. 用户隔离 ──");
-  // 给甲留一条岗位，切到乙再看
-  await page.getByRole("button", { name: /新建岗位|新建投递目标/ }).first().click();
-  await page.waitForTimeout(800);
-  const boxes2 = page.locator("input:visible");
-  await boxes2.nth(0).fill("甲的公司");
-  await boxes2.nth(1).fill("前端");
   await page.locator("textarea:visible").first().fill("任职要求：\n1. 三年以上前端经验");
   await page.getByRole("button", { name: /^创建$/ }).first().click();
-  await page.waitForTimeout(SETTLE);
+  await page.waitForTimeout(800);
+
+  // 岗位页没有保存栏 —— 用全局徽标保存（它同时是这两个时机的入口）
+  await saveNow(page);
+  const jdFiles = await listDir(path.join(userDir(jia), "jds"));
+  step(jdFiles.length === 1, `新建岗位并保存后 jds/ 下出现 1 个文件（${jdFiles.join(", ") || "无"}）`);
+  const jdContent = jdFiles[0] ? await readJson(targetPath(jia, jdFiles[0]!.replace(/\.json$/, ""))) : null;
+  step(
+    jdContent?.company === "华泰证券" && jdContent?.matchAnalysis === null,
+    `岗位内容落盘且是单槽形状（company=${jdContent?.company}）`
+  );
+
+  const theJd = jdFiles[0]!;
+  await page.getByRole("button", { name: /^删除$/ }).first().click();
+  await page.waitForTimeout(800);
+  await saveNow(page);
+  step(!(await exists(path.join(userDir(jia), "jds", theJd))), "删掉岗位并保存后，磁盘上那份文件也消失了");
+
+  // ════════════════ 6. 切用户前自动落盘 ════════════════
+  console.log("\n── 6. 切用户前自动落盘 ──");
+  await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(1500);
+  await page.locator("input:visible").first().fill("甲同学切前改");
+  await page.waitForTimeout(500); // 故意不点保存
 
   await page.getByRole("button", { name: /切换用户/ }).first().click();
   await page.waitForTimeout(900);
-  // 「新建用户」是直接建人并选中，弹窗里没有名字输入框 —— 名字要回档案页填
   await page.getByRole("button", { name: "新建用户" }).first().click();
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(2000);
   const yi = await currentUserId(page);
   created.push(yi);
+  step(yi !== jia, `切到另一个用户（${yi.slice(0, 8)}…）`);
+  step(
+    (await readJson(profilePath(jia))).basic?.name === "甲同学切前改",
+    "切走的那个用户的改动被自动落盘了（时机 ②）"
+  );
+
+  // ════════════════ 7. 用户之间互不串目录 ════════════════
+  console.log("\n── 7. 用户隔离 ──");
   await page.goto(`${BASE}/app/dashboard/profile`, { waitUntil: "networkidle" });
   await page.waitForTimeout(1500);
   await page.locator("input:visible").first().fill("乙同学");
-  await page.waitForTimeout(SETTLE);
-
-  step(yi !== jia, `切到另一个用户（${yi.slice(0, 8)}…）`);
+  await saveNow(page);
   step(await exists(profilePath(yi)), "乙的 profile.json 也落盘了");
   step(
-    (await listDir(path.join(SAVES_ROOT, jia, "jds"))).length === 1,
-    "甲的 jds/ 仍然只有自己那一条，没被乙的同步动过"
+    (await listDir(path.join(userDir(jia), "jds"))).length === 0,
+    "甲的 jds/ 里没有乙的东西，也没被乙的保存动过"
   );
   step(
-    (await listDir(path.join(SAVES_ROOT, yi, "jds"))).length === 0,
-    "乙名下没有任何岗位文件（乙本来就没有岗位）"
+    (await readJson(profilePath(jia))).basic?.name === "甲同学切前改",
+    "甲的档案仍是甲的内容"
   );
 
-  // ════════════════ 5. 删用户 → 磁盘目录消失，且不被写盘追回来 ════════════════
-  console.log("\n── 5. 删用户 → 目录不复现 ──");
-  //
-  // 这一条钉的是一个**时序竞态**：在防抖窗口（1500ms）内删掉用户时，镜像队列里还留着
-  // 他的写盘 op；那批 flush 若在目录删掉**之后**落地，`fs.mkdir(recursive)` 会把目录
-  // 整个写回来 —— 用户以为删干净了，磁盘上却复活了（实测复现过：请求序列
-  // `DELETE 200 | POST 200`）。
-  //
-  // ⚠️ 所以「删除流程耗时 < 1500ms」是这条用例的**前提**：机器慢的时候它仍然会通过，
-  // 但那时它不再验证竞态。这个形状不理想，但它是目前唯一能在真实浏览器里钉住这个
-  // 不变量的办法（防抖计时器没法从外部注入）。
-  const victim = await currentUserId(page);
-  const t0 = Date.now();
-  await page.locator("input:visible").first().fill("乙同学改名");
+  // ════════════════ 8. 删用户 → 目录消失且不复现 ════════════════
+  console.log("\n── 8. 删用户 → 目录不复现 ──");
   await page.getByRole("button", { name: /切换用户/ }).first().click();
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(900);
   const card = page
     .locator('[role="dialog"] [role="button"]')
-    .filter({ hasText: "乙同学改名" })
+    .filter({ hasText: "乙同学" })
     .first();
   await card.hover();
   await page.waitForTimeout(200);
   // ⚠️ 删除按钮**必须限定在这张卡片内**。用全局 `.first()` 会点到 DOM 里第一张卡的
   // 删除按钮 —— 删掉的是别人，而症状是「被删用户的目录没消失」，极容易误判成竞态
-  // （实测踩过：整个竞态排查都是被这一条带偏的）。
   await card.getByRole("button", { name: "删除用户" }).click();
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(600);
   await page.getByRole("button", { name: "删除" }).last().click();
-  const elapsed = Date.now() - t0;
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(2500);
 
-  step(elapsed < 1500, `删除流程在防抖窗口内完成（${elapsed}ms）—— 竞态条件成立`);
-  step(
-    !(await exists(path.join(SAVES_ROOT, victim))),
-    `删用户后 saves/<uid>/ 消失，且没有被写盘追回来（${victim.slice(0, 8)}…）`
-  );
+  step(!(await exists(userDir(yi))), `删用户后 saves/<uid>/ 消失（${yi.slice(0, 8)}…）`);
+  await page.waitForTimeout(1500);
+  step(!(await exists(userDir(yi))), "再等一会儿也没被写回来");
 
   console.log("\n页面错误:", errors.length ? errors.slice(0, 4) : "无");
 } finally {
-  // 只删自己建的目录。递归删除在这里是安全的：路径来自刚创建的两个 uuid，
-  // 且限定在 saves/ 下
+  // 只删自己建的目录。递归删除在这里是安全的：路径来自刚创建的 uuid，且限定在 saves/ 下
   for (const uid of created) {
-    await fs.rm(path.join(SAVES_ROOT, uid), { recursive: true, force: true });
+    await fs.rm(userDir(uid), { recursive: true, force: true });
   }
   await browser.close();
 }

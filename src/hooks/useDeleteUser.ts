@@ -3,7 +3,7 @@ import { useCareerProfileStore } from "@/store/useCareerProfileStore";
 import { useResumeStore } from "@/store/useResumeStore";
 import { useJobTargetStore } from "@/store/useJobTargetStore";
 import { useTranslations } from "@/i18n/compat/client";
-import { discardUser } from "@/hooks/useSavesMirror";
+import { discardUser } from "@/lib/saves/session";
 
 /**
  * 彻底删除一个用户。
@@ -33,8 +33,9 @@ export const useDeleteUser = () => {
     purgeTargets(userId);
     removeUser(userId);
 
-    // ⚠️ 顺序要紧：先把镜像里这个用户的残留收干净（等他正在飞的那批写盘落地），
-    // 再去删目录。反过来的话，那批写盘会在目录删掉之后把文件写回来 —— 目录复活。
+    // ⚠️ 顺序要紧：先等他正在飞的那次保存落地，再去删目录。
+    // 反过来的话，那次保存会在目录删掉之后把文件写回来 —— 目录复活
+    // （实测见过：`DELETE 200` 之后 186ms 追来一个 `POST 200`）。
     await discardUser(userId);
 
     // 本地已经删干净了才去动磁盘。磁盘这步失败**不能**让本地回滚 ——

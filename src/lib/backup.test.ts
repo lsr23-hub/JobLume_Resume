@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { emptyBaseline } from "./saves/baseline";
+import { collectDirty } from "./saves/session";
 import type { ResumeData } from "@/types/resume";
 import { BACKUP_APP_ID, buildBackup, buildProfileArchive, estimateBackupSize, mergeById, ownerSlug, parseBackup, parseProfileArchive, stripResumeCredentials, summarizeBackup, type BackupPayload } from "./backup";
 
@@ -87,15 +89,18 @@ describe("buildBackup 摘凭据", () => {
     expect(payload.resumes[0].basic.name).toBe("张三");
   });
 
-  it("存档镜像那条路径不受影响 —— 摘了会让贡献日历当场失效", async () => {
+  it("写盘那条路径不受影响 —— 摘了会让贡献日历当场失效", async () => {
     // 防回归：stripResumeCredentials 只该用在导出路径。
-    // 存档镜像走的是 lib/saves/mirror.ts 的 diffSnapshot，不经过 buildBackup。
-    const mirror = await import("./saves/mirror");
-    const snapshot = { profile: null, resumes: { r1: { id: "r1", basic: { githubKey: "ghp_secret" } } }, targets: {} };
-    const ops = mirror.diffSnapshot(mirror.EMPTY_SNAPSHOT, snapshot as never);
+    // 写盘走的是 lib/saves/session.ts 的 collectDirty，不经过 buildBackup。
+    const ops = await collectDirty(
+      { profile: null, resumes: { r1: { id: "r1", basic: { githubKey: "ghp_secret" } } }, targets: {} },
+      emptyBaseline()
+    );
     const written = ops.find((o) => o.kind === "resume");
     expect(written).toBeDefined();
-    expect((written as never as { data: { basic: { githubKey: string } } }).data.basic.githubKey).toBe("ghp_secret");
+    expect(
+      (written as unknown as { data: { basic: { githubKey: string } } }).data.basic.githubKey
+    ).toBe("ghp_secret");
   });
 });
 
