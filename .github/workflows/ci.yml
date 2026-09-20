@@ -27,11 +27,13 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # TanStack Router generates src/routeTree.gen.ts during the Vite build.
+      # Generate it before tsc because the file is intentionally gitignored.
+      - name: Generate route tree
+        run: pnpm build
+
       - name: Type check
         run: pnpm exec tsc --noEmit
 
       - name: Unit tests
         run: pnpm test
-
-      - name: Build
-        run: pnpm build

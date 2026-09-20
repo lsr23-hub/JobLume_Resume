@@ -1,10 +1,9 @@
 name: Docker Image CI/CD
 
 on:
-  push:
-    branches: [ "main" ]
-  release:
-    types: [created]
+  # Docker Hub credentials are optional for this repository. Publish manually
+  # after configuring DOCKERHUB_USERNAME and DOCKERHUB_TOKEN.
+  workflow_dispatch:
 
 env:
   REGISTRY: docker.io
