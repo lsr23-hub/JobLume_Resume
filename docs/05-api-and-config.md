@@ -259,39 +259,44 @@ AI Provider（v1：DeepSeek）
 
 上游对此已有防御（`useResumeStore.ts` 的 `warnPersistFailure`），但只是捕获错误并警告 —— 数据实际上没有存下来。
 
-### 5.2 方案
+### 5.2 方案（D5 → D36）
 
-新增 `src/lib/imageStore.ts`：
+`src/lib/imageStore.ts` 的对外接口：
 
 ```ts
-const DB_NAME = "ImageStoreDB";
-const STORE = "images";
+/** 存一张图：压缩 → 命名 → 先写缓存 → **选中即上传**到磁盘。返回引用 `img_<uuid>.<ext>` */
+export async function storeImage(file: File): Promise<string>;
 
-/** 存入 IndexedDB，返回引用字符串 `idb:img_<uuid>` */
-export async function putImage(blob: Blob): Promise<string>;
+/** 取原始字节（缓存优先，没有就从磁盘拉）。导全库备份时按引用清单来取 */
+export async function getImageBytes(ref: string): Promise<Uint8Array | null>;
 
-/** 由引用取回 Blob */
-export async function getImage(ref: string): Promise<Blob | null>;
+/** 收下一批图片（备份导入用）：先进缓存，再尽力上传 */
+export async function importImages(images: Record<string, Uint8Array>): Promise<number>;
 
-/** 删除 */
-export async function deleteImage(ref: string): Promise<void>;
-
-/** 把 `idb:` 引用解析为可直接用于 <img src> 的 blob: URL */
-export async function resolveImageUrl(ref: string): Promise<string>;
+/** 把引用解析为可直接用于 <img src> 的 blob: URL */
+export async function resolveImageRef(ref: string): Promise<string>;
 
 /** 批量解析 DOM 中的图片引用 */
 export async function resolveImagesInElement(el: HTMLElement): Promise<void>;
 ```
 
+D5 当初只把二进制从 localStorage 挪进 **IndexedDB**，于是图片仍然只在这一个浏览器里。
+D36 把它挪到**磁盘**（`saves/<userId>/images/`），IndexedDB 降级为**缓存**。
+
 ### 5.3 引用格式
 
 | 值的形式 | 含义 | 处理 |
 |---|---|---|
-| `idb:img_<uuid>` | IndexedDB 引用 | 解析为 `blob:` URL |
-| `data:image/...` | Base64 内联（旧数据） | 原样透传 |
-| `https://...` / `/avatar.png` | 外链 | 原样透传 |
+| `img_<uuid>.<ext>` | 磁盘上的图片（`saves/<userId>/images/`） | 缓存命中/落空 → 从磁盘拉 → `blob:` URL |
+| `idb:img_<uuid>` | **旧**引用：只在 IndexedDB 里 | 同上（缓存命中即可） |
+| `data:image/...` | Base64 内联（更旧的数据） | 原样透传 |
+| `https://...` / `/avatar.png` | 外链与静态路径 | 原样透传 |
 
-**兼容性**：旧数据（Base64）无需迁移即可继续工作。用户重新上传图片时自动转为 IndexedDB 引用。
+**兼容性**：三种旧形式都无需迁移。引用**强制以 `img_` 开头**——少了这条，
+`/avatar.png` 这类静态路径会被误判成引用。
+
+**图片端点**：`GET/POST/DELETE /api/saves/images`（上传的请求体是原始字节，
+扩展名由服务端从 `Content-Type` 推出来）。
 
 ### 5.4 与导出链路的衔接
 
