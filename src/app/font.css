@@ -55,24 +55,24 @@
 }
 
 @font-face {
-  font-family: "Source Han Serif SC";
-  src: url("/fonts/SourceHanSerifSC-Regular.woff2") format("woff2");
+  font-family: "Han Serif CN";
+  src: url("/fonts/HanSerifSC-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Source Han Serif SC";
-  src: url("/fonts/SourceHanSerifSC-Medium.woff2") format("woff2");
+  font-family: "Han Serif CN";
+  src: url("/fonts/HanSerifSC-Medium.woff2") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Source Han Serif SC";
-  src: url("/fonts/SourceHanSerifSC-Bold.woff2") format("woff2");
+  font-family: "Han Serif CN";
+  src: url("/fonts/HanSerifSC-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;

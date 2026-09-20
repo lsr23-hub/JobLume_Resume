@@ -30,6 +30,19 @@ const ROOT = process.cwd();
 const SOURCE_DIR = path.join(ROOT, "font-sources");
 const OUT_DIR = path.join(ROOT, "public", "fonts");
 
+/**
+ * 产物名 → 原始字体名。**只在两者不同时才需要**。
+ *
+ * Source Han Serif 的子集必须改名才能分发（OFL 的保留字体名条款：修改版不得使用
+ * `'Source'`），而 `font-sources/` 里存的是 Adobe 的原始文件名 —— 这里显式对应。
+ */
+const SOURCE_BASE_OVERRIDE: Record<string, string> = {
+  HanSerifSC: "SourceHanSerifSC",
+};
+
+/** 子集之后要跑一遍改名的产物（同一个 RFN 理由，见 scripts/rename-subset-font.py） */
+const RENAME_AFTER_SUBSET = new Set(["HanSerifSC"]);
+
 /** 原始字体去哪下 —— 缺文件时打出来，省得下次再找 */
 const WHERE_TO_GET: Record<string, string> = {
   AlibabaPuHuiTi: "https://fonts.alibabagroup.com/ （阿里巴巴普惠体 3.0）",
@@ -113,9 +126,13 @@ const main = () => {
 
   for (const { url } of wanted.values()) {
     const base = path.basename(url).replace(/\.woff2$/, "");
-    const source = findSource(base);
+    const [familyPart, ...rest] = base.split("-");
+    const sourceBase = `${SOURCE_BASE_OVERRIDE[familyPart] ?? familyPart}${
+      rest.length > 0 ? `-${rest.join("-")}` : ""
+    }`;
+    const source = findSource(sourceBase);
     if (!source) {
-      missing.push(base);
+      missing.push(sourceBase);
       continue;
     }
 
@@ -126,6 +143,13 @@ const main = () => {
        "--layout-features=*", "--no-hinting", `--output-file=${out}`],
       { stdio: ["ignore", "ignore", "pipe"] }
     );
+
+    // 改名的产物要跟一步改名，否则下次重新生成又会把保留字体名带回来
+    if (RENAME_AFTER_SUBSET.has(familyPart)) {
+      execFileSync("python3", [path.join(ROOT, "scripts", "rename-subset-font.py"), out], {
+        stdio: ["ignore", "ignore", "pipe"],
+      });
+    }
 
     const a = statSync(source).size;
     const b = statSync(out).size;

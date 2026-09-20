@@ -10,11 +10,46 @@
 | `AlibabaPuHuiTi-3-85-Bold.woff2` | 同上 | 700 |
 | `MiSans-Normal.woff2` / `MiSans-Medium.woff2` | MiSans | 400 / 700 |
 | `NotoSansSC-{Regular,Medium,Bold}.woff2` | Noto Sans SC | 400 / 500 / 700 |
-| `SourceHanSerifSC-{Regular,Medium,Bold}.woff2` | Source Han Serif SC | 400 / 500 / 700 |
+| `HanSerifSC-{Regular,Medium,Bold}.woff2` | Han Serif（原 Source Han Serif，**已按 OFL 改名**） | 400 / 500 / 700 |
 
 前两个由 `src/routes/__root.tsx` **预加载**（首屏就要用）；其余按需加载，用户选了那个字体才拉。
 
 声明的唯一来源是 `src/utils/fonts.ts` 的 `FONT_DEFINITIONS`（运行时）与 `src/app/font.css`（静态）—— 两者必须指向同一批文件。**改一个就要改另一个**，否则会出现「界面用了 A、导出/打印去拉 B 而且 404」这种只在导出时才暴露的问题（曾经真的发生过：`MiSans-Bold.woff2` 从来没存在过）。
+
+## 许可证
+
+四个字族都允许再分发，但条款不同 —— 尤其 Source Han Serif 那条**一开始踩了坑**。
+
+| 字族 | 许可证 | 义务 |
+|---|---|---|
+| Alibaba PuHuiTi 3 | 阿里巴巴普惠体许可（永久免费商用） | 可随本软件分发；不得单独售卖字体本身 |
+| MiSans | MiSans 字体知识产权许可协议 | **必须在软件中注明使用了 MiSans 字体**（见下）；不得对字体外观做单独更改 |
+| Noto Sans SC | SIL OFL 1.1 | 随附版权声明与许可证原文 → `LICENSE-NotoSansSC.txt` |
+| Han Serif（原 Source Han Serif） | SIL OFL 1.1，**含保留字体名 `'Source'`** | 随附声明 → `LICENSE-SourceHanSerif.txt`；**修改版不得用保留名**，所以子集改了名 |
+
+> **本软件使用了 MiSans 字体**（小米科技有限责任公司）。
+>
+> 这一句是 MiSans 许可的明确要求（官方 FAQ：「可以[嵌入软件]，但您应在软件中特别注明
+> 使用了 MiSans 字体」），不是可选的礼貌。
+
+### 为什么 Han Serif 不叫 Source Han Serif
+
+OFL 的保留字体名条款：**修改版不得使用保留字体名**，而**子集化就是修改版**。
+`SourceHanSerifSC-*.woff2` 这个文件名、以及字体内部 `name` 表里的 `Source Han Serif CN`，
+**都踩中了那条**。
+
+所以子集化之后跑一遍 `scripts/rename-subset-font.py`：
+
+- 字体内部名改成 `Han Serif CN` / `HanSerifCN-*`
+- 文件名改成 `HanSerifSC-*.woff2`
+- **版权声明（nameID 0）原样保留并追加一句说明** —— 那是 OFL 要求随附的 notice，
+  也正是 RFN 声明的来源，删掉它反而违规
+
+`pnpm subset:fonts` 已内置这一步（见脚本里的 `RENAME_AFTER_SUBSET`），重新生成不会把它带回来。
+
+⚠️ `src/utils/fonts.ts` 的 `aliases` 里**保留**着旧字符串 `"Source Han Serif SC"`：
+已保存的简历把那个值存在 `globalSettings` 里，留着它那些简历才解析得到同一套字。
+那只是 CSS 里的一个**引用** —— 用户本机装了原字体就用它、没装就落到 `serif`，不涉及再分发。
 
 ## 重新生成
 

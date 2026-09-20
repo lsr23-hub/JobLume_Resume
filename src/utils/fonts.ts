@@ -110,32 +110,37 @@ const FONT_DEFINITIONS: FontDefinition[] = [
     ]
   },
   {
-    labelKey: "sourcehanserifsc",
-    value: "\"Source Han Serif SC\", \"Noto Serif SC\", serif",
+    labelKey: "hanserif",
+    value: "\"Han Serif CN\", \"Noto Serif SC\", serif",
     aliases: [
-      "\"Source Han Serif SC\", \"Noto Serif SC\", serif",
-      "\"Noto Serif SC\", \"Source Han Serif SC\", serif",
-      "Source Han Serif SC, serif",
-      "Noto Serif SC, serif"
+      "\"Han Serif CN\", \"Noto Serif SC\", serif",
+      "\"Noto Serif SC\", \"Han Serif CN\", serif",
+      "Han Serif CN, serif",
+      "Noto Serif SC, serif",
+      // 旧值：改名前叫 "Source Han Serif SC"。留着是为了**已保存的简历**
+      //（它们把这个字符串存在 globalSettings 里）仍能解析到同一套字。
+      // 这只是 CSS 里的一个**引用** —— 用户本机装了原字体就用它，没装就落到
+      // `serif`，不涉及再分发，所以与 OFL 的保留字体名条款无关
+      "\"Source Han Serif SC\", \"Noto Serif SC\", serif"
     ],
     sources: [
       {
-        family: "Source Han Serif SC",
-        url: "/fonts/SourceHanSerifSC-Regular.woff2",
+        family: "Han Serif CN",
+        url: "/fonts/HanSerifSC-Regular.woff2",
         format: "woff2",
         weight: "400",
         style: "normal"
       },
       {
-        family: "Source Han Serif SC",
-        url: "/fonts/SourceHanSerifSC-Medium.woff2",
+        family: "Han Serif CN",
+        url: "/fonts/HanSerifSC-Medium.woff2",
         format: "woff2",
         weight: "500",
         style: "normal"
       },
       {
-        family: "Source Han Serif SC",
-        url: "/fonts/SourceHanSerifSC-Bold.woff2",
+        family: "Han Serif CN",
+        url: "/fonts/HanSerifSC-Bold.woff2",
         format: "woff2",
         weight: "700",
         style: "normal"

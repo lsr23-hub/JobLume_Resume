@@ -294,7 +294,7 @@
           "alibaba": "Alibaba PuHuiTi",
           "misans": "MiSans",
           "notosanssc": "Noto Sans SC",
-          "sourcehanserifsc": "Source Han Serif SC",
+          "hanserif": "Han Serif",
           "note": "MiSans is used under its free commercial license. Keep MiSans attribution when distributing this project."
         },
         "lineHeight": {
