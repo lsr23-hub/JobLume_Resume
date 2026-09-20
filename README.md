@@ -1,342 +1,162 @@
 # 职光简历 · JobLume Resume
 
-把散落各处的求职经历沉淀成一份**结构化的职业数据库**，再针对具体岗位自动筛选、生成针对性简历。
+一个本地优先的求职工具：把经历整理成职业数据库，再按岗位生成和管理多份简历。
 
-> 本项目基于 [Magic Resume](https://github.com/JOYCEQL/magic-resume) v2.0.8 二次开发。许可证与商业限制条款见 [LICENSE](./LICENSE)。
-
----
-
-## 它解决什么问题
-
-求职时的重复劳动集中在三件事上：
-
-1. **重复录入** —— 每投一家公司就要重填一遍教育、经历、项目
-2. **手工裁剪** —— 同一段经历，A 岗位要突出性能优化、B 岗位要突出团队协作，全靠人肉判断
-3. **版本失控** —— 投了 30 家后，本地躺着一堆「简历-最终版-v3」，无法回答「我投腾讯用的是哪版」
-
-现有工具解决的是**排版**问题，不解决**内容组织与匹配**问题。
-
----
-
-## 核心流程
-
-```
-职业数据库（唯一事实来源）
-      │
-      │  无 JD：全选 + 用户自己的顺序
-      │  有 JD：LLM 全量排序            ◀── 仅此一步依赖 AI
-      │         代码按篇幅截断
-      ▼
-用户勾选（唯一决策点）
-      │  物化 materialize()
-      ▼
-简历数据（4 套模板零改动）
-      │
-      ▼
-PDF / PNG / JSON / Markdown
-```
-
-### 三个产品承诺
-
-**1. 事实与呈现分离**
-数据库存事实，简历存呈现。同一段经历可以生成十份不同侧重的简历，事实只有一份。
-
-**2. AI 是推荐者，不是决策者**
-LLM 只输出优先级排序，**勾选状态完全由用户产生**，AI 不预设任何默认值。生成路径自始至终是「用户勾选 → 物化」，与 AI 是否可用无关 —— 未配置 API Key 时功能照常可用。
-
-**3. 划线不由 AI 决定**
-模型不做「该不该放进简历」的判断 —— 那条线取决于你这份简历放得下几条，模型无从知道。它只排序，截断交给代码，名额的最终决定权在用户手里。系统也从不替用户删条目：篇幅不够时只给取舍提案，点了才应用。
-
----
+> 本项目基于 [Magic Resume](https://github.com/JOYCEQL/magic-resume) v2.0.8 二次开发。上游来源、许可证和附加条款见 [NOTICE](./NOTICE) 与 [LICENSE](./LICENSE)。
 
 ## 功能
 
-| 模块 | 说明 |
-|---|---|
-| **职业数据库** | 10 个板块（基本信息 / 教育 / 工作 / 技能 / 证书 / 项目 / 自我评价 / 校园 / 荣誉 / 语言），条目级 CRUD、拖拽排序、显示隐藏 |
-| **通用简历** | 无 JD，全选数据库条目、按用户自己的顺序落位 |
-| **投递目标** | 粘贴 JD → 拆成要求项与经历库比对 → 给出**岗位适配度等级**（只读，不勾选、不生成） |
-| **目标简历** | 选岗位 → 选模板 → **内容选择**（板块开关 + 条目勾选 + AI 理由与 ★）→ 生成 |
-| **技能覆盖度** | 报告 JD 要求中「已覆盖 / 覆盖薄弱 / 缺失」，只报告不伪造 |
-| **简历编辑** | 复用上游工作台：4 套模板、字体字号、间距边距、主题色、板块拖拽排序 |
-| **版本管理** | 投递目标分组、版本号、编辑/复制/删除 |
-| **导出** | PDF（浏览器打印，真实文字层）/ 长页 PDF / PNG 长图 / JSON / Markdown |
-| **图片存储** | 照片与证书存 IndexedDB，不占 localStorage 配额 |
-| **全库备份** | 数据库 + 简历 + 投递目标整体导出/导入（合并或覆盖） |
-
----
+- **职业数据库**：管理基本信息、教育、工作、技能、证书、项目、自我评价、校园经历、荣誉和语言能力。
+- **多份简历**：从同一份职业数据库创建多份简历，单独调整内容、模板和排版。
+- **岗位目标**：保存 JD，记录岗位要求和匹配分析。
+- **AI 辅助**：可选的 DeepSeek API 支持岗位匹配、标签分析和内容选择；未配置 API Key 时，手动编辑和导出仍可使用。
+- **四套模板**：`classic`、`modern`、`left-right`、`timeline`。
+- **导出**：浏览器打印 PDF、长页 PDF、PNG、JSON 和 Markdown。
+- **备份与存档**：导出/导入包含职业数据库、简历、岗位目标和图片的 ZIP 备份；自建部署可把数据保存到磁盘。
 
 ## 快速开始
 
+要求：Node.js 20+、pnpm 10+。
+
 ```bash
 pnpm install
-pnpm dev          # http://localhost:3000
+pnpm dev
 ```
 
-构建与测试：
+打开 <http://localhost:3000>。开发服务器默认启用本地存档功能；如只想使用浏览器本地数据，可运行：
 
 ```bash
-pnpm build        # 生产构建
-pnpm test         # 单元测试
-pnpm exec tsc --noEmit   # 类型检查
+SAVES_ENABLED=0 pnpm exec vite dev
 ```
 
-Docker（数据落在当前目录的 `saves/`，详见[部署](#部署)）：
+常用检查：
+
+```bash
+pnpm test
+pnpm exec tsc --noEmit
+pnpm build
+```
+
+## AI 配置
+
+在应用的 **AI 配置** 页面填写 DeepSeek API Key。Key 保存在当前浏览器的本地存储中，请不要把它写入仓库、截图或访问日志。
+
+使用 AI 功能时，浏览器会把请求和 Key 发给本项目服务端，再由服务端转发到上游模型服务。服务端不会把 Key 写入 `saves/`，但部署者仍能在运行时接触请求内容，因此只应把请求发给你信任的服务端。
+
+## 数据与存档
+
+应用有两种数据形态：
+
+1. **浏览器数据**：Zustand 持久化到 `localStorage`，IndexedDB 用于图片缓存和浏览器端降级。
+2. **磁盘存档**：启用 `SAVES_ENABLED=1` 后，服务端把数据写入 `saves/<userId>/`。磁盘是自建部署中的权威副本，浏览器是工作副本。
+
+磁盘存档结构大致如下：
+
+```text
+saves/<userId>/
+├── .baseline.json
+├── profile.json
+├── resumes/<resumeId>.json
+├── jds/<targetId>.json
+└── images/<imageId>.<ext>
+```
+
+`saves/` 包含姓名、联系方式、经历和图片，已被 `.gitignore` 忽略，**不要把它加入 Git 或上传到公开仓库**。
+
+应用通过明确的保存时机写盘，并在启动时检查浏览器数据、磁盘数据和基线之间的差异。冲突需要用户选择，不会自动覆盖两边内容。
+
+## 自建部署
+
+### Docker Compose
 
 ```bash
 mkdir -p saves
 docker compose up -d
 ```
 
-### 部署
+默认配置：
 
-三种方式，数据都落在同一个地方 —— **存档目录**（见下）。
+- 访问地址绑定到 `127.0.0.1:3000`；
+- 数据通过 `./saves:/data/saves` 挂载到宿主机；
+- `SAVES_ENABLED=1`；
+- 容器以非 root 用户运行，若宿主机权限不足，请调整 `saves/` 的写权限。
 
-**1. Docker（推荐自建）**
+如需让其他机器访问，请先配置认证，再修改 `docker-compose.yml` 的端口绑定。当前 `/api/saves` 没有内置账号体系：能访问站点的人可以读写该存档目录中的数据。推荐在 Caddy、nginx 或 Cloudflare Access 等反向代理层加认证。
 
-```bash
-mkdir -p saves            # 容器以 uid 1001 运行，这个目录要让它写得进去
-docker compose up -d
-```
-
-- 数据在**当前目录的 `saves/`**（bind mount，不是命名卷）—— 你随时能打开看、拷走、
-  放进自己的备份。这个应用的心智模型就是「文件夹就是我的数据」，把目录藏进命名卷
-  等于把那件事藏起来
-- 端口默认只绑 `127.0.0.1`，不对局域网暴露。要让别的机器访问，改 `docker-compose.yml`
-  里那一行 —— **但先加认证**（见下）
-- `SAVES_ENABLED=1` 已经在 compose 里设好。不设它的话应用照常能跑，但数据只活在浏览器里
-
-**2. 直接跑 node**
+### Node
 
 ```bash
-pnpm install && pnpm build
-SAVES_ENABLED=1 node server.mjs      # 存档落在 ./saves/
+pnpm install
+pnpm build
+SAVES_ENABLED=1 node server.mjs
 ```
 
-**3. 本地开发**
+默认端口是 `3000`。常用环境变量：
 
-```bash
-pnpm install && pnpm dev             # 这个脚本已经带了 SAVES_ENABLED=1
-```
-
-环境变量完整清单见 [`.env.example`](./.env.example)。需要留意的只有三个：
-
-| 变量 | 默认 | 说明 |
-|---|---|---|
-| `SAVES_ENABLED` | 关 | 存档端点的硬开关。**自建部署必须打开**，否则数据只活在浏览器里 |
-| `SAVES_ROOT` | 进程工作目录 | 存档目录的**父目录**（存档落在 `<它>/saves/`） |
-| `TRUST_PROXY` | 未设 | 跑在反向代理后面时设为 `1`，见下 |
-
-**`TRUST_PROXY` 必须按部署形态设置，设错了会影响所有人。** `/api/saves` 与 AI 转发接口
-都按来源 IP 限流（存档 300 次/分、AI 30 次/分），而 HTTP 请求本身拿不到对端地址，
-只能读转发头。
-
-- **前面有反向代理**（nginx / Caddy / Cloudflare 等）：设 `TRUST_PROXY=1`，
-  否则所有用户的请求会被当成同一个来源，**共用一个额度**，很快就被打满。
-- **直接暴露端口**：不要设。此时转发头完全由客户端伪造，采信它等于没有限流 ——
-  代价是全站共用一个额度，对单人自用够，对公开服务不够。
-
-带代理时按 `CF-Connecting-IP` → `X-Real-IP` → `X-Forwarded-For` 的**最后一跳**
-依次取来源地址（最后一跳才是自家代理看到的真实地址，攻击者预置的第一段会被忽略）。
-
-### ⚠️ 对外开放之前必须做的两件事
-
-**1. 加一层认证。** `/api/saves` 是**匿名可调用**的 —— 谁能访问到站点，谁就能读写存档目录里
-的全部数据（姓名、联系方式、完整经历）。最省事的做法是在反向代理上加 basic-auth：
-
-```caddy
-# Caddyfile
-example.com {
-  basicauth {
-    me $2a$14$...        # caddy hash-password 生成
-  }
-  reverse_proxy 127.0.0.1:3000
-}
-```
-
-这个仓库**刻意不做自己的账号体系**：自托管是单人场景，而发明一套鉴权比用现成的代理层
-风险大得多。默认只绑回环也是同一个思路 —— 没想过这件事的部署会失败关闭。
-
-**2. 想清楚 `SAVES_ENABLED` 与暴露面的关系。** 关掉它时应用照常能跑（数据只在浏览器里），
-那是静态部署的形态；打开它才需要上面那层认证。
-
-### 健康检查
-
-`GET /healthz` 返回 `200 {"status":"ok","uptimeSec":N,"rateLimitMode":"..."}`，`HEAD` 同样支持。
-它不经过应用渲染、也不受限流，可以用作容器或负载均衡的探针。
-
-`rateLimitMode` 有两种值，启动日志里也会打一行：
-
-- `per-ip` —— 已设 `TRUST_PROXY=1`，按来源 IP 分别计数。
-- `shared` —— **所有请求共用一个额度**。单人自用没问题；对外提供服务时
-  会让用户互相挤额度，表现为「明明没怎么用却提示请求过于频繁」。
-
-### ⚠️ 访问日志不要记录请求体
-
-用户填的 DeepSeek API Key 会随请求体 POST 到本站，再由服务端转发给上游。
-**如果反向代理或平台把请求体写进访问日志，这些 Key 就会留在日志文件里。**
-
-请确认访问日志只记录方法 / 路径 / 状态码 / IP 这类元信息；需要排查问题时
-再看具体请求。服务端自身的 `console.error` 只记录错误对象，不打印请求体。
-
-
-### 数据存在哪里
-
-**浏览器是工作副本，磁盘是权威副本。** 两者靠「每条记录的内容哈希 + 磁盘上的基线」对账，
-具体规则见 [docs/02-data-model.md](./docs/02-data-model.md)。
-
-浏览器里仍是三份 `localStorage`（按用户分桶）：
-
-| 内容 | 键 | 结构 |
-|---|---|---|
-| 职业数据库 | `career-profile-storage` | `profiles[userId]` + `currentUserId` |
-| 简历 | `resume-storage` | `byUser[userId][resumeId]` |
-| 投递目标 | `job-target-storage` | `targetsByUser[userId][targetId]`，每条自带一个分析槽 |
-
-#### 磁盘：`saves/<userId>/`
-
-```
-saves/<userId>/
-├── .baseline.json            每条记录上次写盘时的内容哈希（对账的判据）
-├── profile.json              职业数据库
-├── resumes/<resumeId>.json   简历
-├── jds/<targetId>.json       投递目标
-└── images/<imageId>.<ext>    照片与证书的**原始字节**
-```
-
-- **写盘时机是明确的五个**：点「立即保存」/ 切用户 / 关编辑器 / 页面隐藏或关闭 /
-  应用内离开时确认。其余时间编辑只留在浏览器里 —— 所以界面上一直写着「未保存 N 处」
-- **启动时会读回来并对账**：磁盘上被手改过的内容会生效；两边都改过则弹对话框逐条问，
-  **不自动覆盖任何一边**
-- **清掉浏览器数据不丢**：重新打开时，选择用户的弹窗里会列出「磁盘上发现的用户」，
-  点一下就连人带数据读回来
-- **图片的二进制在 `images/` 里**，数据里只留文件名引用 —— 所以「备份含图 / 换机器 /
-  清缓存」这三件事同时成立。换过照片的旧文件会在下次保存时被回收
-- `saves/` 已在 `.gitignore` 里 —— 里面是姓名、联系方式与经历
-
-#### 备份
-
-「通用设置 → 导出全库备份」导出的是一个 **zip**：
-
-```
-manifest.json    这份备份是什么、有多少东西（人看；也是导入时的版本判据）
-backup.json      数据本身
-images/          照片与证书的原始字节
-```
-
-**换台机器**：装好应用 → 建一个用户 → 导入这个 zip。数据与图片一起回来。
-（也认更早版本的单个 JSON 备份 —— 判据是文件头，不看扩展名。）
-
-单个简历 / 职业数据库的「导出数据」仍是 JSON：那份是给人看、发给招聘方的。
-
-#### 为什么不做双向同步
-
-时间戳不可靠：三个 store 的 `updatedAt` 都会因为**点标签、拖顺序**这类视图操作被 bump，
-拿它判断「哪边更新」会静默覆盖用户的真实编辑。所以对账用**内容哈希 + 基线** ——
-它只回答「这条比上次同步时变了没有」，不依赖任何时钟，也不需要合并算法。
-
-#### 服务端保存了什么
-
-**没有数据库、没有账号体系。** 用户数据只以两种形式落盘：上面那个 `saves/` 副本，
-以及容器/平台的日志（见上，**不要记录请求体**）。
-
-> 顺带一提：API Key 既不在服务端的任何存储里，也不进 `saves/` —— 每个用户填
-> 自己的 key，存在自己浏览器里。
-
-### 配置 AI 匹配（可选）
-
-「目标简历」的智能匹配需要 DeepSeek API Key：侧边栏 **AI 配置** 页填入即可。
-
-未配置时该功能降级为手动勾选 —— 候选清单、勾选、生成简历全部照常。
-
----
-
-## 技术栈
-
-| | |
+| 变量 | 作用 |
 |---|---|
-| 框架 | TanStack Start 1.160 + Vite 7 + React 18 + TypeScript |
-| 样式 | Tailwind CSS + shadcn/ui |
-| 状态 | Zustand + persist（localStorage） |
-| 富文本 | Tiptap |
-| 图片存储 | IndexedDB |
-| 测试 | Vitest |
-| AI | DeepSeek（OpenAI 兼容接口） |
+| `SAVES_ENABLED` | `1` 启用服务端存档；其他值关闭存档端点 |
+| `SAVES_ROOT` | 存档父目录，数据写入 `<SAVES_ROOT>/saves/` |
+| `TRUST_PROXY` | 仅在可信反向代理后设为 `1`，用于读取代理传来的来源 IP |
+| `PORT` | HTTP 端口，默认 `3000` |
+| `HOSTNAME` | 监听地址；本机使用可设为 `127.0.0.1` |
+| `SITE_URL` | 构建期站点地址，用于生成绝对 URL |
 
----
+完整说明见 [.env.example](./.env.example)。
 
-## 项目结构
+### 对外部署前检查
 
-```
-docs/          设计文档（PRD / 数据模型 / 算法 / 开发计划 / API）
-logo/          品牌标识源文件
-src/
-├── types/         类型定义（profile / resume / jobTarget）
-├── config/        板块定义、常量、AI 配置
-├── store/         Zustand store（职业数据库 / 简历 / 投递目标）
-├── lib/
-│   ├── profile/       物化、日期解析、分页预算
-│   ├── match/         提示词构造、结果校验、分析缓存、编排
-│   ├── saves/         存档系统（见下）
-│   ├── server/        服务端：存档读写、限流、LLM 转发
-│   ├── imageStore.ts  图片（二进制落盘 + IndexedDB 作缓存）
-│   └── backup.ts      全库备份的数据形状；backupZip.ts 是它的容器
-├── routes/api/        /api/saves（存档读写）、/api/saves/images（图片）
-├── app/app/dashboard/
-│   ├── profile/       职业数据库
-│   ├── targets/       投递目标与候选清单
-│   └── resumes/       简历列表
-└── components/
-    ├── templates/     4 套模板（classic / modern / left-right / timeline）
-    └── editor/        工作台编辑器
+- `SAVES_ENABLED=1` 时，先给 `/api/saves` 和图片接口加认证。
+- 反向代理后才设置 `TRUST_PROXY=1`；直接暴露端口时不要设置，否则客户端可以伪造转发头。
+- 访问日志不要记录请求体。请求体可能包含简历内容和 API Key。
+- 使用 HTTPS，并限制备份文件和 `saves/` 目录的读取权限。
+
+如果只是静态托管或单机使用，可以关闭 `SAVES_ENABLED`，让数据只保存在浏览器中。
+
+## 健康检查
+
+服务端提供：
+
+```text
+GET /healthz
+HEAD /healthz
 ```
 
-`lib/saves/` 是存档系统的主体，按职责分层：
+成功时返回 `200`，JSON 中包含 `status`、`uptimeSec` 和 `rateLimitMode`。
 
-| 模块 | 管什么 |
-|---|---|
-| `baseline.ts` / `images.ts` / `kinds.ts` | 前后端共用的**规则**（键格式、图片命名、版本号） |
-| `session.ts` | 会话状态机：启动读回、脏集计算、保存、冲突 |
-| `reconcile.ts` | 三方比对（本地 / 磁盘 / 基线）的纯逻辑 |
-| `applyPull.ts` / `diskUsers.ts` | 把读回来的数据写进 store；带回磁盘上的用户 |
-| `leaveGuard.ts` | 离开前的守卫（有未落盘的改动就问一句） |
+## 开发
 
-设计文档见 [docs/](docs/) —— 建议按 [PRD](docs/01-PRD.md) → [数据模型](docs/02-data-model.md) → [算法](docs/03-generation-algorithm.md) 顺序阅读。
-存档模型的设计与取舍在 [plan/saves-design.md](plan/saves-design.md)。
+主要目录：
 
----
+```text
+docs/                 设计、数据模型、算法和 API 文档
+public/               字体、图标、模板截图和演示素材
+src/config/           默认数据、板块和 AI 配置
+src/store/            浏览器端状态
+src/lib/profile/      职业档案和简历生成逻辑
+src/lib/match/        岗位匹配、提示词和结果校验
+src/lib/saves/        磁盘存档和冲突处理
+src/lib/server/       存档读写、限流和模型转发
+src/routes/api/       `/api/match`、`/api/tag`、`/api/saves`
+scripts/              评测、字体处理和端到端验收脚本
+```
 
-## 可复现性
+生成字体子集需要额外的原始字体文件。原始 TTF/OTF 放在 `font-sources/`，该目录不入 Git；流程见 [public/fonts/README.md](./public/fonts/README.md)。
 
-用户明确要求「匹配结果不要每次相差很远」。四道防线：
+端到端脚本需要先启动开发服务器和 Chromium，具体命令见 [scripts/e2e/README.md](./scripts/e2e/README.md)。
 
-| 防线 | 手段 |
-|---|---|
-| 一 | **只排序，不判定**：档位越少越稳，模型不做「推荐 / 不推荐」的二元判断 |
-| 二 | **prompt 逐字节确定**：固定序列化顺序，禁用 `Date.now()` / `Object.keys()` / `toLocaleString` |
-| 三 | **采样参数**：`temperature=0` + `seed=42`，由服务端注入，不接受客户端传值 |
-| 四 | **指纹缓存**：数据未变时不重跑，结果**零变化**；变更时提示而非自动重跑 |
+## 文档
 
-实测（8 个案例 × 3 次重跑，真实 DeepSeek）：
+- [产品需求](./docs/01-PRD.md)
+- [数据模型](./docs/02-data-model.md)
+- [简历生成算法](./docs/03-generation-algorithm.md)
+- [API 与配置](./docs/05-api-and-config.md)
+- [评测设计](./docs/07-eval-design.md)
+- [评测报告](./docs/08-eval-report.md)
+- [上游来源清单](./docs/upstream-derivation.md)
 
-| 指标 | 实测 | 阈值 |
-|---|---|---|
-| 排序一致性（Kendall τ） | 93.4% | ≥ 80% |
-| L1 缓存漂移 | 0 条 | = 0 |
+## 许可证与来源
 
-排序质量与失败案例的完整报告见 [docs/08-eval-report.md](docs/08-eval-report.md)，
-指标定义与阈值理由见 [docs/07-eval-design.md](docs/07-eval-design.md)。
-**12 项指标中 10 项达标** —— 未达标的那几项连同根因一并写在报告里，没有藏。
-（两项未达标：缺失项召回的口径在 prompt v5 变过、与旧版不可比；关键经历召回差 10 个百分点。
-阈值附近的几项会随采样抖动，同一份代码连跑两次实测过 69.3% 与 72.1% 的差别。）
+本项目是 Magic Resume v2.0.8 的衍生作品。修改文件和逐文件来源见 [docs/upstream-derivation.md](./docs/upstream-derivation.md)，字体许可证见 [public/fonts/](./public/fonts/)。
 
----
-
-## 许可证
-
-上游 Magic Resume 采用 **Apache 2.0 + 附加商业限制条款**：
-
-- ✅ 个人非商业使用免费
-- ⚠️ 二次开发后用于商业运营 / 作为 SaaS 提供 / 嵌入企业内部系统，需事先获得上游作者授权
-
-原文见 [LICENSE](LICENSE)。本项目当前定位为个人自用求职工具。
+完整许可文本见 [LICENSE](./LICENSE)。使用、修改、部署或再分发前，请按该文件中的条款执行。
