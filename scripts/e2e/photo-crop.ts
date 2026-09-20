@@ -12,7 +12,9 @@
  */
 import { chromium, type Page } from "playwright";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
+import { strFromU8, unzipSync } from "fflate";
 import { ensureCurrentUser, seedSaves } from "./userScope.mjs";
 
 /**
@@ -285,6 +287,34 @@ const restoredWidth = await page.evaluate(() => {
   return img ? img.naturalWidth : 0;
 });
 step(restoredWidth > 0, `缓存清空后照片仍显示（${restoredWidth}px 宽）—— 字节是从磁盘拉回来的`);
+
+// ─────────── 全库备份要把图片字节一起装走 ───────────
+//
+// 这是缺口 2 的全部意义：内联 base64 会撑爆 localStorage 配额，而"不装图"则让备份
+// 不完整（换台机器照片就没了）。所以备份是 zip：`manifest.json` + `backup.json` + `images/`。
+console.log("\n── 备份里的图片 ──");
+await page.goto(`${BASE}/app/dashboard/settings`, { waitUntil: "networkidle" });
+await page.waitForTimeout(1500);
+const backupDl = page.waitForEvent("download", { timeout: 20000 });
+await page.getByRole("button", { name: /导出全库备份/ }).first().click();
+const backupDownload = await backupDl;
+const backupPath = path.join(os.tmpdir(), "photo-crop-backup.zip");
+await backupDownload.saveAs(backupPath);
+
+const zipFiles = unzipSync(new Uint8Array(await fs.readFile(backupPath)));
+const zipNames = Object.keys(zipFiles).sort();
+step(
+  zipNames.includes("manifest.json") && zipNames.includes("backup.json"),
+  `备份是 zip，含清单与数据（${zipNames.filter((n) => !n.startsWith("images/")).join(", ")}）`
+);
+const insideImages = zipNames.filter((n) => n.startsWith("images/"));
+step(insideImages.length >= 1, `**照片的字节装进了备份**（${insideImages.join(", ")}）`);
+const manifest = JSON.parse(strFromU8(zipFiles["manifest.json"]));
+step(
+  manifest.counts?.images === insideImages.length,
+  `清单说的张数与实际一致（${manifest.counts?.images} 张）`
+);
+await fs.rm(backupPath, { force: true });
 
 await browser.close();
 

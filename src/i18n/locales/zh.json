@@ -992,8 +992,10 @@
     "import": "导入备份",
     "lastBackup": "上次备份：{time}",
     "neverBackedUp": "尚未备份过。浏览器清理缓存会清空全部数据，建议定期导出。",
-    "imageNote": "照片与证书以 Base64 内嵌在数据中，会一并导出 —— 这会让备份文件偏大，属正常现象。",
+    "imageNote": "备份是一个 zip：数据在 backup.json 里，照片与证书的原始字节在 images/ 里 —— 换台机器导入之后照片同样在。",
     "exportSuccess": "已导出备份（{size}）",
+    "exportMissingImages": "有 {count} 张图片找不到字节（只在浏览器缓存里、磁盘上也没有），这次备份里没有它们",
+    "importImages": "并收回了 {count} 张图片",
     "importFailed": "导入失败：{error}",
     "importSuccess": "已导入 {resumes} 份简历、{targets} 个投递目标（跳过 {skipped} 项重复）",
     "confirm": {

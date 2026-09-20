@@ -87,6 +87,10 @@ export const imageFileName = (id: unknown, mime: string): string => {
   return `${id}.${ext}`;
 };
 
+/** 由文件名取 MIME。名字非法或扩展名不认识时给 `application/octet-stream` */
+export const imageMimeOf = (name: string): string =>
+  IMAGE_MIME_BY_EXT[name.slice(name.lastIndexOf(".") + 1)] ?? "application/octet-stream";
+
 /** 生成一个新的图片 id（不含扩展名） */
 export const newImageId = (): string => `${IMAGE_ID_PREFIX}${crypto.randomUUID()}`;
 

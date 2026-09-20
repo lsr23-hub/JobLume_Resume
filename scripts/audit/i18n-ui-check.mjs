@@ -11,6 +11,7 @@
  */
 import { chromium } from "playwright";
 import fs from "node:fs";
+import { strFromU8, unzipSync } from "fflate";
 import { ensureCurrentUser, seedSaves } from "../e2e/userScope.mjs";
 
 const BASE = process.env.E2E_BASE ?? "http://localhost:3000";
@@ -202,8 +203,10 @@ await page.waitForTimeout(1200);
 const dlBak = page.waitForEvent("download", { timeout: 20000 });
 await page.getByRole("button", { name: /导出全库备份/ }).first().click();
 const bakDl = await dlBak;
-await bakDl.saveAs("/tmp/jl-audit-backup.json");
-const backup = JSON.parse(fs.readFileSync("/tmp/jl-audit-backup.json", "utf8"));
+await bakDl.saveAs("/tmp/jl-audit-backup.zip");
+// 备份是 zip（S6）：数据在 backup.json 里，图片原始字节在 images/ 里
+const backupZip = unzipSync(new Uint8Array(fs.readFileSync("/tmp/jl-audit-backup.zip")));
+const backup = JSON.parse(strFromU8(backupZip["backup.json"]));
 step(!JSON.stringify(backup).includes(FAKE_TOKEN), "全库备份文件里也搜不到 token 明文");
 step(backup.resumes?.[0]?.basic?.githubUseName === "octocat", "备份里简历的其它字段仍在");
 

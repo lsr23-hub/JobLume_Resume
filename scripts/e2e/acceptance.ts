@@ -12,6 +12,7 @@
  *   npx tsx scripts/e2e/acceptance.ts
  */
 import { chromium } from "playwright";
+import { strFromU8, unzipSync } from "fflate";
 import { ensureCurrentUser, seedSaves } from "./userScope.mjs";
 import fs from "node:fs";
 import { fingerprintEntity, fingerprintContent } from "../../src/lib/match/analysisCache";
@@ -346,9 +347,11 @@ try {
   const dl = page.waitForEvent("download", { timeout: 15000 });
   await page.getByRole("button", { name: /导出全库备份/ }).first().click();
   const download = await dl;
-  const file = `${OUT}/accept-backup.json`;
+  // 备份是 zip（S6）：`manifest.json` + `backup.json` + `images/`
+  const file = `${OUT}/accept-backup.zip`;
   await download.saveAs(file);
-  const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
+  const zipped = unzipSync(new Uint8Array(fs.readFileSync(file)));
+  const parsed = JSON.parse(strFromU8(zipped["backup.json"]));
   const entityCount = Object.keys(parsed?.profile?.entities ?? {}).length;
   const resumeCount = (parsed?.resumes ?? []).length;
   const targetCount = (parsed?.targets ?? []).length;

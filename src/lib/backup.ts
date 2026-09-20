@@ -1,3 +1,4 @@
+import { collectImageRefs } from "@/lib/saves/images";
 import type { CareerProfile } from "@/types/profile";
 import type { JobTarget } from "@/types/jobTarget";
 import type { ResumeData } from "@/types/resume";
@@ -148,6 +149,23 @@ export const parseBackup = (
     },
   };
 };
+
+/**
+ * 备份里引用了哪些图片（档案照片 / 简历照片 / 证书 url）。
+ *
+ * 打包 zip 时按这份清单去找字节；与**服务端孤儿回收**扫的是同一组字段
+ * （见 `lib/server/saves.ts` 的 `collectReferencedImages`）—— 两处不一致会让
+ * 「备份少图」或「盘上多垃圾」。图片只可能在这三处：富文本插不了图
+ * （tiptap 依赖里没有 `extension-image`）。
+ */
+export const imagesInBackup = (payload: BackupPayload): string[] =>
+  collectImageRefs([
+    payload.profile?.basic?.photo,
+    ...payload.resumes.flatMap((resume) => [
+      resume.basic?.photo,
+      ...(resume.certificates ?? []).map((certificate) => certificate.url),
+    ]),
+  ]);
 
 export interface MergeResult<T> {
   merged: Record<string, T>;

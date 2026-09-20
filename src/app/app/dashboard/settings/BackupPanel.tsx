@@ -8,13 +8,15 @@ import { useJobTargetStore } from "@/store/useJobTargetStore";
 import { normalizeImportedTarget } from "@/store/userScope";
 import {
   buildBackup,
-  estimateBackupSize,
-  ownerSlug,
+  imagesInBackup,
   mergeById,
+  ownerSlug,
   parseBackup,
   summarizeBackup,
   type BackupPayload,
 } from "@/lib/backup";
+import { buildBackupZip, parseBackupZip } from "@/lib/backupZip";
+import { getImageBytes, importImages } from "@/lib/imageStore";
 import { downloadBlob } from "@/utils/export";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +37,13 @@ import {
 
 type PendingMode = "replace" | "merge";
 
+/** 待确认的导入。zip 会带上图片字节，老的单个 JSON 没有 */
+interface PendingImport {
+  payload: BackupPayload;
+  name: string;
+  images: Record<string, Uint8Array>;
+}
+
 const BackupPanel = () => {
   const t = useTranslations("backup");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,9 +53,15 @@ const BackupPanel = () => {
   const { targets } = useJobTargetStore();
   const resumes = useResumeStore((s) => s.resumes);
 
-  const [pending, setPending] = useState<{ payload: BackupPayload; name: string } | null>(null);
+  const [pending, setPending] = useState<PendingImport | null>(null);
 
-  const handleExport = () => {
+  /**
+   * 导出全库备份 —— 一个 zip：`manifest.json` + `backup.json` + `images/`。
+   *
+   * 图片**必须装进去**：内联进 JSON 会让文件膨胀三分之一且没法单独取用，不装则备份不完整
+   * （换台机器照片就没了 —— 那正是这个功能要解决的问题）。
+   */
+  const handleExport = async () => {
     const now = new Date().toISOString();
     const payload = buildBackup({
       profile,
@@ -55,32 +70,60 @@ const BackupPanel = () => {
       now,
       ownerName: profile?.basic.name,
     });
-    const size = estimateBackupSize(payload);
 
+    // 按引用清单去找字节：缓存优先，没有就从磁盘拉
+    const images: Record<string, Uint8Array> = {};
+    const missing: string[] = [];
+    for (const ref of imagesInBackup(payload)) {
+      const bytes = await getImageBytes(ref);
+      if (bytes) images[ref] = bytes;
+      else missing.push(ref);
+    }
+
+    const { bytes } = buildBackupZip({ payload, images });
     const stamp = now.slice(0, 19).replace(/[:T]/g, "-");
     downloadBlob(
-      new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }),
-      `joblume-backup-${ownerSlug(profile?.basic.name)}-${stamp}.json`
+      new Blob([bytes], { type: "application/zip" }),
+      `joblume-backup-${ownerSlug(profile?.basic.name)}-${stamp}.zip`
     );
 
     if (profile) {
       replaceProfile({ ...profile, meta: { ...profile.meta, lastBackupAt: now } });
     }
 
-    toast.success(t("exportSuccess", { size: `${(size / 1024).toFixed(0)} KB` }));
+    toast.success(t("exportSuccess", { size: `${(bytes.byteLength / 1024).toFixed(0)} KB` }));
+    // 少图要如实说 —— 一个"看起来完整"的备份比一个明说缺了什么的备份危险得多
+    if (missing.length > 0) toast.warning(t("exportMissingImages", { count: missing.length }));
   };
 
   const handleFile = async (file: File) => {
-    const text = await file.text();
-    const parsed = parseBackup(text);
+    const buffer = new Uint8Array(await file.arrayBuffer());
+
+    // zip 还是老的单个 JSON？先看**文件头**（PK\x03\x04）再看扩展名 ——
+    // 只看扩展名的话，一个被改过名或没后缀的备份会走错分支
+    const looksLikeZip =
+      (buffer[0] === 0x50 && buffer[1] === 0x4b) || file.name.toLowerCase().endsWith(".zip");
+
+    if (looksLikeZip) {
+      const parsed = parseBackupZip(buffer);
+      if (!parsed.ok) {
+        toast.error(t("importFailed", { error: parsed.error }));
+        return;
+      }
+      setPending({ payload: parsed.payload, name: file.name, images: parsed.images });
+      return;
+    }
+
+    // 老备份（单个 JSON）继续认 —— 用户手上存的很可能就是那种
+    const parsed = parseBackup(new TextDecoder().decode(buffer));
     if (!parsed.ok) {
       toast.error(t("importFailed", { error: parsed.error }));
       return;
     }
-    setPending({ payload: parsed.payload, name: file.name });
+    setPending({ payload: parsed.payload, name: file.name, images: {} });
   };
 
-  const apply = (mode: PendingMode) => {
+  const apply = async (mode: PendingMode) => {
     if (!pending) return;
     const { payload } = pending;
 
@@ -109,6 +152,10 @@ const BackupPanel = () => {
     // 走 action：setState 不经过 set 层收口，只会改别名、不进 targetsByUser
     useJobTargetStore.getState().replaceTargets(targetResult.merged);
 
+    // 图片：先进缓存（界面立刻能显示），再尽力上传到磁盘。
+    // 放在数据之后 —— 数据里那些引用要先存在，收进来的字节才有意义
+    const imageCount = await importImages(pending.images);
+
     toast.success(
       t("importSuccess", {
         resumes: resumeResult.added,
@@ -116,6 +163,7 @@ const BackupPanel = () => {
         skipped: resumeResult.skipped + targetResult.skipped,
       })
     );
+    if (imageCount > 0) toast.success(t("importImages", { count: imageCount }));
     setPending(null);
   };
 
@@ -158,7 +206,7 @@ const BackupPanel = () => {
             <input
               ref={fileInputRef}
               type="file"
-              accept="application/json,.json"
+              accept="application/zip,.zip,application/json,.json"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -216,10 +264,10 @@ const BackupPanel = () => {
             <Button variant="ghost" onClick={() => setPending(null)}>
               {t("confirm.cancel")}
             </Button>
-            <Button variant="outline" onClick={() => apply("merge")}>
+            <Button variant="outline" onClick={() => void apply("merge")}>
               {t("confirm.merge")}
             </Button>
-            <Button variant="destructive" onClick={() => apply("replace")}>
+            <Button variant="destructive" onClick={() => void apply("replace")}>
               {t("confirm.replace")}
             </Button>
           </DialogFooter>

@@ -991,8 +991,10 @@
     "import": "Import backup",
     "lastBackup": "Last backup: {time}",
     "neverBackedUp": "Never backed up. Clearing your browser cache wipes everything — export regularly.",
-    "imageNote": "Photos and certificates are embedded as Base64 and will be included, which makes the backup file fairly large. That's expected.",
+    "imageNote": "The backup is a zip: data in backup.json, raw bytes of photos and certificates in images/ — so they survive a move to another machine.",
     "exportSuccess": "Backup exported ({size})",
+    "exportMissingImages": "{count} image(s) could not be found (only in the browser cache, not on disk) and are not in this backup",
+    "importImages": "and {count} image(s) restored",
     "importFailed": "Import failed: {error}",
     "importSuccess": "Imported {resumes} resumes and {targets} targets ({skipped} duplicates skipped)",
     "confirm": {

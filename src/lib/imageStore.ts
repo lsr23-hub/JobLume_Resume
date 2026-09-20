@@ -1,6 +1,12 @@
 import { compressImage } from "@/utils/imageUtils";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
-import { imageFileName, isImageRef, newImageId } from "@/lib/saves/images";
+import {
+  imageFileName,
+  imageMimeOf,
+  isImageFileName,
+  isImageRef,
+  newImageId,
+} from "@/lib/saves/images";
 
 /**
  * 图片：二进制落盘 + IndexedDB 作**缓存**。
@@ -178,6 +184,40 @@ export const resolveImageRef = async (ref: string): Promise<string> => {
   // 字节是"后到"的 —— 通知渲染侧再解析一次（见 `bumpImageEpoch` 的注释）
   bumpImageEpoch();
   return URL.createObjectURL(fetched);
+};
+
+/**
+ * 取一张图的**原始字节**（缓存优先，没有就从磁盘拉）。导全库备份时按引用清单来取。
+ *
+ * 取不到给 `null` —— 调用方要**如实告诉用户少了几张**，不能静默打个不完整的包。
+ */
+export const getImageBytes = async (ref: string): Promise<Uint8Array | null> => {
+  if (!isImageRef(ref)) return null;
+
+  const blob = (await getImageBlob(ref)) ?? (await fetchImageFromDisk(ref));
+  if (!blob) return null;
+  await putImageBlob(ref, blob).catch(() => undefined);
+  return new Uint8Array(await blob.arrayBuffer());
+};
+
+/**
+ * 把一批图片收进来（备份导入用）：**先进缓存**（界面立刻能显示），再尽力上传到磁盘。
+ *
+ * 只收合法文件名 —— 一个被改过的 zip 不该把任意路径塞进缓存。
+ * 返回收下的张数。
+ */
+export const importImages = async (
+  images: Record<string, Uint8Array>
+): Promise<number> => {
+  let count = 0;
+  for (const [name, bytes] of Object.entries(images)) {
+    if (!isImageFileName(name)) continue;
+    const blob = new Blob([bytes], { type: imageMimeOf(name) });
+    await putImageBlob(name, blob).catch(() => undefined);
+    await uploadImage(name, blob);
+    count += 1;
+  }
+  return count;
 };
 
 /**
