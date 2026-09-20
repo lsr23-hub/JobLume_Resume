@@ -17,13 +17,13 @@ const initialGlobalSettings: GlobalSettings = {
 export const initialResumeState = {
   title: "新建简历",
   basic: {
-    name: "宋哈娜",
-    title: "高级前端工程师",
-    employementStatus: "离职",
-    email: "zhangsan@example.com",
+    name: "叶安燃",
+    title: "战术行动专员",
+    employementStatus: "在职",
+    email: "anran.ye@example.com",
     phone: "13800138000",
-    location: "北京市朝阳区",
-    birthDate: "2025-01",
+    location: "中国·成都",
+    birthDate: "2003-08-08",
     fieldOrder: DEFAULT_FIELD_ORDER,
     icons: {
       email: "Mail",
@@ -37,11 +37,11 @@ export const initialResumeState = {
       {
         id: "personal",
         label: "个人网站",
-        value: "https://zhangsan.dev",
+        value: "https://anran.dev",
         icon: "Globe",
       },
     ],
-    photo: "/avatar.png",
+    photo: "/avatar-anran.jpg",
     githubKey: "",
     githubUseName: "",
     githubContributionsVisible: false,
@@ -49,48 +49,43 @@ export const initialResumeState = {
   education: [
     {
       id: "1",
-      school: "北京大学",
-      major: "计算机科学与技术",
-      degree: "",
-      startDate: "2013-09",
-      endDate: "2017-06",
+      school: "五行大学 · 火学院",
+      major: "武术战斗战略",
+      degree: "本科",
+      startDate: "2021-09",
+      endDate: "2025-06",
       visible: true,
       gpa: "",
       description: `<ul>
-        <li>主修课程：数据结构、算法设计、操作系统、计算机网络、Web开发技术</li>
-        <li>专业排名前 5%，连续三年获得一等奖学金</li>
-        <li>担任计算机协会技术部部长，组织多次技术分享会</li>
-        <li>参与开源项目贡献，获得 GitHub Campus Expert 认证</li>
+        <li>以专业第一名成绩毕业，入学后长期保持火学院优秀训练表现</li>
+        <li>系统学习以传统武术哲学为基础的现代战斗战略与实战方法</li>
+        <li>在高强度战斗训练、战术判断与个人作战能力方面表现突出</li>
+        <li>核心课程：现代战斗战略、武术哲学与战术决策、高机动近距离作战、战场态势判断、小队战术与协同作战、城市环境战术、危机管理与人员疏散</li>
       </ul>`,
     },
   ],
   skillContent: `<div class="skill-content">
   <ul>
-    <li>前端框架：熟悉 React、Vue.js，熟悉 Next.js、Nuxt.js 等 SSR 框架</li>
-    <li>开发语言：TypeScript、JavaScript(ES6+)、HTML5、CSS3</li>
-    <li>UI/样式：熟悉 TailwindCSS、Sass/Less、CSS Module、Styled-components</li>
-    <li>状态管理：Redux、Vuex、Zustand、Jotai、React Query</li>
-    <li>工程化工具：Webpack、Vite、Rollup、Babel、ESLint</li>
-    <li>测试工具：Jest、React Testing Library、Cypress</li>
-    <li>性能优化：熟悉浏览器渲染原理、性能指标监控、代码分割、懒加载等优化技术</li>
-    <li>版本控制：Git、SVN</li>
-    <li>技术管理：具备团队管理经验，主导过多个大型项目的技术选型和架构设计</li>
+    <li>战斗与武术：中国武术 ★★★★★、竞技武术套路 ★★★★★、近距离格斗 ★★★★★、中国古典舞 ★★★★☆</li>
+    <li>战术能力：战场态势判断 ★★★★★、单兵作战 ★★★★★、小队协同 ★★★★☆、战术指导 ★★★★☆</li>
+    <li>特殊战斗技术：朱雀扇（高温火焰投射）、火焰控制（持续燃烧压制）、高机动作战（高速位移与突破）、战斗恢复</li>
   </ul>
 </div>`,
-  selfEvaluationContent: "",
+  selfEvaluationContent: `<p>拥有长期武术训练背景和系统化战斗战略教育经历，习惯在高标准和高压力环境下完成任务。</p><p>对自己以及团队成员均保持较高要求，面对问题倾向于直接指出并推动解决。真正可靠的能力并不是在理想环境中完成训练，而是在情况失控之后依然能够作出正确判断。</p><p>长期竞技训练让我习惯失败、伤病和重复训练，也形成了持续突破个人极限的习惯。擅长独立承担高风险任务，同时正在学习如何将个人能力转化为更成熟的团队协作与领导能力。</p>`,
   experience: [
     {
       id: "1",
-      company: "字节跳动",
-      position: "高级前端工程师",
-      date: "2021.07 - 2024.12",
+      company: "守望先锋 Overwatch",
+      position: "行动干员 · 战术作战方向",
+      date: "2025.07 - 至今",
       visible: true,
       details: `<ul>
-      <li>负责抖音创作者平台的开发与维护，主导多个核心功能的技术方案设计</li>
-      <li>优化项目工程化配置，将构建时间从 8 分钟优化至 2 分钟，提升团队开发效率</li>
-      <li>设计并实现组件库，提升代码复用率达 70%，显著减少开发时间</li>
-      <li>主导性能优化项目，使平台首屏加载时间减少 50%，接入 APM 监控系统</li>
-      <li>指导初级工程师，组织技术分享会，提升团队整体技术水平</li>
+      <li>接受守望先锋邀请后加入组织，参与应对全球范围内不断升级的武装冲突</li>
+      <li>执行高风险地区战术行动，负责高机动突击、侧翼突破及重点目标压制</li>
+      <li>根据现场战况独立制定短周期战术方案，配合不同能力类型的成员执行联合行动</li>
+      <li>在复杂城市环境中执行人员保护与撤离任务</li>
+      <li>运用朱雀扇及火焰战斗技术进行近、中距离作战</li>
+      <li>代表经历：抵达直布罗陀基地期间遭遇黑爪突袭，直接参与战斗</li>
     </ul>`,
     },
   ],
@@ -98,75 +93,130 @@ export const initialResumeState = {
   projects: [
     {
       id: "p1",
-      name: "抖音创作者中台",
-      role: "前端负责人",
-      date: "2022.06 - 2023.12",
+      name: "成都城市紧急撤离与防卫行动",
+      role: "火学院学生战斗小队核心成员",
+      date: "2025.05",
       description: `<ul>
-        <li>基于 React 开发的创作者数据分析和内容管理平台，服务百万级创作者群体</li>
-        <li>包含数据分析、内容管理、收益管理等多个子系统</li>
-        <li>使用 Redux 进行状态管理，实现复杂数据流的高效处理</li>
-        <li>采用 Ant Design 组件库，确保界面设计的一致性和用户体验</li>
-        <li>实施代码分割和懒加载策略，优化大规模应用的加载性能</li>
+        <li>归零者袭击成都，正规力量抵达前火学院学生被部署至现场协助平民撤离</li>
+        <li>判断现场主要威胁方向，协助制定平民撤离路径</li>
+        <li>与学生战斗小队建立临时防御阵线，保护缺乏战斗能力的平民</li>
+        <li>防线被突破后主动承担断后任务，独自牵制敌方单位为其他人争取时间</li>
+        <li>在敌方数量占明显优势的情况下争取到关键撤离时间，随后与叶无漾协同突破包围撤离</li>
+        <li>行动记录受到守望先锋关注，最终获得组织正式招募邀请</li>
       </ul>`,
       visible: true,
     },
     {
       id: "p2",
-      name: "微信小程序开发者工具",
-      role: "核心开发者",
-      date: "2020.03 - 2021.06",
+      name: "火系战斗武器联合研究项目",
+      role: "武术动作适配 · 实战测试",
+      date: "2024.09 - 2025.01",
       description: `<ul>
-        <li>为开发者提供小程序开发、调试和发布的一站式解决方案</li>
-        <li>基于 Electron 构建的跨平台桌面应用</li>
-        <li>支持多平台开发，包括 Windows、macOS 和 Linux</li>
-        <li>提供实时的错误日志和性能分析工具</li>
-        <li>集成第三方插件和 SDK，支持开发者自定义功能</li>
-      </ul>`,
-      visible: true,
-    },
-    {
-      id: "p3",
-      name: "前端监控平台",
-      role: "技术负责人",
-      date: "2021.09 - 2022.03",
-      description: `<ul>
-        <li>一个完整的前端监控解决方案，包含错误监控、性能监控、用户行为分析等功能。</li>
-        <li>基于 Vue 和 Element UI 构建，提供实时的监控数据和可视化分析工具。</li>
-        <li>支持多种监控指标，包括错误日志、性能指标、用户行为分析等。</li>
-        <li>提供详细的错误日志和性能分析工具，帮助开发者定位和优化问题。</li>
-        <li>集成第三方插件和 SDK，支持开发者自定义功能。</li>
+        <li>五行大学火学院 × 金学院合作项目，参与火属性战斗长棍原型装备研究</li>
+        <li>负责武术动作适配、武器实战测试、火焰输出方式设计与人体工学反馈</li>
+        <li>完成第一阶段原型测试；测试中出现能量控制事故造成庭院起火，随后进行安全性复盘</li>
+        <li>认识到高性能战斗装备的设计不能仅考虑输出能力，必须把安全冗余、使用者控制能力与复杂环境风险一并纳入设计</li>
       </ul>`,
       visible: true,
     },
   ],
   menuSections: [
     { id: "basic", title: "基本信息", icon: "👤", enabled: true, order: 0 },
-    { id: "skills", title: "专业技能", icon: "⚡", enabled: true, order: 1 },
-    {
-      id: "experience",
-      title: "工作经验",
-      icon: "💼",
-      enabled: true,
-      order: 2,
-    },
-
-    {
-      id: "projects",
-      title: "项目经历",
-      icon: "🚀",
-      enabled: true,
-      order: 3,
-    },
-    {
-      id: "education",
-      title: "教育经历",
-      icon: "🎓",
-      enabled: true,
-      order: 4,
-    },
+    { id: "education", title: "教育经历", icon: "🎓", enabled: true, order: 1 },
+    { id: "experience", title: "工作经验", icon: "💼", enabled: true, order: 2 },
+    { id: "skills", title: "专业技能", icon: "⚡", enabled: true, order: 3 },
+    { id: "projects", title: "项目经历", icon: "🚀", enabled: true, order: 4 },
+    { id: "campus", title: "校园经历", icon: "🏫", enabled: true, order: 5 },
+    { id: "honors", title: "获奖情况", icon: "🎖️", enabled: true, order: 6 },
+    { id: "selfEvaluation", title: "自我评价", icon: "💬", enabled: true, order: 7 },
   ],
   certificates: [],
-  customData: {},
+  customData: {
+    campus: [
+      {
+        id: "c1",
+        title: "五行大学火学院",
+        subtitle: "学生训练负责人 / 高年级学生导师",
+        dateRange: "2023.09 - 2025.06",
+        visible: true,
+        description: `<ul>
+        <li>协助低年级学生进行武术及实战训练，参与学院高强度战斗模拟训练</li>
+        <li>对训练动作、战斗策略和现场决策提供改进意见，帮助表现落后的学生制定针对性训练计划</li>
+        <li>长期承担学生间非正式指导角色，指导风格偏直接、严格</li>
+      </ul>`,
+      },
+      {
+        id: "c2",
+        title: "五行大学校级武术代表队",
+        subtitle: "核心运动员",
+        dateRange: "2021.09 - 2025.06",
+        visible: true,
+        description: `<ul>
+        <li>入学前已拥有多年竞技武术套路经验</li>
+        <li>入学后主动结束职业竞技生涯，将主要精力投入火学院武术与战斗战略研究</li>
+        <li>继续保持高水平日常训练</li>
+      </ul>`,
+      },
+    ],
+    honors: [
+      {
+        id: "h1",
+        title: "五行大学火学院优秀毕业生",
+        subtitle: "",
+        dateRange: "2025.06",
+        visible: true,
+        description: "以专业第一名成绩完成火学院全部培养项目",
+      },
+      {
+        id: "h2",
+        title: "守望先锋招募资格",
+        subtitle: "",
+        dateRange: "2025.06",
+        visible: true,
+        description: "因成都防卫行动中的表现受到守望先锋关注，与叶无漾共同获得加入邀请",
+      },
+      {
+        id: "h3",
+        title: "成都防卫行动特别表彰",
+        subtitle: "",
+        dateRange: "2025.05",
+        visible: true,
+        description: "因在归零者袭击期间保护平民并掩护学生小队撤离获得特别表彰",
+      },
+      {
+        id: "h4",
+        title: "五行大学火学院年度优秀学生",
+        subtitle: "",
+        dateRange: "2022 - 2024",
+        visible: true,
+        description: "",
+      },
+      {
+        id: "h5",
+        title: "全国青年武术套路赛事奖项",
+        subtitle: "",
+        dateRange: "2019",
+        visible: true,
+        description: "多次进入全国及地区赛事前三名",
+      },
+      {
+        id: "h6",
+        title: "青少年武术套路纪录保持者",
+        subtitle: "",
+        dateRange: "2016 - 2019",
+        visible: true,
+        description: "竞技生涯期间连续多年刷新相关赛事纪录",
+      },
+      {
+        id: "h7",
+        title: "中国古典舞青年组奖项",
+        subtitle: "",
+        dateRange: "2018",
+        visible: true,
+        description: "",
+      },
+    ],
+  },
   activeSection: "basic",
   globalSettings: initialGlobalSettings,
 };
