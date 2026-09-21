@@ -1,13 +1,14 @@
 import { spawn } from "node:child_process";
+import { resolve } from "node:path";
 
 const browserOnly = process.argv.includes("--browser-only");
-const command = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const env = {
   ...process.env,
   SAVES_ENABLED: browserOnly ? "0" : "1"
 };
 
-const child = spawn(command, ["exec", "vite", "dev"], {
+const viteCli = resolve("node_modules", "vite", "bin", "vite.js");
+const child = spawn(process.execPath, [viteCli, "dev"], {
   env,
   stdio: "inherit",
   shell: false
