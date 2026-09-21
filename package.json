@@ -8,7 +8,8 @@
     "build": "vite build",
     "canary": "tsx scripts/match-canary.ts",
     "audit:i18n-ui": "node scripts/audit/i18n-ui-check.mjs",
-    "dev": "SAVES_ENABLED=1 vite dev",
+    "dev": "node scripts/dev.mjs",
+    "dev:browser-only": "node scripts/dev.mjs --browser-only",
     "e2e:acceptance": "tsx scripts/e2e/acceptance.ts",
     "e2e:core": "node scripts/e2e/core-flow.mjs",
     "e2e:legacy": "node scripts/e2e/legacy-template.mjs",
@@ -23,7 +24,7 @@
     "install:playwright": "playwright install chromium",
     "preview": "vite preview",
     "release": "bumpp",
-    "start": "node server.mjs",
+    "start": "node scripts/start.mjs",
     "subset:fonts": "tsx scripts/subset-fonts.ts",
     "test": "vitest run",
     "test:watch": "vitest"

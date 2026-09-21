@@ -16,7 +16,14 @@
 
 ## 快速开始
 
-要求：Node.js 20+、pnpm 10+。
+要求：Node.js 20+、pnpm 10+。Windows 用户建议使用 PowerShell。
+
+Windows 如果尚未安装 pnpm，可先启用 Node.js 自带的 Corepack：
+
+```powershell
+corepack enable
+corepack prepare pnpm@10.3.0 --activate
+```
 
 ```bash
 pnpm install
@@ -26,8 +33,10 @@ pnpm dev
 打开 <http://localhost:3000>。开发服务器默认启用本地存档功能；如只想使用浏览器本地数据，可运行：
 
 ```bash
-SAVES_ENABLED=0 pnpm exec vite dev
+pnpm dev:browser-only
 ```
+
+`pnpm dev`、`pnpm dev:browser-only` 和 `pnpm start` 已使用跨平台环境变量写法，Windows、macOS 和 Linux 都可以直接执行。
 
 常用检查：
 
@@ -74,6 +83,13 @@ mkdir -p saves
 docker compose up -d
 ```
 
+Windows PowerShell：
+
+```powershell
+New-Item -ItemType Directory -Force saves
+docker compose up -d
+```
+
 默认配置：
 
 - 访问地址绑定到 `127.0.0.1:3000`；
@@ -88,7 +104,7 @@ docker compose up -d
 ```bash
 pnpm install
 pnpm build
-SAVES_ENABLED=1 node server.mjs
+pnpm start
 ```
 
 默认端口是 `3000`。常用环境变量：
