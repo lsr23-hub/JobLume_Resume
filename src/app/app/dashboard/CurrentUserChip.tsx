@@ -16,7 +16,6 @@ import { UserSelectDialog } from "./UserSelectDialog";
 export const CurrentUserChip = () => {
   const t = useTranslations("userSelect");
   const profile = useCareerProfileStore((s) => s.profile);
-  const currentUserId = useCareerProfileStore((s) => s.currentUserId);
   const photo = useResolvedImage(profile?.basic?.photo);
   const { state, isMobile } = useSidebar();
   const [open, setOpen] = useState(false);
@@ -58,11 +57,7 @@ export const CurrentUserChip = () => {
         )}
       </button>
 
-      {/*
-        当前用户为空时**不渲染**：那种情况下 RequireUser 的门禁已经弹了一个
-        一模一样的弹窗，再叠一层就是两个。删掉当前用户时正好会撞上。
-      */}
-      {currentUserId && <UserSelectDialog open={open} onOpenChange={setOpen} />}
+      <UserSelectDialog open={open} onOpenChange={setOpen} />
     </>
   );
 };

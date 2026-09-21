@@ -213,7 +213,7 @@ export const UserSelectDialog = ({ open, onOpenChange }: UserSelectDialogProps =
         hideClose={!dismissible}
         className={cn(
           "max-w-[900px] w-[95vw] max-h-[85vh] overflow-y-auto p-0",
-          "bg-card/95 dark:bg-gray-950/95 backdrop-blur-2xl border-white/20 dark:border-white/10 shadow-2xl rounded-[2rem]"
+          "bg-card/95 backdrop-blur-2xl border-border/60 shadow-2xl rounded-[2rem]"
         )}
       >
         <div className="px-8 pt-7 pb-2">
@@ -278,7 +278,7 @@ export const UserSelectDialog = ({ open, onOpenChange }: UserSelectDialogProps =
               <Card
                 className={cn(
                   "aspect-[3/4] border border-dashed cursor-pointer transition-all duration-200 flex flex-col",
-                  "hover:border-gray-400 hover:bg-muted",
+                  "hover:border-primary/60 hover:bg-muted",
                   "dark:hover:border-primary dark:hover:bg-primary/10"
                 )}
                 onClick={handleCreate}
@@ -287,11 +287,11 @@ export const UserSelectDialog = ({ open, onOpenChange }: UserSelectDialogProps =
               >
                 <CardContent className="flex-1 p-0 text-center flex flex-col items-center justify-center gap-3">
                   <motion.div
-                    className="p-3 rounded-full bg-muted dark:bg-primary/10"
+                    className="p-3 rounded-full bg-muted"
                     whileHover={{ rotate: 90 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <Plus className="h-6 w-6 text-gray-600 dark:text-primary" />
+                    <Plus className="h-6 w-6 text-primary" />
                   </motion.div>
                   <span className="text-sm font-medium px-3">{t("create")}</span>
                 </CardContent>

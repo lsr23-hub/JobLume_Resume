@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { IconResumes, IconTemplates, IconSettings, IconAI, IconProfile, IconTarget } from "@/components/shared/icons/SidebarIcons";
 import { usePathname, useRouter } from "@/lib/navigation";
 import {
@@ -29,6 +29,7 @@ import { LeaveDialog } from "@/components/shared/LeaveDialog";
 import { ConflictDialog } from "@/components/shared/ConflictDialog";
 import { SyncStatusBadge } from "@/components/shared/SyncStatusBadge";
 import ThemeToggle from "@/components/shared/ThemeToggle";
+import { cn } from "@/lib/utils";
 
 interface MenuItem {
   title: string;
@@ -36,6 +37,73 @@ interface MenuItem {
   href?: string;
   icon: any;
 }
+
+const SidebarNavItem = ({
+  item,
+  active,
+  open,
+  onClick,
+}: {
+  item: MenuItem;
+  active: boolean;
+  open: boolean;
+  onClick: () => void;
+}) => {
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+
+  useEffect(() => {
+    setTooltipOpen(false);
+  }, [open]);
+
+  return (
+    <TooltipProvider
+      delayDuration={300}
+      skipDelayDuration={0}
+      disableHoverableContent
+    >
+      <Tooltip
+        open={!open && tooltipOpen}
+        onOpenChange={setTooltipOpen}
+      >
+        <SidebarMenuItem>
+          <TooltipTrigger asChild>
+            <SidebarMenuButton
+              isActive={active}
+              onClick={onClick}
+              aria-label={item.title}
+              className={cn(
+                "mb-1 gap-2 transition-colors duration-200 [&>svg]:!size-6",
+                open ? "h-12 w-full px-4" : "h-10 w-10 p-0",
+                active
+                  ? "bg-primary/10 text-primary font-bold hover:bg-primary/20 hover:text-primary"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <item.icon size={24} active={active} />
+              <span
+                className={cn(
+                  "min-w-0 overflow-hidden whitespace-nowrap text-sm transition-opacity duration-200",
+                  open ? "flex-1 text-left" : "w-0 opacity-0"
+                )}
+                aria-hidden={!open}
+              >
+                {item.title}
+              </span>
+            </SidebarMenuButton>
+          </TooltipTrigger>
+        </SidebarMenuItem>
+        {!open && (
+          <TooltipContent
+            side="right"
+            className="font-medium data-[state=closed]:!animate-none"
+          >
+            {item.title}
+          </TooltipContent>
+        )}
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   // 把 store 的改动防抖镜像到磁盘上的 saves/<userId>/（编辑器那边另挂一次）
@@ -106,56 +174,30 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
                 className="hover:opacity-80 transition-opacity"
                 size={36}
               />
-              {open && (
-                <span className="font-bold text-lg tracking-tight">
-                  {t("sidebar.appName")}
-                </span>
-              )}
+              <span
+                className={cn(
+                  "min-w-0 overflow-hidden whitespace-nowrap font-bold text-lg tracking-tight transition-[opacity] duration-200",
+                  !open && "opacity-0"
+                )}
+              >
+                {t("sidebar.appName")}
+              </span>
             </div>
           </SidebarHeader>
-          <SidebarContent className="px-3 py-4">
+          <SidebarContent className="px-3 py-4 group-data-[collapsible=icon]:px-0">
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu className="space-y-1">
                   {sidebarItems.map((item) => {
                     const active = isItemActive(item);
                     return (
-                      <TooltipProvider delayDuration={0} key={item.title}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <SidebarMenuItem key={item.title}>
-                              <SidebarMenuButton
-                                asChild
-                                isActive={active}
-                                className={`w-full transition-all duration-200 ease-in-out h-12 mb-1 [&>svg]:size-auto ${active
-                                  ? "bg-primary/10 text-primary font-bold hover:bg-primary/20 hover:text-primary"
-                                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                                  }`}
-                              >
-                                <div
-                                  className="flex items-center gap-2 px-2 cursor-pointer"
-                                  onClick={() => handleItemClick(item)}
-                                >
-                                  <item.icon
-                                    size={24}
-                                    active={active}
-                                  />
-                                  {open && (
-                                    <span className="flex-1 text-sm">
-                                      {item.title}
-                                    </span>
-                                  )}
-                                </div>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                          </TooltipTrigger>
-                          {!open && (
-                            <TooltipContent side="right" className="font-medium">
-                              {item.title}
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
-                      </TooltipProvider>
+                      <SidebarNavItem
+                        key={item.title}
+                        item={item}
+                        active={active}
+                        open={open}
+                        onClick={() => handleItemClick(item)}
+                      />
                     );
                   })}
                 </SidebarMenu>
@@ -163,8 +205,8 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
             </SidebarGroup>
           </SidebarContent>
           <SidebarFooter>
-            <div className="flex items-center gap-1">
-              <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1 transition-[gap] duration-200 group-data-[collapsible=icon]:flex-col-reverse group-data-[collapsible=icon]:gap-2">
+              <div className="min-w-0 flex-1 transition-[width] duration-200 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex-none">
                 <CurrentUserChip />
               </div>
               {/* 写盘出问题时才出现（见组件头注释） */}
