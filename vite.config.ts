@@ -16,6 +16,11 @@ export default defineConfig({
   define: {
     __SITE_URL__: JSON.stringify(SITE_URL)
   },
+  // pnpm 在不同平台的链接布局可能让 SSR 解析出多份 React。
+  // 强制客户端、服务端和依赖统一使用根目录中的 React，避免 hooks dispatcher 丢失。
+  resolve: {
+    dedupe: ["react", "react-dom"]
+  },
   server: {
     port: 3000
   },
