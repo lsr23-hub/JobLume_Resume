@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Reorder } from "framer-motion";
+import { AnimatePresence, Reorder, motion } from "framer-motion";
 import { ChevronDown, Eye, EyeOff, GripVertical, PlusCircle, Trash2 } from "lucide-react";
 import { useTranslations } from "@/i18n/compat/client";
 import { useCareerProfileStore } from "@/store/useCareerProfileStore";
@@ -59,6 +59,7 @@ export const EntityList = ({ sectionId }: { sectionId: string }) => {
             <Reorder.Item
               key={entity.id}
               value={entity}
+              layout="position"
               className={cn(
                 "rounded-xl border bg-card transition-colors",
                 expanded ? "border-primary/40" : "border-border/60",
@@ -119,11 +120,21 @@ export const EntityList = ({ sectionId }: { sectionId: string }) => {
                 </Button>
               </div>
 
-              {expanded && (
-                <div className="border-t border-border/60 p-4">
-                  <EntityEditor entity={entity} />
-                </div>
-              )}
+              <AnimatePresence initial={false}>
+                {expanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.18, ease: "linear" }}
+                    className="overflow-hidden border-t border-border/60"
+                  >
+                    <div className="p-4">
+                      <EntityEditor entity={entity} />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </Reorder.Item>
           );
         })}

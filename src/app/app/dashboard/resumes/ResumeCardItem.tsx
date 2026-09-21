@@ -11,6 +11,7 @@ import ResumeTemplateComponent from "@/components/templates";
 import { DEFAULT_TEMPLATES } from "@/config";
 import { cn } from "@/lib/utils";
 import { normalizeFontFamily } from "@/utils/fonts";
+import { useResolvedImage } from "@/hooks/useResolvedImage";
 import { Edit2, Copy, Trash2 } from "lucide-react";
 
 interface ResumeCardItemProps {
@@ -40,6 +41,7 @@ export const ResumeCardItem = ({
     const containerRef = React.useRef<HTMLDivElement>(null);
     const [scale, setScale] = React.useState(0.24);
     const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+    const resolvedPhoto = useResolvedImage(resume.basic?.photo);
     
     const activeTemplate =
         DEFAULT_TEMPLATES.find((template) => template.id === resume.templateId) ??
@@ -98,7 +100,10 @@ export const ResumeCardItem = ({
                                     fontFamily: normalizeFontFamily(resume.globalSettings?.fontFamily),
                                 }}
                             >
-                                <ResumeTemplateComponent data={resume as any} template={activeTemplate} />
+                                <ResumeTemplateComponent
+                                    data={resolvedPhoto ? { ...resume, basic: { ...resume.basic, photo: resolvedPhoto } } : resume as any}
+                                    template={activeTemplate}
+                                />
                             </div>
                         </div>
                     </div>
